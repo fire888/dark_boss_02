@@ -1,3 +1,6 @@
+import * as THREE from 'three'
+import { StudioConf } from "_CORE/types"
+
 export const IS_DEV_START_ORBIT = false
 export const IS_PHISICS_DEBUG = false
 export const IS_SHOW_INFO = true
@@ -60,7 +63,7 @@ const GREEN_DARK = {
 const GRAY_GRAY = {
     "colorB":[0.8199156888754634,0.7804203432654724,0.8838621899028638],
     "colorF":[0.45376361205333049,0.409019673691427,0.4964499205082738],
-    "fogFar":102.61987425011904
+    "fogFar":200.61987425011904
 }
 const GRAY_RED = {"colorB":[0.14633413359562747,0.08947979627659533,0.10952951006356146],"colorF":[0.25286321211388724,0.034250892344869534,0.05347911523540349],"fogFar":46.71524161734923}
 
@@ -89,4 +92,27 @@ export const THEMES = {
     YELLOY_GRAPHIC,
     GREEN_DARK,
     GRAY_RED
+}
+
+export const STUDIO_CONF: StudioConf = {
+    // spotLightParams: {
+    //     color: new THREE.Color().setHex(0xffffff),
+    //     intensity: 15,
+    //     pos: new THREE.Vector3(0, 0, 0),
+    //     angle: Math.PI * .2,
+    //     penumbra: 1,
+    //     decay: 1,
+    //     distance: 300,
+    //     targetPos: new THREE.Vector3(0, 0, -50)
+    // },
+    cameraPos: new THREE.Vector3().fromArray(PLAYER_POS_START),
+    cameraLookAt: new THREE.Vector3(150, 0, 0),
+    //ambientLightParams: { color: new THREE.Color(0x897fa0), intensity: 3 },
+    sceneBackground: new THREE.Color().fromArray(GRAY_GRAY.colorB),
+    fogParams: { color: new THREE.Color().fromArray(GRAY_GRAY.colorF), near: 80, far: GRAY_GRAY.fogFar },
+    //SSAO: { kernelRadius: 10, minDistance: 2, maxDistance: 0, enabled: true },
+    directionalLightParams: { 
+        color: new THREE.Color(0xffffff), intensity: 5.5,
+        pos: new THREE.Vector3(-3, 3, -2)
+    },
 }

@@ -2,6 +2,7 @@ import { _M, A3 } from "../geometry/_m"
 import { ILevelConf } from "../types/GeomTypes"
 import { THEMES, THEMES_START} from "./THEMES"
 import * as THREE from 'three'
+import { StudioConf } from "_CORE/types"
 
 // DEBUG FLAGS ************************************* / 
 
@@ -22,6 +23,32 @@ export const IS_OLD_GAMES_INFO = true
 //export const IS_OLD_GAMES_INFO = false
 
 // ************************************************/ 
+
+export const STUDIO_CONF: StudioConf = {
+    spotLightParams: {
+        color: new THREE.Color().setHex(0xffffff),
+        intensity: 15,
+        pos: new THREE.Vector3(0, 0, 0),
+        angle: Math.PI * .2,
+        penumbra: 1,
+        decay: 1,
+        distance: 300,
+        targetPos: new THREE.Vector3(0, 0, -50)
+    },
+    directionalLightParams: { 
+        color: new THREE.Color(0x97e6eb), intensity: 30,
+        pos: new THREE.Vector3(-3, 3, -2)
+    },
+    cameraPos: new THREE.Vector3(1, 30, 70),
+    cameraLookAt: new THREE.Vector3(150, 1, 150),
+    ambientLightParams: { color: new THREE.Color(0x897fa0), intensity: 3 },
+    sceneBackground: new THREE.Color().setHex(0x0e2535),
+    fogParams: { color: new THREE.Color().setHex(0x0e2535), near: .2, far: 1000 },
+    SSAO: { kernelRadius: 10, minDistance: 2, maxDistance: 0, enabled: true },
+}
+
+
+// ************************************************/
 
 const PLAYER_START_POS_BIG_LEVEL: number[] = [-1, .7, -200]
 const PLAYER_START_POS_SMALL_LEVEL: number[] = [-1, .7, -50]

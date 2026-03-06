@@ -3,10 +3,11 @@ import { Ticker } from "_CORE/Ticker"
 import { Phisics } from "_CORE/Phisics"
 import { ControlsSystem } from "_CORE/controls/ControlsSystem"
 import { DeviceData } from "_CORE/DeviceData"
+import { Studio } from "_CORE/Studio"
 
-import { CONSTANTS } from "./constants/CONSTANTS"
+import { CONSTANTS, STUDIO_CONF } from "./constants/CONSTANTS"
 
-import { Studio } from "./entities/Studio"
+
 
 import { Floor } from "./entities/Floor"
 import { Particles } from './entities/Particles'
@@ -48,6 +49,7 @@ window.addEventListener("DOMContentLoaded", async () => {
     const root: Root = {
         CONSTANTS,
         ticker: new Ticker(),
+        studioConf: STUDIO_CONF, 
         studio: new Studio(),
         controls: new ControlsSystem(),
         ui: new UiCustom(),

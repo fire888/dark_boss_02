@@ -17,6 +17,8 @@ import { pipelineEnd } from "./pipelines/pipelineEnd"
 
 import { Core } from '_CORE/types'
 
+import { STUDIO_CONF } from "./constants/CONSTANTS"
+
 export interface Root extends Core {
     controls: ControlsSystem,
     loader: LoaderAssets,
@@ -34,8 +36,10 @@ window.addEventListener("DOMContentLoaded", async () => {
     console.log("branch:" + __GIT_CURRENT_BRANCH__ + ' commit:' + __HASH_COMMIT__)
 
     const root: Root = {
-        ticker: new Ticker(),
+        studioConf: STUDIO_CONF,
         studio: new Studio(),
+        ticker: new Ticker(),
+
         controls: new ControlsSystem(),
         ui: new Ui(),
         loader: new LoaderAssets(),

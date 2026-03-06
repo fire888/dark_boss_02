@@ -197,6 +197,7 @@ export class Labyrinth {
             this._collisionsNames.push(collisionMesh.name)
             collisionMesh.position.add(strict.position) 
             this._root.phisics.addMeshToCollision(collisionMesh)
+            collisionMesh.geometry.dispose()
         }
     }
 
