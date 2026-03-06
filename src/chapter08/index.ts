@@ -7,10 +7,10 @@ import { StudioCustom } from "./entities/Studio"
 import { Phisics } from "_CORE/Phisics"
 // import { Ui } from "./entities/Ui"
 import { UiCustom } from "./entities/Ui"
+import { ControlsSystem } from "_CORE/controls/ControlsSystem"
 
 import { CONSTANTS, STUDIO_CONF } from "./constants/CONSTANTS"
 
-import { ControlsSystem } from "./entities/controls/ControlsSystem"
 import { Ticker } from "./entities/Ticker"
 import { Floor } from "./entities/Floor"
 import { SmallTriangles } from "./entities/SmallTriangles"
