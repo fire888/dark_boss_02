@@ -148,9 +148,6 @@ export class StudioCustom extends Studio {
     }
 
     cameraFlyToLevel (playerStartPosition: number[]) {
-        //const { PLAYER_START_POS } = this._root.CONSTANTS
-
-        //const from = [PLAYER_START_POS[0], PLAYER_START_POS[1] + 300, PLAYER_START_POS[2] - 1500]
         const from = [playerStartPosition[0], playerStartPosition[1], playerStartPosition[2] - 1500]
         const to = [...playerStartPosition]
         const time = 5000
