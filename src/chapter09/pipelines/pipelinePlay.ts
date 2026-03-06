@@ -171,7 +171,7 @@ export const pipelinePlay = async (root: Root, currentIndexLevel = 0) => {
 
     const startPos = [levelData.playerStartPosition[0], .7, levelData.playerStartPosition[1]]
     await studio.cameraFlyToLevel(startPos)
-    phisics.setPlayerPosition(...startPos)
+    phisics.setPlayerPosition(startPos[0], startPos[1], startPos[2], 0)
     studio.animateFogTo(levelData.fogFar, levelData.theme.fogColor, 4000)
     studio.animateBackgroundTo(levelData.theme.sceneBackground, 3000)
     studio.animateLightTo(levelData.theme.dirLightColor, levelData.theme.ambientLightColor, 3000)

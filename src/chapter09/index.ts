@@ -1,14 +1,19 @@
 import "./stylesheets/controls.css"
+import { Ticker } from "_CORE/Ticker"
+import { Phisics } from "_CORE/Phisics"
+import { ControlsSystem } from "_CORE/controls/ControlsSystem"
+
 import { CONSTANTS } from "./constants/CONSTANTS"
+
 import { Studio } from "./entities/Studio"
-import { ControlsSystem } from "./entities/controls/ControlsSystem"
-import { Ticker } from "./entities/Ticker"
+
 import { Floor } from "./entities/Floor"
 import { Particles } from './entities/Particles'
 import { LoaderAssets } from "./entities/Loader";
 import { DeviceData } from "./entities/DeviceData"
-import { Ui } from "./entities/Ui"
-import { Phisics } from "./entities/Phisics"
+import { UiCustom } from "./entities/Ui"
+//import { Phisics } from "./entities/Phisics"
+
 import { Labyrinth } from './entityLabyrinth/Labyrinth'
 import { EnergySystem } from "./entities/EnergySystem"
 import { AntigravSystem } from "./entities/AntigravSystem"
@@ -18,18 +23,15 @@ import { Materials } from "./entities/Materials"
 import { pipelineInit } from "./pipelines/pipelineInit"
 import { pipelinePlay } from "./pipelines/pipelinePlay"
 import { pipelineEnd } from "./pipelines/pipelineEnd"
+import { Core } from '_CORE/types'
 
-export type Root = {
+export interface Root extends Core {
     CONSTANTS: typeof CONSTANTS,
-    ticker: Ticker,
-    studio: Studio,
+    ui: UiCustom,
     controls: ControlsSystem,
     floor: Floor,
     particles: Particles,
     loader: LoaderAssets,
-    deviceData: DeviceData,
-    ui: Ui,
-    phisics: Phisics,
     lab: Labyrinth,
     audio: AudioManager,
     materials: Materials,
@@ -48,7 +50,7 @@ window.addEventListener("DOMContentLoaded", async () => {
         ticker: new Ticker(),
         studio: new Studio(),
         controls: new ControlsSystem(),
-        ui: new Ui(),
+        ui: new UiCustom(),
         floor: new Floor(),
         particles: new Particles(),
         loader: new LoaderAssets(),

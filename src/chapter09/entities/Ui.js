@@ -1,13 +1,15 @@
 import { Tween, Interpolation } from '@tweenjs/tween.js'
 import { pause, elementClickOnce } from '../helpers/htmlHelpers'
 import { IS_OLD_GAMES_INFO } from '../constants/CONSTANTS'
+import { Ui } from '_CORE/Ui'
 
 const ENERGY_MAX_WIDTH = 30
 
-export class Ui {
+export class UiCustom extends Ui {
     _currentEnergyMinWidth = 0
-    init (root) {
-        this._root = root
+    //init (root) {
+    init () {
+        //this._root = root
         this.lockButton = document.createElement('div')
         this.lockButton.classList.add('butt-lock')
         this.lockButton.classList.add('control-small')
@@ -24,16 +26,16 @@ export class Ui {
         this._countEnergyInner.style.opacity = 0
         this._countEnergy.appendChild(this._countEnergyInner)
 
-        if (IS_OLD_GAMES_INFO) {
-            this._infoButton = document.createElement('div')
-            this._infoButton.classList.add('butt-info')
-            this._infoButton.classList.add('control-small')
-            this._infoButton.style.display = 'none'
-            this._infoButton.addEventListener('pointerdown', () => {
-                this._showInfo()
-            })
-            document.body.appendChild(this._infoButton)
-        }
+        //if (IS_OLD_GAMES_INFO) {
+        //    this._infoButton = document.createElement('div')
+        //    this._infoButton.classList.add('butt-info')
+        //    this._infoButton.classList.add('control-small')
+        //    this._infoButton.style.display = 'none'
+        //    this._infoButton.addEventListener('pointerdown', () => {
+        //        this._showInfo()
+        //    })
+        //    document.body.appendChild(this._infoButton)
+        //}
     }
 
     async hideStartScreen () {
@@ -58,11 +60,6 @@ export class Ui {
         await opacityByTransition(controlsM, 0, 300)
         //await pause(100)  
 
-        await opacityByTransition(startButton, 0, 300)
-        //await pause(100)
-
-        const img = document.body.getElementsByTagName('img')[0]
-        await opacityByTransition(img, 0, 300)
         //await pause(100)
 
         const h1 = document.body.getElementsByTagName('h1')[0]

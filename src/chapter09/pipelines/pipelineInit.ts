@@ -63,7 +63,7 @@ export const pipelineInit = async (root: Root) => {
     ticker.on(particles.update.bind(particles))
     studio.add(particles.m)
 
-    ui.init(root)
+    ui.init()
     ui.setEnergyLevel(0)
 
     materials.changeWallMaterial(LEVELS[0].theme.materialWalls)
@@ -86,14 +86,14 @@ export const pipelineInit = async (root: Root) => {
     await pause(100)
     
     if (!IS_DEV_START_ORBIT) {
-        controls.disconnect()
+        //controls.disconnect()
         const startPos = [LEVELS[0].playerStartPosition[0], .7, LEVELS[0].playerStartPosition[1]]
         await studio.cameraFlyToLevel(startPos)
-        phisics.setPlayerPosition(...startPos)
+        phisics.setPlayerPosition(startPos[0], startPos[1], startPos[2])
         studio.animateFogTo(LEVELS[0].fogFar, LEVELS[0].theme.fogColor, 4000)
         studio.animateBackgroundTo(LEVELS[0].theme.sceneBackground, 3000)
         studio.animateLightTo(LEVELS[0].theme.dirLightColor, LEVELS[0].theme.ambientLightColor, 3000)
-        controls.connect()
+        //controls.connect()
     }
 
     createChangerGameTheme(root)

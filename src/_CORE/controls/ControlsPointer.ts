@@ -1,7 +1,7 @@
 import { PointerLockControls } from 'three/examples/jsm/controls/PointerLockControls'
 import * as THREE from 'three'
 import { Tween, Interpolation } from '@tweenjs/tween.js'
-import { Root } from 'chapter10'
+import { Core } from '_CORE/types'
 import { Body } from 'cannon-es'
 import { _M } from '_CORE/_M/_m'
 
@@ -20,7 +20,7 @@ export class ControlsPointer {
 
     controls: PointerLockControls
 
-    _root: Root
+    _root: Core
 
     _isMoveDisabled = false
     _mouseEnable = true
@@ -55,7 +55,7 @@ export class ControlsPointer {
     _strengthIdle = 0.
 
 
-    init (root: Root) {
+    init (root: Core) {
         this._root = root
 
         this.camera = root.studio.camera

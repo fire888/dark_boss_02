@@ -31,6 +31,13 @@ export class Labyrinth {
     constructor() {}
     async init (root: Root) {
         this._root = root
+
+        const ground = new THREE.Mesh(
+            new THREE.BoxGeometry(500, 0.1, 500),
+            new THREE.MeshBasicMaterial({ color: _M.normRGBtoHex(...COLOR_FLOOR) })
+        )
+        ground.name = 'ground'
+        root.phisics.addMeshToCollision(ground)
     }
 
     async build (conf: ILevelConf) {

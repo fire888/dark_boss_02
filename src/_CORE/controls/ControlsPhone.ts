@@ -1,6 +1,6 @@
 import * as THREE from 'three'
 import { Tween, Interpolation } from '@tweenjs/tween.js'
-import { Root } from 'chapter10'
+import { Core } from '_CORE/types'
 import { Body } from 'cannon-es'
 import { _M } from '_CORE/_M/_m'
 
@@ -26,14 +26,14 @@ export class ControlsPhone {
     _strengthIdle = 0.
     _timeRot = 0
 
-    _root: Root
+    _root: Core
     _moveForwardDiv: HTMLElement
     _moveBackDiv: HTMLElement
     _moveLeftDiv: HTMLElement
     _moveRightDiv: HTMLElement
     _obj: THREE.Object3D
 
-    init(root: Root) {
+    init(root: Core) {
         this._root = root
 
         this._moveForwardDiv = document.createElement('div')

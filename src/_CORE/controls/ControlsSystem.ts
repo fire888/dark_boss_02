@@ -1,17 +1,17 @@
 import { ControlsOrbit } from "./ControlsOrbit"
 import { ControlsPointer } from "./ControlsPointer"
 import { ControlsPhone } from "./ControlsPhone"
-import { Root } from "chapter10"
+import { Core } from "../types"
 
 export class ControlsSystem {
     _orbit: ControlsOrbit
     _pointer: ControlsPointer
     _phone: ControlsPhone
-    _root: Root
+    _root: Core
     _currentWalkingControls: ControlsPointer | ControlsPhone | null
     _isDisabled = false
     
-    init (root: Root, isStartOrbit: boolean) {
+    init (root: Core, isStartOrbit: boolean) {
         this._root = root
     
         const { 
