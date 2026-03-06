@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+
+<head>
+    <title>Walking_09</title>
+      <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no" />
+      <meta name="-ms-viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+      <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+      <meta name="theme-color" content="#ffffff" />
+      <meta name="color-scheme" content="light only">
+      <meta name="apple-mobile-web-app-status-bar-style" content="white" />
+      <meta name="apple-mobile-web-app-capable" content="yes" />
+      <meta name="apple-touch-fullscreen" content="yes" />
+      <meta name="msapplication-tap-highlight" content="no" />
+    <style>
+        * {
+            padding: 0;
+            margin: 0;
+        }
+        .VIpgJd-ZVi9od-ORHb-OEVmcd {
+            display: none !important;
+        }
+        body {
+            overflow: hidden;
+            /* font-family: Geneva, Arial, Helvetica, sans-seri;
+            font-family: 'Roboto Mono' monospace; */
+            font-style: italic;
+            color: #a1ccea;
+        }
+        .start-screen {
+            position: absolute;
+            left: 0;
+            right: 0;
+            top: 0;
+            bottom: 0;
+            display: flex;
+            flex-direction: column;
+            background: linear-gradient(to top, #570ea4 60%, #0e0924 60%);
+            z-index: 500;
+            justify-content: center;
+            align-items: center;
+        }
+        .message {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            /* font-weight: bold; */
+        }
+        svg {
+            border: 35px solid #570ea4;
+            max-width: 40vw;
+            width: auto;
+            height: auto;
+            border-radius: 5px;
+        }
+        .loader {
+            border: 8px solid #f3f3f3; /* Light grey */
+            border-top: 8px solid #3498db; /* Blue */
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 2s linear infinite;
+            margin: 0;
+            padding: 0;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .start-but {
+            background-color:  #15338e; /* Green */
+            border: 2px solid #dadada;
+            min-height: 46px;
+            width: 40vw;
+            max-width: 450px;
+            min-width: 200px;
+            border-radius: 3px;
+            font-size: 20px;
+            font-style: italic;
+            color: #ffffff;
+            cursor: pointer;
+            transition: 1s;
+        }
+        .start-but:hover {
+            background-color:  #141524; /* Green */
+            border: 1px solid #3498db;
+            color: #3498db;
+            cursor: pointer;
+            transition: 1s;
+        }
+        #cont-level-dev {
+            position: absolute;
+            z-index: 500;
+            top: 0;
+            left: 0;
+        }
+    </style>
+</head>
+
+<body>
+    <div class='start-screen'>
+        <div class='message'>
+            <svg width="450" height="150" xmlns="http://www.w3.org/2000/svg">
+                <g>
+                 <title>Layer 1</title>
+                 <path id="svg_27" d="m118.65853,-11.34147c0.60976,1.82927 43.90244,189.63414 45.12195,189.63414c1.21951,0 116.46341,4.87805 114.02439,2.43902c-2.43902,-2.43902 -139.02439,-212.80487 -139.39024,-212.43902" opacity="NaN" stroke="null" fill="#15338e"/>
+                 <path id="svg_26" d="m102.19512,-39.39025l49.63415,229.0244c0.36585,0.24389 -116.70732,19.14633 -116.09756,2.07316c0.60976,-17.07317 25,-245.7317 24.63415,-245.36585" opacity="NaN" stroke="null" fill="#15338e"/>
+                 <path transform="rotate(-2.88545 224.883 23.4805)" stroke="null" id="svg_4" d="m-134.43829,35.96252c9.39367,-0.6001 713.91918,-24.90405 712.57724,-24.96406c1.34193,0.06001 12.07756,9.06147 1.34193,9.51155" opacity="NaN" fill="#424406"/>
+                 <path transform="rotate(-1.23534 312.22 32.8716)" stroke="null" id="svg_5" d="m-47.03944,47.74273c9.39207,-0.71496 713.79725,-29.67081 712.45554,-29.7423c1.34171,0.0715 12.0755,10.79588 1.34171,11.33211" opacity="NaN" fill="#424406"/>
+                 <path stroke="null" id="svg_6" d="m-45.00001,65.74145c9.39207,-0.71493 713.79725,-29.66996 712.45554,-29.74145c1.34171,0.0715 12.0755,10.79557 1.34171,11.33178" opacity="NaN" fill="#424406"/>
+                 <path transform="rotate(3.39517 312.26 73.7)" stroke="null" id="svg_7" d="m-47.00001,102.39999c9.39207,-1.3798 713.79725,-57.26201 712.45554,-57.39999c1.34171,0.13798 12.0755,20.83509 1.34171,21.86995" opacity="NaN" fill="#424406"/>
+                 <path transform="rotate(5.53973 312.26 96.7)" stroke="null" id="svg_8" d="m-47.00001,125.39999c9.39207,-1.3798 713.79725,-57.26201 712.45554,-57.39999c1.34171,0.13798 12.0755,20.83509 1.34171,21.86995" opacity="NaN" fill="#424406"/>
+                 <path transform="rotate(8.95416 309.621 123.757)" stroke="null" id="svg_9" d="m-49.63922,156.56374c9.39207,-1.57725 713.79725,-65.45606 712.45554,-65.61379c1.34171,0.15772 12.0755,23.81654 1.34171,24.99949" opacity="NaN" fill="#424406"/>
+                 <path transform="rotate(-2.88545 224.883 19.7)" stroke="null" id="svg_17" d="m-134.3769,33.39999c9.39207,-0.65865 713.79724,-27.33413 712.45554,-27.39999c1.3417,0.06586 12.0755,9.94567 1.3417,10.43966" opacity="NaN" fill="#7777f4"/>
+                 <path transform="rotate(-1.23534 312.26 29.7)" stroke="null" id="svg_18" d="m-47.00001,46.39999c9.39207,-0.80288 713.79725,-33.3197 712.45554,-33.39999c1.34171,0.08029 12.0755,12.12355 1.34171,12.72572" opacity="NaN" fill="#8e8ef2"/>
+                 <path stroke="null" id="svg_19" d="m-45.00001,64.39999c9.39207,-0.80288 713.79725,-33.3197 712.45554,-33.39999c1.34171,0.08029 12.0755,12.12355 1.34171,12.72572" opacity="NaN" fill="#afafed"/>
+                 <path transform="rotate(3.39517 312.26 68.7)" stroke="null" id="svg_20" d="m-47.00001,97.39999c9.39207,-1.3798 713.79725,-57.26201 712.45554,-57.39999c1.34171,0.13798 12.0755,20.83509 1.34171,21.86995" opacity="NaN" fill="#ccccea"/>
+                 <path transform="rotate(5.53973 312.26 91.7)" stroke="null" id="svg_21" d="m-47.00001,120.39999c9.39207,-1.3798 713.79725,-57.26201 712.45554,-57.39999c1.34171,0.13798 12.0755,20.83509 1.34171,21.86995" opacity="NaN" fill="#ffffff"/>
+                 <path transform="rotate(8.95416 309.621 118.757)" stroke="null" id="svg_22" d="m-49.63922,151.56374c9.39207,-1.57725 713.79725,-65.45607 712.45554,-65.61379c1.34171,0.15772 12.0755,23.81654 1.34171,24.99948" opacity="NaN" fill="#ffffff"/>
+                </g>
+               </svg>
+            <!-- <img class="big-border"src="start-img.webp"> -->
+            <button class="start-but" style="display: none;">P&nbsp;L&nbsp;A&nbsp;Y</button>
+            <div class="loader"></div>
+            <div style="min-height: 40px;"></div>
+            <div class="controls-mess">&#8592; &#8593; &#8594; &#8595; | W A S D</div>
+        </div>
+    </div>
+    <div id="container-game" touch-action="none"></div>
+    <div id='cont-level-dev'></div> 
+</body>
+</html>
