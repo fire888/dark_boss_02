@@ -16,17 +16,27 @@ type SpotLightConf = {
     targetPos: THREE.Vector3
 }
 
+type HemisphereLightConf = {
+    skyColor: THREE.Color
+    groundColor: THREE.Color
+    intensity: number
+    pos: THREE.Vector3
+} 
+
 export type StudioConf = {
     cameraPos: THREE.Vector3
     cameraLookAt: THREE.Vector3
     spotLightParams?: SpotLightConf
     ambientLightParams?: { color?: THREE.Color, intensity?: number }
     directionalLightParams?: { color?: THREE.Color, intensity?: number, pos?: THREE.Vector3 }
+    hemisphereLightParams?: HemisphereLightConf
     sceneBackground?: THREE.Color
     fogParams?: { color?: THREE.Color, near?: number, far?: number }
     SSAO?: {
         kernelRadius: number, minDistance: number, maxDistance: number, enabled: boolean
-    }
+    },
+    SSMA?: boolean
+    bokehPass?: { focus: number, aperture: number, maxblur: number }
 } 
 
 export interface Core {

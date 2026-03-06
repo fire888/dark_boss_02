@@ -16,6 +16,8 @@ import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js'
 import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js';
 import { SSAOPass } from 'three/examples/jsm/postprocessing/SSAOPass.js'
+import { SMAAPass } from 'three/examples/jsm/postprocessing/SMAAPass.js';
+import { BokehPass } from 'three/examples/jsm/postprocessing/BokehPass';
 import { Core } from "./types"
 import { Tween, Easing } from '@tweenjs/tween.js'
 
@@ -72,6 +74,11 @@ export class Studio {
             this.scene.add(this.spotLight)
         }
 
+        if (studioConf.hemisphereLightParams) {
+            this.hemiLight = new HemisphereLight(studioConf.hemisphereLightParams.skyColor, studioConf.hemisphereLightParams.groundColor, studioConf.hemisphereLightParams.intensity)
+            this.hemiLight.position.copy(studioConf.hemisphereLightParams.pos)
+            this.scene.add(this.hemiLight)
+        }
 
         this.scene.add(this.camera)
 
@@ -102,18 +109,33 @@ export class Studio {
         this.renderer.setSize(window.innerWidth, window.innerHeight)
         this.containerDom.appendChild(this.renderer.domElement)
 
-        if (studioConf.SSAO) {
+        if (studioConf.SSAO || studioConf.SSMA || studioConf.bokehPass) {
             this.composer = new EffectComposer(this.renderer)
             const renderPass = new RenderPass(this.scene, this.camera)
             this.composer.addPass(renderPass)
 
+        }
+
+        if (studioConf.SSMA) {
+            const smaaPass = new SMAAPass( window.innerWidth * this.renderer.getPixelRatio(), window.innerHeight * this.renderer.getPixelRatio() );
+            this.composer.addPass(smaaPass)
+        }
+
+        if (studioConf.SSAO) {
             this.ssaoPass = new SSAOPass(this.scene, this.camera, window.innerWidth, window.innerHeight)
             this.ssaoPass.kernelRadius = studioConf.SSAO.kernelRadius
             this.ssaoPass.minDistance = studioConf.SSAO.minDistance
             this.ssaoPass.maxDistance = studioConf.SSAO.maxDistance
             this.ssaoPass.enabled = studioConf.SSAO.enabled
             this.composer.addPass(this.ssaoPass)
+        }
 
+        if (studioConf.bokehPass) {
+            const bokehPass = new BokehPass(this.scene, this.camera, studioConf.bokehPass)
+            this.composer.addPass(bokehPass)
+        }
+
+        if (this.composer) {
             const outputPass = new OutputPass()
             this.composer.addPass(outputPass)
         }

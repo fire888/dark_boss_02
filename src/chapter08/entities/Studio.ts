@@ -1,94 +1,21 @@
 import { 
-    PerspectiveCamera,
-    Scene, 
-    Fog,
-    HemisphereLight,
-    DirectionalLight,
-    WebGLRenderer,
-    Texture,
     EquirectangularReflectionMapping,
     SRGBColorSpace,
-    Object3D,
     Vector3,
-    AxesHelper,
     Quaternion,
 } from 'three'
-import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer';
-import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
-// import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
-import { BokehPass } from 'three/examples/jsm/postprocessing/BokehPass';
-//import { BokehPass } from 'three/examples/jsm/postprocessing/';
-import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js';
-import { SMAAPass } from 'three/examples/jsm/postprocessing/SMAAPass.js';
 // import { GUI } from 'three/examples/jsm/libs/lil-gui.module.min.js';
 import { Root } from "../index";
-import { Tween, Interpolation, Easing } from '@tweenjs/tween.js'
+import { Tween, Easing } from '@tweenjs/tween.js'
 import { Studio } from '_CORE/Studio';
-
-
-
-const params = {
-    threshold: 0.65,
-    strength: 0.2,
-    radius: 0,
-
-    focus: 500.0,
-    aperture: 5,
-    maxblur: 0.01
-}
 
 export class StudioCustom extends Studio {
     init (root: Root) {
         super.init(root)
 
-    //     this._root = root
-    //     this.containerDom = document.getElementById('container-game')
-    //     this.camera = new PerspectiveCamera(45, window.innerWidth / window.innerHeight, .001, 1000)
-    //     this.camera.position.set(1, 30, 70)
-    //     this.camera.lookAt(0, 1, 0)
-
-    //     this.scene = new Scene()
-    //     root.loader.assets.mapEnv.mapping = EquirectangularReflectionMapping;
-    //     root.loader.assets.mapEnv.colorSpace = SRGBColorSpace;
-
-    //     this.scene.background = root.loader.assets.mapEnv
-    //     this.envMap = root.loader.assets.mapEnv
-
-    //    this.hemiLight = new HemisphereLight(0x6767f3, 0xffffff, 5)
-    //    this.hemiLight.position.set( 0, 20, 0 )
-    //    this.scene.add(this.hemiLight)
-
-    //     this.dirLight = new DirectionalLight( 0xffffff, 3 )
-    //     this.dirLight.position.set(-3, 10, 2)
-    //     this.scene.add(this.dirLight)
-
-    //     this.renderer = new WebGLRenderer({ antialias: true })
-    //     this.renderer.setPixelRatio(window.devicePixelRatio)
-    //     this.renderer.setSize(window.innerWidth, window.innerHeight)
-    //     this.containerDom.appendChild(this.renderer.domElement)
-
-
-    //     const renderScene = new RenderPass(this.scene, this.camera)
-
-    //     const smaaPass = new SMAAPass( window.innerWidth * this.renderer.getPixelRatio(), window.innerHeight * this.renderer.getPixelRatio() );
-
-    //     const bokehPass = new BokehPass(this.scene, this.camera, {
-    //         focus: 50,
-    //         aperture: 0.00002,
-    //         //maxblur: 0.015
-    //         maxblur: 0.01
-    //     } );
-
-    //     const outputPass = new OutputPass();
-
-    //     this.composer = new EffectComposer(this.renderer)
-    //     this.composer.addPass(renderScene)
-    //     this.composer.addPass(smaaPass)
-    //     this.composer.addPass(bokehPass)
-    //     this.composer.addPass(outputPass)
-
-    //     window.addEventListener( 'resize', this.onWindowResize.bind(this))
-    //     this.onWindowResize()
+        root.loader.assets.mapEnv.mapping = EquirectangularReflectionMapping;
+        root.loader.assets.mapEnv.colorSpace = SRGBColorSpace;
+        this.scene.background = root.loader.assets.mapEnv
     }
 
     cameraFlyAway (dir: string) {
