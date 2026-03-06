@@ -1,0 +1,19 @@
+{
+  "include": ["./src"],
+  "compilerOptions": {
+    "baseUrl": "./src",
+    "sourceMap": true,
+    "outDir": "./dist/",
+    "target": "esnext",
+    "module": "esnext",
+    "allowJs": true,
+    "moduleResolution": "node",
+    "allowSyntheticDefaultImports": true,
+    "noImplicitAny": true
+  },
+  "lib": [
+    "es2016",
+    "dom",
+    "es6"
+  ]
+}
