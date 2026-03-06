@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+
+<head>
+    <title>Walking_09</title>
+      <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no" />
+      <meta name="-ms-viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+      <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+      <meta name="theme-color" content="#ffffff" />
+      <meta name="color-scheme" content="light only">
+      <meta name="apple-mobile-web-app-status-bar-style" content="white" />
+      <meta name="apple-mobile-web-app-capable" content="yes" />
+      <meta name="apple-touch-fullscreen" content="yes" />
+      <meta name="msapplication-tap-highlight" content="no" />
+    <style>
+        * {
+            padding: 0;
+            margin: 0;
+        }
+        .VIpgJd-ZVi9od-ORHb-OEVmcd {
+            display: none !important;
+        }
+        body {
+            overflow: hidden;
+            font-style: italic;
+            color: #a1ccea;
+        }
+        .start-screen {
+            font-family: Geneva, Arial, Helvetica, sans-seri;
+            position: absolute;
+            left: 0;
+            right: 0;
+            top: 0;
+            bottom: 0;
+            display: flex;
+            flex-direction: column;
+            background: linear-gradient(to top, #3e5e73 60%, #0e0924 60%);
+            z-index: 500;
+            justify-content: center;
+            align-items: center;
+        }
+        .message {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            /* font-weight: bold; */
+        }
+        h1 {
+            font-size: 15vw;
+            line-height: 90px;
+            color: #6490ad;
+            font-style: normal;
+        }
+        .message img {
+            width: 250px;
+            max-width: 80vw;
+            height: auto;
+            border: 50px solid #0e0924;
+            margin-bottom: 30px;
+        }
+        .loader {
+            border: 8px solid #a1ccea;
+            border-top: 8px solid #0e0924;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 2s linear infinite;
+            margin: 0;
+            padding: 0;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .start-but {
+            background-color:  #0e0924;
+            border: 2px solid #a1ccea;
+            min-height: 46px;
+            width: 350px;
+            max-width: 90vw;
+            border-radius: 5px;
+            font-size: 20px;
+            font-style: italic;
+            color: #a1ccea;;
+            cursor: pointer;
+            transition: 1s;
+            font-style: normal;
+            font-weight: bold;
+        }
+        .start-but:hover {
+            background-color:  #141524; /* Green */
+            border: 1px solid #3498db;
+            color: #3498db;
+            cursor: pointer;
+            transition: 1s;
+        }
+        #cont-level-dev {
+            position: absolute;
+            z-index: 500;
+            top: 0;
+            left: 0;
+        }
+    </style>
+</head>
+
+<body>
+    <div class='start-screen'>
+        <div class='message'>
+            <div class='name'>
+                <h1>TOWN</h1>
+            </div>
+            <img src="./start-img.webp">
+            <button class="start-but" style="display: none;">P&nbsp;L&nbsp;A&nbsp;Y</button>
+            <div class="loader"></div>
+            <div style="min-height: 40px;"></div>
+            <div class="controls-mess">&#8592;&#8593;&#8594;&#8595;&nbsp;&nbsp;&nbsp;W A S D</div>
+        </div>
+    </div>
+    <div id="container-game" touch-action="none"></div>
+    <div id='cont-level-dev'></div> 
+</body>
+</html>
