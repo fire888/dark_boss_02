@@ -1,6 +1,15 @@
-import "./stylesheets/controls.css"
-import { CONSTANTS } from "./constants/CONSTANTS"
-import { Studio } from "./entities/Studio"
+import "_CORE/stylesheets/controls.css"
+import { Core } from '_CORE/types'
+
+//import { Studio } from "./entities/Studio"
+import { StudioCustom } from "./entities/Studio"
+//import { Phisics } from "./entities/Phisics"
+import { Phisics } from "_CORE/Phisics"
+// import { Ui } from "./entities/Ui"
+import { UiCustom } from "./entities/Ui"
+
+import { CONSTANTS, STUDIO_CONF } from "./constants/CONSTANTS"
+
 import { ControlsSystem } from "./entities/controls/ControlsSystem"
 import { Ticker } from "./entities/Ticker"
 import { Floor } from "./entities/Floor"
@@ -8,8 +17,8 @@ import { SmallTriangles } from "./entities/SmallTriangles"
 import { Particles } from './entities/Particles'
 import { LoaderAssets } from "./entities/Loader";
 import { DeviceData } from "./entities/DeviceData"
-import { Ui } from "./entities/Ui"
-import { Phisics } from "./entities/Phisics"
+
+
 import { EnergySystem } from './entities/EnergySystem'
 import { Lab } from './entities/labyrinth/Lab'
 import { AudioManager } from "./entities/AudioManager"
@@ -18,17 +27,17 @@ import { pipelineInit } from "./pipelines/pipelineInit"
 import { pipelinePlay } from "./pipelines/pipelinePlay"
 import { pipelineEnd } from "./pipelines/pipelineEnd"
 
-export type Root = {
+export interface Root extends Core {
     CONSTANTS: typeof CONSTANTS,
     ticker: Ticker,
-    studio: Studio,
+    studio: StudioCustom,
     controls: ControlsSystem,
     floor: Floor,
     smallTriangles: SmallTriangles,
     particles: Particles,
     loader: LoaderAssets,
     deviceData: DeviceData,
-    ui: Ui,
+    ui: UiCustom,
     phisics: Phisics,
     energySystem: EnergySystem,
     lab: Lab,
@@ -41,11 +50,12 @@ window.addEventListener("DOMContentLoaded", async () => {
     console.log("branch:" + __GIT_CURRENT_BRANCH__ + ' commit:' + __HASH_COMMIT__)
 
     const root: Root = {
+        studioConf: STUDIO_CONF,
         CONSTANTS,
         ticker: new Ticker(),
-        studio: new Studio(),
+        studio: new StudioCustom(),
         controls: new ControlsSystem(),
-        ui: new Ui(),
+        ui: new UiCustom(),
         floor: new Floor(),
         smallTriangles: new SmallTriangles(),
         particles: new Particles(),

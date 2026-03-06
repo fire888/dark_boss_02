@@ -13,6 +13,7 @@ import { createDoor } from "../../geometry/door"
 import { Root } from "../../index"
 import { Tween, Interpolation, Easing } from '@tweenjs/tween.js'
 import { vC_H } from "../../constants/CONSTANTS"
+import * as THREE from 'three'
 
 type TopTunnelStartData = {
     color: [number, number, number],
@@ -35,8 +36,8 @@ export class TopTunnel {
     W = 60
     N = 140
     mesh: Mesh
-    meshCollision: Object3D
-    meshDoorCollision: Object3D
+    meshCollision: THREE.Mesh
+    meshDoorCollision: THREE.Mesh
     _doorMesh: Mesh
     _doorDataOpened: GeometryData
 

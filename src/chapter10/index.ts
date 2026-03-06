@@ -1,4 +1,3 @@
-import "_CORE/stylesheets/controls.css"
 import { Studio } from "../_CORE/Studio"
 import { ControlsSystem } from "../_CORE/controls/ControlsSystem"
 import { Ticker } from "../_CORE/Ticker"

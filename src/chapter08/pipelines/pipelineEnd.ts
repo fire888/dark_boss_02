@@ -14,7 +14,8 @@ export const pipelineEnd = async (root: Root) => {
 
     controls.disable()
     setTimeout(() => {
-        studio.showFinalView()
+        studio.camera.position.set(17.5, 1, -6)
+        studio.camera.lookAt(14, .5, 0)
         lab.init(root, CONSTANTS.LABS_CONF[0])
         energySystem.init(root, [])
     }, 600)

@@ -3,6 +3,7 @@ import { Tween, Interpolation } from '@tweenjs/tween.js'
 import { Core } from '_CORE/types'
 import { Body } from 'cannon-es'
 import { _M } from '_CORE/_M/_m'
+import '../stylesheets/controls.css'
 
 export class ControlsPhone {
     _isForward = false

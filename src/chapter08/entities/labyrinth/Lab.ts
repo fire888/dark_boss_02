@@ -12,7 +12,7 @@ import { createRandomDataForLine } from '../../geometry/_lineGeom'
 import { _M } from "../../geometry/_m"
 import { Root } from '../../index'
 import { PosesSleepEnds, Dir, DataToCreateLine } from './types'
-
+import * as THREE from 'three'
 
 const LEVEL_H = 5
 const W = 3
@@ -44,6 +44,13 @@ export class Lab {
         this._root = root
 
         const { phisics } = root
+
+        const ground = new THREE.Mesh(
+            new THREE.BoxGeometry(500, 0.1, 500),
+            new THREE.MeshBasicMaterial()
+        )
+        ground.name = 'ground'
+        root.phisics.addMeshToCollision(ground)
 
         if (!this.mesh) {
             this.mesh = new Object3D()
