@@ -12,6 +12,10 @@ const hashCommit = exec('git log -1 --pretty=format:%h').toString().trim()
 const currentBranch = exec('git rev-parse --abbrev-ref HEAD').toString().trim()
 
 module.exports = (env, { mode }) => {
+
+    // example: folder = chapter10  
+    const folder = process.env.FOLDER.trim()
+
     return {
         devServer: {
             headers: {
@@ -19,7 +23,7 @@ module.exports = (env, { mode }) => {
                 'Cross-Origin-Embedder-Policy': 'require-corp',
             },
         },
-        entry: './src/index.ts',
+        entry: './src/' + folder + '/index.ts',
         // mode: 'development',
         devtool: mode === 'development' ? 'source-map' : false,
         resolve: {
@@ -32,7 +36,7 @@ module.exports = (env, { mode }) => {
         },
         output: {
             filename: "./res/" + hashCommit + "_index.js",
-            path: path.resolve(__dirname, 'dist'),
+            path: path.resolve(__dirname, 'dist/' + folder),
             assetModuleFilename: './res/assets/'+ hashCommit + '_[name][ext]',
             clean: true,
         },
@@ -43,7 +47,7 @@ module.exports = (env, { mode }) => {
             }),
             new ESLintPlugin({}),
             new HtmlWebpackPlugin({
-                template: './templates/index.html'
+                template: './src/'+ folder + '/0_templates/index.html'
             }),
             new MiniCssExtractPlugin({
                 filename: './res/'+ hashCommit + '_main.css',
