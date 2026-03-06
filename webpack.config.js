@@ -55,6 +55,7 @@ module.exports = (env, { mode }) => {
             new webpack.DefinePlugin({
                 __HASH_COMMIT__: JSON.stringify(hashCommit),
                 __GIT_CURRENT_BRANCH__: JSON.stringify('' + currentBranch),
+                __CHAPTER__: JSON.stringify(folder),
             }),
             new webpack.ProvidePlugin({
                 // 'cannon': 'cannon',

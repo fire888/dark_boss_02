@@ -72,7 +72,7 @@ export const pipelinePlay = async (root: Root, currentIndexLevel = 0) => {
         const prevAOIntensity = materials.materialLab.envMapIntensity
         const newAoMapIntensity = Math.random() * .5 + .7
         const prevDirLightIntensity = studio.dirLight.intensity
-        const newDirLightIntensity = Math.random() * 3  + 2
+        const newDirLightIntensity = Math.random() * 5  + 4
         new Tween(obj)
             .easing(Easing.Linear.In)
             .to({ v: 1 }, time)

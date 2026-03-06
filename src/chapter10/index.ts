@@ -39,9 +39,9 @@ window.addEventListener("DOMContentLoaded", async () => {
         studioConf: STUDIO_CONF,
         studio: new Studio(),
         ticker: new Ticker(),
-
-        controls: new ControlsSystem(),
         ui: new Ui(),
+        controls: new ControlsSystem(),
+
         loader: new LoaderAssets(),
         texturesCanvas: new TexturesCanvas(),
         deviceData: new DeviceData(),

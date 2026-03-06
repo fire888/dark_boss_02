@@ -95,24 +95,12 @@ export const THEMES = {
 }
 
 export const STUDIO_CONF: StudioConf = {
-    // spotLightParams: {
-    //     color: new THREE.Color().setHex(0xffffff),
-    //     intensity: 15,
-    //     pos: new THREE.Vector3(0, 0, 0),
-    //     angle: Math.PI * .2,
-    //     penumbra: 1,
-    //     decay: 1,
-    //     distance: 300,
-    //     targetPos: new THREE.Vector3(0, 0, -50)
-    // },
     cameraPos: new THREE.Vector3().fromArray(PLAYER_POS_START),
     cameraLookAt: new THREE.Vector3(150, 0, 0),
-    //ambientLightParams: { color: new THREE.Color(0x897fa0), intensity: 3 },
     sceneBackground: new THREE.Color().fromArray(GRAY_GRAY.colorB),
     fogParams: { color: new THREE.Color().fromArray(GRAY_GRAY.colorF), near: 80, far: GRAY_GRAY.fogFar },
-    //SSAO: { kernelRadius: 10, minDistance: 2, maxDistance: 0, enabled: true },
     directionalLightParams: { 
-        color: new THREE.Color(0xffffff), intensity: 5.5,
+        color: new THREE.Color(0xffffff), intensity: 8.5,
         pos: new THREE.Vector3(-3, 3, -2)
     },
 }

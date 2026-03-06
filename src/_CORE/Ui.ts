@@ -1,12 +1,27 @@
 import { Tween, Interpolation } from '@tweenjs/tween.js'
-import { elementClickOnce } from './helpers/htmlHelpers'
+import { elementClickOnce, pause } from './helpers/htmlHelpers'
 import { Core } from './types'
-import { IS_SHOW_INFO } from 'chapter10/constants/CONSTANTS'
+
+const IS_SHOW_INFO = true
+
+const CHAPTERS = [
+    'chapter01',
+    'chapter02',
+    'chapter03',
+    'chapter04',
+    'chapter05',
+    'chapter06',
+    'chapter07',
+    'chapter08',
+    'chapter09',
+    'chapter10'
+]
 
 export class Ui {
     _root: Core
     lockButton: HTMLDivElement
     _infoButton: HTMLDivElement
+    finalDark: HTMLDivElement
 
     _currentEnergyMinWidth = 0
     init (root: Core) {
@@ -63,6 +78,106 @@ export class Ui {
         this.lockButton.style.display = visible ? 'flex' : 'none'
     }
 
+    async showFinalPage () {
+        if (!IS_SHOW_INFO) {
+            const wrapper = document.createElement('div')
+            wrapper.style.opacity = '0'
+            wrapper.classList.add('final-page')
+
+            const complete = document.createElement('div')
+            complete.classList.add('top20px')
+            complete.innerHTML = 'You are done,'
+            complete.style.opacity = '0'
+            wrapper.appendChild(complete)
+
+            const complete2 = document.createElement('div')
+            complete2.classList.add('bottom60px')
+            complete2.innerHTML = 'thank you for playing!'
+            complete2.style.opacity = '0'
+            wrapper.appendChild(complete2)
+
+            document.body.appendChild(wrapper)
+            opacityByTransition(wrapper, 1, 300)
+            opacityByTransition(complete, 1, 300)
+            opacityByTransition(complete2, 1, 300)
+
+            if (this.finalDark) {
+                await pause(300)
+                await opacityByTransition(this.finalDark, 0, 5000)
+            }
+        
+        } else {
+            const wrapper = document.createElement('div')
+            wrapper.style.opacity = '0'
+            wrapper.classList.add('final-page')
+
+            const complete = document.createElement('div')
+            complete.classList.add('top20px')
+            complete.innerHTML = 'You are done,'
+            complete.style.opacity = '0'
+            wrapper.appendChild(complete)
+
+            const complete2 = document.createElement('div')
+            complete2.classList.add('bottom20px')
+            complete2.innerHTML = 'thank you for playing!'
+            complete2.style.opacity = '0'
+            wrapper.appendChild(complete2)
+
+            const prev = document.createElement('div')
+            prev.innerHTML = 'Previous chapters:'
+            prev.style.opacity = '0'
+            wrapper.appendChild(prev)
+
+            const list = createChaptersList()
+            list.classList.add('bottom20px')
+            list.style.opacity = '0'
+            wrapper.appendChild(list)
+
+            let currentIndex = null
+            let bottom, bottom1
+            // @ts-ignore
+            currentIndex = CHAPTERS.findIndex(ch => ch === __CHAPTER__)
+            if (currentIndex === CHAPTERS.length - 1) {
+                bottom = document.createElement('div')
+                bottom.style.opacity = '0'
+                bottom.innerHTML = 'Next chapter comming soon,'
+                wrapper.appendChild(bottom)
+
+                bottom1 = document.createElement('div')
+                bottom1.classList.add('bottom60px')
+                bottom1.style.opacity = '0'
+                bottom1.innerHTML = 'to be continued...'
+                wrapper.appendChild(bottom1)
+            } else {
+                bottom = document.createElement('div')
+                bottom.style.opacity = '0'
+                bottom.innerHTML = 'Please select next chapter.'
+                bottom.classList.add('bottom60px')
+                wrapper.appendChild(bottom)
+            }
+
+            document.body.appendChild(wrapper)
+            opacityByTransition(wrapper, 1, 300)
+            opacityByTransition(complete, 1, 300)
+            opacityByTransition(complete2, 1, 300)
+
+            await pause(300)
+            await opacityByTransition(prev, 1, 300)
+
+            await pause(300)
+            await opacityByTransition(list, 1, 300)
+
+            await pause(300)
+            await opacityByTransition(bottom, 1, 300)
+
+            await pause(500)
+            await opacityByTransition(bottom1, 1, 300)
+
+            await pause(300)
+            await opacityByTransition(this.finalDark, 0, 5000)
+        }
+    }
+
     _showInfo () {
         this._infoButton.style.display = 'none'
         this.toggleVisibleButtonLock(false)
@@ -110,6 +225,8 @@ export class Ui {
 }
 
 const opacityByTransition = (elem: HTMLElement, to: number, time: number) => {
+    if (!elem) return;
+
     return new Promise<void>(res => {
         const obj = { v: to === 1 ? 0 : 1 }
         new Tween(obj)
@@ -137,12 +254,20 @@ const createOffset = (n: number) => {
 
 
 const createChaptersList = () => {
+
+    let currentIndex = null
+    // @ts-ignore
+    if (__CHAPTER__) currentIndex = CHAPTERS.findIndex(ch => ch === __CHAPTER__)
+
     const LIST: [number, string, string, string?][] = []
-    for (let i = 1; i < 11; ++i) {
-        const strI = i < 10 ? '0' + i : i
-        LIST.push([i, './../' + strI, 'Chapter ' + i])
+    for (let i = 0; i < CHAPTERS.length; ++i) {
+        const ind = i + 1
+        const strI = ind < 10 ? '0' + ind : ind
+        LIST.push([ind, './../' + ind, 'Chapter ' + ind])
+        if (i === currentIndex) {
+            LIST[LIST.length - 1].push('current chapter')
+        }
     }
-    LIST[LIST.length - 1].push('current chapter')
 
     const list = document.createElement('div')
 

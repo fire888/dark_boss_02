@@ -190,7 +190,7 @@ export class Studio {
                 .onUpdate(() => {
                     if (this.ssaoPass) {
                         this.ssaoPass.maxDistance = obj.v * 15
-                        this.ssaoPass.minDistance = (1 - obj.v) * 0.2001
+                        this.ssaoPass.minDistance = (1 - obj.v) * 0.05
                     }
 
                     this.camera.position.lerpVectors(savedPos, targetPos, obj.v)

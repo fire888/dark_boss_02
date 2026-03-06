@@ -103,6 +103,11 @@ export class ControlsSystem {
         this._phone.disable()
     }
 
+    setRotation(x: number, y: number, z: number) {
+        this._pointer.setRotation(x, y, z)
+        this._phone.setRotation(y)
+    }
+
     enableRotation () {
         if (this._phone.constructor.name === this._currentWalkingControls.constructor.name) {
             this._phone.enable()

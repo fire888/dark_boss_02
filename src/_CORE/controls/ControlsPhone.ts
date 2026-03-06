@@ -118,10 +118,13 @@ export class ControlsPhone {
         window.addEventListener('keydown', this._onKeyDown.bind(this))
         window.addEventListener('keyup', this._onKeyUp.bind(this))
 
-
         this._obj = new THREE.Object3D()
         const rotY = _M.getAngleDirY(this._root.studio.camera) + Math.PI
         this._obj.rotation.y = rotY
+    }
+
+    setRotation(y: number) {
+        this._obj.rotation.y = y
     }
 
     update(delta: number, playerBody: Body) {

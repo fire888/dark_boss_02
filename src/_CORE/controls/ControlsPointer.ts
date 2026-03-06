@@ -88,6 +88,10 @@ export class ControlsPointer {
         this.raycaster = new THREE.Raycaster(new THREE.Vector3(), this._topVec, 0, 1)
     }
 
+    setRotation(x: number, y: number, z: number) {
+        this.controls.getObject().rotation.set(x, y, z)
+    } 
+
     update (delta: number, playerCollision: Body) {
         if (this._mouseEnable === false) {
             return;

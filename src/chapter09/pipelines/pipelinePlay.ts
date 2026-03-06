@@ -170,6 +170,7 @@ export const pipelinePlay = async (root: Root, currentIndexLevel = 0) => {
     phisics.switchToGravity()
 
     const startPos = [levelData.playerStartPosition[0], .7, levelData.playerStartPosition[1]]
+    controls.setRotation(0, Math.PI, 0)
     await studio.cameraFlyToLevel(startPos)
     phisics.setPlayerPosition(startPos[0], startPos[1], startPos[2], 0)
     studio.animateFogTo(levelData.fogFar, levelData.theme.fogColor, 4000)
