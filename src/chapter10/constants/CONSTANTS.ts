@@ -102,5 +102,5 @@ export const STUDIO_CONF: StudioConf = {
     directionalLightParams: { 
         color: new THREE.Color(0xffffff), intensity: 8.5,
         pos: new THREE.Vector3(-3, 3, -2)
-    },
+    }
 }

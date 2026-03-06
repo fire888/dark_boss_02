@@ -19,20 +19,6 @@ const ENERGY_PERCENTAGE_MUST_GET: number = .3
 
 
 export const STUDIO_CONF: StudioConf = {
-    // spotLightParams: {
-    //     color: new THREE.Color().setHex(0xffffff),
-    //     intensity: 15,
-    //     pos: new THREE.Vector3(0, 3, 5),
-    //     angle: Math.PI * .2,
-    //     penumbra: 1,
-    //     decay: 1,
-    //     distance: 300,
-    //     targetPos: new THREE.Vector3(0, 0, -50)
-    // },
-    // directionalLightParams: { 
-    //     color: new THREE.Color(0xffffff), intensity: 3,
-    //     pos: new THREE.Vector3(-3, 10, 2)
-    // },
     hemisphereLightParams: {
         skyColor: new THREE.Color().setHex(0x6767f3),
         groundColor: new THREE.Color().set(0xffffff),
@@ -41,10 +27,6 @@ export const STUDIO_CONF: StudioConf = {
     },
     cameraPos: new THREE.Vector3(1, 30, 70),
     cameraLookAt: new THREE.Vector3(150, 1, 150),
-    //ambientLightParams: { color: new THREE.Color().setHex(0x897fa0), intensity: 3 },
-    sceneBackground: new THREE.Color().setHex(0x0e2535),
-    fogParams: { color: new THREE.Color().setHex(0x0e2535), near: .2, far: 1000 },
-    SSAO: { kernelRadius: 5, minDistance: 2, maxDistance: 0, enabled: true },
     SSMA: true,
     bokehPass: { focus: 50, aperture: 0.00002, maxblur: 0.01 }
 }
