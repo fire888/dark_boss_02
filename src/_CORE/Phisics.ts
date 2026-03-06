@@ -14,7 +14,8 @@ import {
 import { Object3D } from 'three'
 import CannonDebugger from 'cannon-es-debugger'
 import * as THREE from 'three'
-import { Root } from 'chapter10'
+//import { Root } from 'chapter10'
+import { Core } from './types'
 import { IS_PHISICS_DEBUG } from 'chapter10/constants/CONSTANTS'
 
 class BodyN extends Body {
@@ -43,7 +44,7 @@ export class Phisics {
     playerBody: BodyN
     cannonDebugger: any
 
-    init (root: Root) {
+    init (root: Core) {
         this.world = new World()
         this.world.gravity.set(0, -9.82, 0)
         this.world.quatNormalizeSkip = 0

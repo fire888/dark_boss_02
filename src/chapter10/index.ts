@@ -15,15 +15,13 @@ import { pipelineInit } from "./pipelines/pipelineInit"
 import { pipelinePlay } from "./pipelines/pipelinePlay"
 import { pipelineEnd } from "./pipelines/pipelineEnd"
 
-export type Root = {
-    ticker: Ticker,
-    studio: Studio,
+import { Core } from '_CORE/types'
+
+export interface Root extends Core {
     controls: ControlsSystem,
     loader: LoaderAssets,
     texturesCanvas: TexturesCanvas,
     deviceData: DeviceData,
-    ui: Ui,
-    phisics: Phisics,
     lab: Labyrinth,
     backTower: BackTower,
     audio: AudioManager,

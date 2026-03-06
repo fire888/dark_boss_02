@@ -1,15 +1,15 @@
 import { Tween, Interpolation } from '@tweenjs/tween.js'
 import { elementClickOnce } from './helpers/htmlHelpers'
-import { Root } from 'chapter10'
+import { Core } from './types'
 import { IS_SHOW_INFO } from 'chapter10/constants/CONSTANTS'
 
 export class Ui {
-    _root: Root
+    _root: Core
     lockButton: HTMLDivElement
     _infoButton: HTMLDivElement
 
     _currentEnergyMinWidth = 0
-    init (root: Root) {
+    init (root: Core) {
         this._root = root
         this.lockButton = document.createElement('div')
         this.lockButton.classList.add('butt-lock')

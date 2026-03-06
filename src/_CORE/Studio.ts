@@ -16,7 +16,7 @@ import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js'
 import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js';
 import { SSAOPass } from 'three/examples/jsm/postprocessing/SSAOPass.js'
-import { Root } from "../chapter10/index"
+import { Core } from "./types"
 import { Tween, Easing } from '@tweenjs/tween.js'
 import { PLAYER_POS_START } from '../chapter10/constants/CONSTANTS'
 import { START_THEME } from '../chapter10/constants/CONSTANTS';
@@ -40,14 +40,14 @@ export class Studio {
     dirLight: DirectionalLight
     renderer: WebGLRenderer
     envMap: Texture
-    _root: Root
+    _root: Core
     spotLight: SpotLight
     amb: THREE.AmbientLight
     ssaoPass: SSAOPass
     composer: EffectComposer | null
 
-    init (root: Root) {
-        this._root = root
+    init (core: Core) {
+        this._root = core
         this.containerDom = document.getElementById('container-game')
         this.camera = new PerspectiveCamera(45, window.innerWidth / window.innerHeight, .1, 1000)
         this.camera.position.fromArray(PLAYER_POS_START)
@@ -67,7 +67,7 @@ export class Studio {
 
         this.renderer = new WebGLRenderer({ antialias: true })    
         this.renderer.setPixelRatio(window.devicePixelRatio)
-        if (root.deviceData.device === 'desktop') {
+        if (core.deviceData.device === 'desktop') {
             this.renderer.setPixelRatio(window.devicePixelRatio * 1.15)
         }
         
