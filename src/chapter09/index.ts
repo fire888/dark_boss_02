@@ -2,6 +2,7 @@ import "./stylesheets/controls.css"
 import { Ticker } from "_CORE/Ticker"
 import { Phisics } from "_CORE/Phisics"
 import { ControlsSystem } from "_CORE/controls/ControlsSystem"
+import { DeviceData } from "_CORE/DeviceData"
 
 import { CONSTANTS } from "./constants/CONSTANTS"
 
@@ -10,9 +11,8 @@ import { Studio } from "./entities/Studio"
 import { Floor } from "./entities/Floor"
 import { Particles } from './entities/Particles'
 import { LoaderAssets } from "./entities/Loader";
-import { DeviceData } from "./entities/DeviceData"
+
 import { UiCustom } from "./entities/Ui"
-//import { Phisics } from "./entities/Phisics"
 
 import { Labyrinth } from './entityLabyrinth/Labyrinth'
 import { EnergySystem } from "./entities/EnergySystem"
