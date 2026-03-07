@@ -18,6 +18,7 @@ export const pipeInit_07 = async (root: Root) => {
         backTower,
         audio,
         materials,
+        flyer,
     } = root
 
     loader.init()
@@ -39,6 +40,7 @@ export const pipeInit_07 = async (root: Root) => {
     phisics.createPlayer()
     phisics.setPlayerPosition(PLAYER_POS_START[0], PLAYER_POS_START[1], PLAYER_POS_START[2], PLAYER_POS_START[3])
 
+    // TEST MESH
     const m = new THREE.Mesh(
         new THREE.BoxGeometry(0.1, 0.1, 0.1),
         new THREE.MeshBasicMaterial({ color: 0x00ff00 })
@@ -48,6 +50,12 @@ export const pipeInit_07 = async (root: Root) => {
     
     lab.init(root)
     await lab.generateStructure(STRUCTURES[0])
+
+
+    flyer.init(root)
+    studio.add(flyer.mesh)
+
+
 
     ui.init(root)
     ui.setTransparentBackground()

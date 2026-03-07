@@ -1,27 +1,13 @@
-import {H} from "../constants/constants_elements";
-import {createFace, fillColorFace, rotateArrY} from "../helpers/geomHelpers";
+import {createFace, fillColorFace} from "../helpers/geomHelpers";
 import {
     tileUv,
-    randomTile,
+
 } from "./uvAtlas";
 import { COLOR_00 } from '../constants/constants_elements'
 
-const { sin, cos } = Math
-
 export const createElemDrive = ({
-                                     h = 31,
-                                     h0 = 3,
-                                     h00 = 5,
-                                     w0 = 10,
-                                     w = 3,
-                                     h1 = h - 10,
-                                     h11 = h - 7,
-                                     w1 = 4.5,
-                                     h2 = h - .5,
-                                     bottomH = 5,
-                                     topH = 15,
-                                     color = COLOR_00
-                                 }) => {
+    color = COLOR_00
+}) => {
     const v = []
     const c = []
     const u = []
@@ -71,11 +57,8 @@ export const createElemDrive = ({
         )
     )
 
-
     u.push(...tileUv['empty'])
     c.push(...colorPolygon)
-
-
 
     v.push(
         ...createFace(
@@ -89,7 +72,6 @@ export const createElemDrive = ({
     u.push(...tileUv['empty'])
     c.push(...colorPolygon)
 
-
     col.push(
         ...createFace(
             [-15, 0, 2],
@@ -98,9 +80,6 @@ export const createElemDrive = ({
             [-15, 20, 2],
         )
     )
-
-
-
 
     // const SIDES = 8
     //
@@ -168,7 +147,6 @@ export const createElemDrive = ({
     //         [-w0 / 2, h, -w0 / 2],
     //     ),
     // )
-
 
     return { v, col, u, c }
 }

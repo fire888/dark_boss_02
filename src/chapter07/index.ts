@@ -9,6 +9,7 @@ import { Structure } from "./Structure03/Structure03"
 import { BackTower } from "./entities/BackTower"
 import { AudioManager } from "./entities/AudioManager"
 import { Materials } from "./entities/Materials"
+import { Flyer } from "./entities/Flyer/Flyer"
 import { pipeInit_07 } from "./pipelines/pipeInit_07"
 import { pipePlay_07 } from "./pipelines/pipePlay_07"
 import { pipeEnd_07 } from "./pipelines/pipeEnd_07"
@@ -25,6 +26,7 @@ export interface Root extends Core {
     backTower: BackTower,
     audio: AudioManager,
     materials: Materials,
+    flyer: Flyer
 }
 
 
@@ -45,7 +47,8 @@ window.addEventListener("DOMContentLoaded", async () => {
         lab: new Structure(),
         backTower: new BackTower(),
         audio: new AudioManager(),
-        materials: new Materials()
+        materials: new Materials(),
+        flyer: new Flyer()
     }
 
     await pipeInit_07(root)

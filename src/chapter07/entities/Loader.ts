@@ -1,12 +1,19 @@
 import {  
     AudioLoader, 
+    TextureLoader,
 } from 'three'
+
+
 
 import audioAmbient from '../assets/ambient.mp3'
 import steps from '../assets/steps_metal.mp3'
+import tex01 from '../assets/texture01.jpg'
+import tex01_inv from '../assets/texture01_inv.jpg'
 
 type Assets = {
-    soundAmbient: any,
+    textureTiles: any
+    textureTilesInv: any
+    soundAmbient: any
     soundStepsMetal: any
 }
 type ResultLoad = {
@@ -16,22 +23,27 @@ type ResultLoad = {
 
 export class LoaderAssets {
     assets: Assets = {
+        textureTiles: null,
+        textureTilesInv: null,
         soundAmbient: null,
         soundStepsMetal: null,
     }
+
+    _textureLoader: TextureLoader = new TextureLoader()
+    // cubeTextureLoader: CubeTextureLoader = new CubeTextureLoader()
 
     init () {}
 
     loadAssets (): Promise<void> {
         return new Promise(res => {
 
-            // const loadTexture = (key: keyof Assets, src: string) => {
-            //     return new Promise<ResultLoad>(res => {
-            //         this._textureLoader.load(src, texture => {
-            //             res({ key, texture })
-            //         })
-            //     })
-            // }
+            const loadTexture = (key: keyof Assets, src: string) => {
+                return new Promise<ResultLoad>(res => {
+                    this._textureLoader.load(src, texture => {
+                        res({ key, texture })
+                    })
+                })
+            }
 
             const loadAudio = ( key: keyof Assets, src: string) => {
                 return new Promise<ResultLoad>(res => {
@@ -53,6 +65,8 @@ export class LoaderAssets {
             const promises = [
                 loadAudio('soundAmbient', audioAmbient),
                 loadAudio('soundStepsMetal', steps),
+                loadTexture('textureTiles', tex01),
+                loadTexture('textureTilesInv', tex01_inv)
             ]
 
             Promise.all(promises).then(result => {
