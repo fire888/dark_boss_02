@@ -55,7 +55,7 @@ export const pipePlay_07 = async (root: Root) => {
         })
     }
 
-    await pause(300000) 
+    await pause(10000) 
     await waiterStructures()
 
     console.log('##@@#@ COMPLETE!!!')

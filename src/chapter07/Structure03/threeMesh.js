@@ -95,10 +95,9 @@ export const createrMesh = (root) => {
                 gCollision.scale(SCALE, SCALE, SCALE)
                 meshCollision = new THREE.Mesh(gCollision, root.materials.collision)
                 meshCollision.position.set(X * SCALE, Y * SCALE, Z * SCALE)
-                root.studio.add(meshCollision)
-                meshCollision.visible = false
+                //root.studio.add(meshCollision)
+                //meshCollision.visible = false
                 root.phisics.addMeshToCollision(meshCollision)
-                //root.phisics.setPlayerPosition(0, 30, 0)
                 res()
             })
         },
@@ -114,9 +113,11 @@ export const createrMesh = (root) => {
             root.studio.remove(mesh)
             mesh.geometry.dispose()
 
-            //root.studio.removeFromScene(meshCollision)
+            root.phisics.removeMeshFromCollision(meshCollision.name)
             meshCollision.geometry.dispose()
+            root.studio.remove(meshCollision)
             mesh = null
+            meshCollision = null
         },
     }
 }
