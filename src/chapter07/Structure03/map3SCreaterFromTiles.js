@@ -144,11 +144,9 @@ export const createMap = (tiles) => {
             let maxCallStack = 10000
 
             return new Promise(res => {
-                console.log('!!! tiles', tiles)
                 /** create start map */
 
                 map = createMap3X(tiles, dataStructure)
-                console.log('!!! map', map)
 
                 const { mapFill } = dataStructure
                 for (let i = 0; i < mapFill.length; ++i) {
@@ -214,7 +212,6 @@ export const createMap = (tiles) => {
                         calculateMapItem(nextY, nextZ, nextX).then(nextItem)
                         //setTimeout(() => {  }, 0)
                     } else {
-                        console.log('$$$$--')
                         res(map)
                     }
                 }

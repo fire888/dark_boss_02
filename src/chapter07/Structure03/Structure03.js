@@ -15,11 +15,10 @@ export class Structure {
         this.map = null
     } 
 
-    generateStructure (structure = STRUCTURES[Math.floor(Math.random()* STRUCTURES.length)]) {
+    generateStructure (structure = STRUCTURES[Math.floor(Math.random() * STRUCTURES.length)]) {
         return new Promise(res => {
             this.dataStructure.generateMap(structure).then(m => {
                 this.map = m
-                console.log('map', this.map)
                 this.makerMesh.generateMeshes(this.map, structure).then(result => {
                     res()
                 })

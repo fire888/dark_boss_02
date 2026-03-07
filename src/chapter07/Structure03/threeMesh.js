@@ -17,6 +17,7 @@ import {
 } from "./helpers/geomHelpers";
 import tile from '../assets/texture01.jpg'
 import * as _M from "./helpers/geomHelpers"
+import { SCALE } from './constants/const_structures'
 
 
 export const createrMesh = (root) => {
@@ -82,23 +83,22 @@ export const createrMesh = (root) => {
                 })
 
                 const { X, Y, Z, SIZE_X, SIZE_Y, SIZE_Z } = structureData
-                console.log('ERERE XYZ', X, Y, Z, SIZE_X, SIZE_Y, SIZE_Z)
-
-                const SCALE = .028
 
                 const g = createGeomFromBuffer({ v, c, u })
                 g.scale(SCALE, SCALE, SCALE)
                 mesh = new THREE.Mesh(g, mat)
+                mesh.position.set(X * SCALE, Y * SCALE, Z * SCALE)
                 root.studio.add(mesh)
                 mesh.geometry.computeBoundingSphere()
 
                 const gCollision = createGeomFromBuffer({ v: col })
                 gCollision.scale(SCALE, SCALE, SCALE)
-                meshCollision = new THREE.Mesh(gCollision, new THREE.MeshPhongMaterial({ color: 0xff0000 }))
+                meshCollision = new THREE.Mesh(gCollision, root.materials.collision)
+                meshCollision.position.set(X * SCALE, Y * SCALE, Z * SCALE)
                 root.studio.add(meshCollision)
                 meshCollision.visible = false
                 root.phisics.addMeshToCollision(meshCollision)
-                root.phisics.setPlayerPosition(0, 30, 0)
+                //root.phisics.setPlayerPosition(0, 30, 0)
                 res()
             })
         },
@@ -111,11 +111,11 @@ export const createrMesh = (root) => {
             if (!mesh) {
                 return
             }
-            root.studio.removeFromScene(mesh)
+            root.studio.remove(mesh)
             mesh.geometry.dispose()
 
             //root.studio.removeFromScene(meshCollision)
-            //meshCollision.geometry.dispose()
+            meshCollision.geometry.dispose()
             mesh = null
         },
     }

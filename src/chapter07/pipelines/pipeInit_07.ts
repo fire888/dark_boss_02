@@ -3,15 +3,16 @@ import { update } from '@tweenjs/tween.js'
 import { IS_DEV_START_ORBIT } from '../constants/CONSTANTS'
 import { PLAYER_POS_START } from '../constants/CONSTANTS'
 import { pause } from '_CORE/helpers/htmlHelpers'
+import { STRUCTURES } from '../Structure03/constants/constants_elements'
+import * as THREE from 'three'
 
-export const pipelineInit = async (root: Root) => {
+export const pipeInit_07 = async (root: Root) => {
     const {
         studio,
         controls,
         ui,
         ticker,
         loader,
-        texturesCanvas,
         phisics,
         lab,
         backTower,
@@ -22,8 +23,6 @@ export const pipelineInit = async (root: Root) => {
     loader.init()
     await loader.loadAssets()
 
-    await texturesCanvas.init()
-
     ticker.start()
 
     ticker.on((t: number) => {
@@ -33,35 +32,35 @@ export const pipelineInit = async (root: Root) => {
     materials.init(root)
 
     studio.init(root)
+    studio.setSceneBackground(STRUCTURES[0].ENV_COLOR.toArray())
     ticker.on(studio.render.bind(studio))
 
     phisics.init(root)
-    phisics.createPlayerPhisicsBody(PLAYER_POS_START)
+    phisics.createPlayer()
+    phisics.setPlayerPosition(PLAYER_POS_START[0], PLAYER_POS_START[1], PLAYER_POS_START[2], PLAYER_POS_START[3])
+
+    const m = new THREE.Mesh(
+        new THREE.BoxGeometry(0.1, 0.1, 0.1),
+        new THREE.MeshBasicMaterial({ color: 0x00ff00 })
+    )
+    m.position.set(PLAYER_POS_START[0], PLAYER_POS_START[1], PLAYER_POS_START[2] + 3)
+    studio.add(m)
     
     lab.init(root)
-    //await lab.buildNext('fast')
-    await lab.generateStructure()
-
-    await backTower.init(root)
-    const TOWER_OFFSET = 900
-    root.backTower.setPositionX(phisics.playerBody.position.x + TOWER_OFFSET)
-    let n = 100
-    ticker.on(() => {
-        --n
-        if (n < 0) {
-            n = 100
-            root.backTower.setPositionX(phisics.playerBody.position.x + TOWER_OFFSET)
-        }
-
-    })
+    await lab.generateStructure(STRUCTURES[0])
 
     ui.init(root)
     ui.setTransparentBackground()
 
+    root.studio.addFog()
+    const { color, near, far } = STRUCTURES[0].FOG
+    root.studio.fog.color.set(color)
+    root.studio.fog.near = near
+    root.studio.fog.far = far
+
     if (IS_DEV_START_ORBIT) {
         await ui.hideStartScreenForce()
     } else {
-        root.studio.addFog()
         await ui.hideStartScreen().then()
     }
 
@@ -72,5 +71,6 @@ export const pipelineInit = async (root: Root) => {
     audio.playAmbient()
     
     controls.init(root, IS_DEV_START_ORBIT)
+
     ticker.on(controls.update.bind(controls))
 }

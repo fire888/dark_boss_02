@@ -85,6 +85,7 @@ export class Phisics {
     }
 
     createPlayerPhisicsBody (playerPosition: number[]) {
+        console.log('Must depricade !!!!')
         const sphere = new Sphere(.5);
         this.playerBody = new BodyN({ 
             mass: 5,
@@ -110,6 +111,33 @@ export class Phisics {
             this.playerBody.myObject3D.quaternion.w,
         )
 
+
+        this.world.addBody(this.playerBody)
+
+        this.world.addEventListener('beginContact', (event: any) => {
+            const { bodyA, bodyB } = event;
+            if (bodyA.id === 0 && bodyB.id !== 0) {
+                this.isGround = true 
+            }
+        })
+        this.world.addEventListener('endContact', (event: any) => {
+            const { bodyA, bodyB } = event;
+            if (bodyA && bodyB && bodyA.id === 0 && bodyB.id !== 0) {
+                this.isGround = false
+            }
+        })
+    }
+
+    createPlayer () {
+        const sphere = new Sphere(.5)
+        this.playerBody = new BodyN({ 
+            mass: 5,
+            linearDamping: 0.9,
+        })
+        this.playerBody.myName = 'playerBody'
+        this.playerBody.addShape(sphere)
+
+        this.playerBody.myObject3D = new Object3D()
 
         this.world.addBody(this.playerBody)
 
@@ -199,7 +227,6 @@ export class Phisics {
             this.playerBody.myObject3D.quaternion.z,
             this.playerBody.myObject3D.quaternion.w,
         )
-        
     }
 
     stopPlayerBody () {

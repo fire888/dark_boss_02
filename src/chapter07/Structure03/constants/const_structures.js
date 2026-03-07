@@ -3,6 +3,8 @@ import { Color } from 'three'
 
 //export const W = 160
 export const W = 160
+//export const SCALE = .028
+export const SCALE = .031
 
 
 const c = new Color(0xa76815)
