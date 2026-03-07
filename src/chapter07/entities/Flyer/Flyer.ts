@@ -56,9 +56,11 @@ export class Flyer {
         const collisionGeom = createGeomFromBuffer({ v: col })
         collisionGeom.scale(SCALE, SCALE, SCALE)
         const meshCollision = new THREE.Mesh(collisionGeom, basicMat)
-        meshCollision.visible = false
-        mesh.add(meshCollision)
-        
+        meshCollision.name = 'Flyer_Collision'
+        root.studio.add(meshCollision)
+        root.phisics.addMeshToCollision(meshCollision)
+        //meshCollision.visible = false
+
         // !! TODO MAKE PHISICS 
         //root.system_PlayerMoveOnLevel.addItemToPlayerCollision(meshCollision)
         //root.system_PlayerMoveOnLevel.addItemToPlayerCollisionWalls(meshCollision)

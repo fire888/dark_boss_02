@@ -60,24 +60,26 @@ export const pipeInit_07 = async (root: Root) => {
     studio.add(flyer.mesh)
 
     fuel.init(root)
+    fuel.mesh.position.set(0, 0, 1000)
     studio.add(fuel.mesh)
 
-    if (coordsFuel) {
-        // @ts-ignore
-        fuel.mesh.position.set(
-            // @ts-ignore
-            ((coordsFuel[0] + .5) * W + dataS.X) * SCALE,
-            // @ts-ignore 
-            ((coordsFuel[1] + .5) * H + dataS.Y) * SCALE,
-            // @ts-ignore 
-            ((coordsFuel[2] + .5) * W + dataS.Z) * SCALE
-        )
-        console.log('$$%$% coordsFuel', coordsFuel)
-    }
+    // if (coordsFuel) {
+    //     // @ts-ignore
+    //     fuel.mesh.position.set(
+    //         // @ts-ignore
+    //         ((coordsFuel[0] + .5) * W + dataS.X) * SCALE,
+    //         // @ts-ignore 
+    //         ((coordsFuel[1] + .5) * H + dataS.Y) * SCALE,
+    //         // @ts-ignore 
+    //         ((coordsFuel[2] + .5) * W + dataS.Z) * SCALE
+    //     )
+    //     console.log('$$%$% coordsFuel', coordsFuel)
+    // }
 
 
     ui.init(root)
     ui.setTransparentBackground()
+    ui.setEnergyLevel(1)
 
     root.studio.addFog()
     const { color, near, far } = STRUCTURES[0].FOG

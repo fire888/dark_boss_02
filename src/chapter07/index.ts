@@ -3,7 +3,7 @@ import { ControlsSystem } from "../_CORE/controls/ControlsSystem"
 import { Ticker } from "../_CORE/Ticker"
 import { LoaderAssets } from "./entities/Loader"
 import { DeviceData } from "../_CORE/DeviceData"
-import { Ui } from "../_CORE/Ui"
+import { UiCustom } from "./entities/UiCustom"
 import { Phisics } from "../_CORE/Phisics"
 import { Structure } from "./Structure03/Structure03"
 import { BackTower } from "./entities/BackTower"
@@ -18,6 +18,7 @@ import { pipeEnd_07 } from "./pipelines/pipeEnd_07"
 import { Core } from '_CORE/types'
 
 import { STUDIO_CONF } from "./constants/CONSTANTS"
+import { Ui } from "_CORE/Ui"
 
 export interface Root extends Core {
     controls: ControlsSystem,
@@ -29,6 +30,7 @@ export interface Root extends Core {
     materials: Materials,
     flyer: Flyer
     fuel: Fuel
+    ui: UiCustom
 }
 
 
@@ -40,7 +42,7 @@ window.addEventListener("DOMContentLoaded", async () => {
         studioConf: STUDIO_CONF,
         studio: new Studio(),
         ticker: new Ticker(),
-        ui: new Ui(),
+        ui: new UiCustom(),
         controls: new ControlsSystem(),
 
         loader: new LoaderAssets(),

@@ -7,9 +7,27 @@ import { pause } from '_CORE/helpers/htmlHelpers'
 import { W, H } from '../Structure03/constants/constants_elements'
 import { SCALE } from '../Structure03/constants/const_structures'
 
+const waiterPlayerFindFlyer = async (root: Root) => {
+    const { ticker, studio, lab, fuel, flyer, ui } = root
+
+    const waitNear = () => {
+        return new Promise<void>((resolve) => {
+            const removerUpdater = ticker.on(() => {
+                if (studio.camera.position.distanceTo(flyer.mesh.position) < .7) {
+                    removerUpdater()
+                    resolve()
+                }
+            })
+        })
+    }
+
+    await waitNear()
+    ui.setEnergyLevel(0)
+}
+
 
 const findFuelIteration = async (root: Root, structureIndex: number) => {
-    const { ticker, studio, lab, fuel } = root
+    const { ticker, studio, lab, fuel, ui } = root
 
     lab.destroyStructure()
 
@@ -49,7 +67,11 @@ const findFuelIteration = async (root: Root, structureIndex: number) => {
 
     await waiter()
 
+    ui.setEnergyLevel(1)
+
     fuel.mesh.position.x = -10000
+    
+    await waiterPlayerFindFlyer(root)
 
     await pause(1000)
 } 
@@ -70,8 +92,7 @@ export const pipePlay_07 = async (root: Root) => {
     })
 
     // first walking    
-    await pause(10000) 
-
+    await waiterPlayerFindFlyer(root)
 
     // waiter iterator structures
     const waiterStructures = () => {

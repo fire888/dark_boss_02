@@ -20,7 +20,6 @@ export class Structure {
             this.dataStructure.generateMap(structure).then(m => {
                 this.map = m
                 this.makerMesh.generateMeshes(this.map, structure).then(result => {
-                    console.log('result', result)
                     res()
                 })
             })
