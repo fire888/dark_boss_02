@@ -8,8 +8,33 @@ import { W, H } from '../Structure03/constants/constants_elements'
 import { SCALE } from '../Structure03/constants/const_structures'
 
 
-const findFuelIteration = async (root: Root) => {
+const findFuelIteration = async (root: Root, structureIndex: number) => {
     const { ticker, studio, lab, fuel } = root
+
+    lab.destroyStructure()
+
+    const dataS = STRUCTURES[structureIndex]
+    await lab.generateStructure(dataS)
+    const coordsFuel = lab.getCoordsForItem('fuel')
+
+    if (coordsFuel) {
+        // @ts-ignore
+        fuel.mesh.position.set(
+            // @ts-ignore
+            ((coordsFuel[0]) * W + dataS.X) * SCALE,
+            // @ts-ignore 
+            ((coordsFuel[1] + .5) * H + dataS.Y) * SCALE,
+            // @ts-ignore 
+            ((coordsFuel[2]) * W + dataS.Z) * SCALE
+        )
+    }
+    
+    const { color, near, far } = dataS.FOG
+    root.studio.fog.color.setHex(color)
+    root.studio.fog.near = near * 0.25
+    root.studio.fog.far = far * 0.25
+
+    root.studio.setSceneBackground(dataS.ENV_COLOR.toArray())
 
     const waiter = () => {
         return new Promise<void>((resolve) => {
@@ -27,7 +52,6 @@ const findFuelIteration = async (root: Root) => {
     fuel.mesh.position.x = -10000
 
     await pause(1000)
-
 } 
 
 
@@ -36,60 +60,37 @@ export const pipePlay_07 = async (root: Root) => {
     console.log('[MESSAGE:] START PLAY')
     const { studio, lab, ticker, phisics, fuel } = root
 
+    // return player if fall
     ticker.on(() => {
-        if (studio.camera.position.y < -10) {
-            const startPoint = new THREE.Vector3(0, 15, 0)
+        if (studio.camera.position.y < -40) {
+            const startPoint = new THREE.Vector3(0, 25, 0)
             phisics.setPlayerPosition(...startPoint.toArray())
             studio.camera.rotation.y = Math.PI * 1.5
         }
     })
 
+    // first walking    
+    await pause(10000) 
+
+
+    // waiter iterator structures
     const waiterStructures = () => {
         return new Promise<void>((resolve) => {
-            let currentIndexStructure = 0
+            let newIndexStruct = 1
             
-            const iterateStructure = async (newIndex: number) => {
-                currentIndexStructure = newIndex
-
-                const dataS = STRUCTURES[currentIndexStructure]
-
-                lab.destroyStructure()
-                await lab.generateStructure(dataS)
-                const coordsFuel = lab.getCoordsForItem('fuel')
-
-                if (coordsFuel) {
-                    // @ts-ignore
-                    fuel.mesh.position.set(
-                        // @ts-ignore
-                        ((coordsFuel[0]) * W + dataS.X) * SCALE,
-                        // @ts-ignore 
-                        ((coordsFuel[1] + .5) * H + dataS.Y) * SCALE,
-                        // @ts-ignore 
-                        ((coordsFuel[2]) * W + dataS.Z) * SCALE
-                    )
-                }
-                
-                const { color, near, far } = dataS.FOG
-                root.studio.fog.color.setHex(color)
-                root.studio.fog.near = near * 0.25
-                root.studio.fog.far = far * 0.25
-
-                root.studio.setSceneBackground(dataS.ENV_COLOR.toArray())
-                
-                currentIndexStructure = newIndex
-
-                if (STRUCTURES[currentIndexStructure + 1]) {
-                    await findFuelIteration(root) 
-                    iterateStructure(currentIndexStructure + 1)
+            const iterateStructure = async () => {
+                ++newIndexStruct
+                if (STRUCTURES[newIndexStruct]) {
+                    await findFuelIteration(root, newIndexStruct) 
+                    iterateStructure()
                 } else {
                     resolve()
                 }
             }
 
-            iterateStructure(currentIndexStructure + 1)
+            iterateStructure()
         })
     }
 
-    await pause(10000) 
     await waiterStructures()
 }
