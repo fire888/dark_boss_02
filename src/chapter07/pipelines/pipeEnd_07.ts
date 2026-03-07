@@ -1,3 +1,5 @@
 import { Root } from "../index"
 
-export const pipeEnd_07 = async (root: Root) => {}
+export const pipeEnd_07 = async (root: Root) => {
+    console.log('##@@#@ COMPLETE!!!')
+}

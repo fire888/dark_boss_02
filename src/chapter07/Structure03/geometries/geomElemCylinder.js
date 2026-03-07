@@ -4,24 +4,12 @@ import {
 } from "../helpers/geomHelpers";
 import {
     tileUv,
-    randomTile,
 } from "./uvAtlas";
 import { COLOR_00 } from '../constants/constants_elements'
 
 const { sin, cos } = Math
 
 export const createElemCylinder = ({
-                                    h = 31,
-                                    h0 = 3,
-                                    h00 = 5,
-                                    w0 = 10,
-                                    w = 3,
-                                    h1 = h - 10,
-                                    h11 = h - 7,
-                                    w1 = 4.5,
-                                    h2 = h - .5,
-                                    bottomH = 5,
-                                    topH = 15,
                                     color = COLOR_00
                                 }) => {
     const v = []
@@ -61,35 +49,6 @@ export const createElemCylinder = ({
              c.push(...colorPolygon)
          }
     }
-
-    /** collision */
-    // col.push(
-    //     ...createFace(
-    //         [-w0 / 2, 0, w0 / 2],
-    //         [w0 / 2, 0, w0 / 2],
-    //         [w0 / 2, h, w0 / 2],
-    //         [-w0 / 2, h, w0 / 2],
-    //     ),
-    //     ...createFace(
-    //         [w0 / 2, 0, w0 / 2],
-    //         [w0 / 2, 0, -w0 / 2],
-    //         [w0 / 2, h, -w0 / 2],
-    //         [w0 / 2, h, w0 / 2],
-    //     ),
-    //     ...createFace(
-    //         [w0 / 2, 0, -w0 / 2],
-    //         [-w0 / 2, 0, -w0 / 2],
-    //         [-w0 / 2, h, -w0 / 2],
-    //         [w0 / 2, h, -w0 / 2],
-    //     ),
-    //     ...createFace(
-    //         [-w0 / 2, 0, -w0 / 2],
-    //         [-w0 / 2, 0, w0 / 2],
-    //         [-w0 / 2, h, w0 / 2],
-    //         [-w0 / 2, h, -w0 / 2],
-    //     ),
-    // )
-
 
     return { v, col, u, c }
 }

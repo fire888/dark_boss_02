@@ -10,6 +10,7 @@ import { BackTower } from "./entities/BackTower"
 import { AudioManager } from "./entities/AudioManager"
 import { Materials } from "./entities/Materials"
 import { Flyer } from "./entities/Flyer/Flyer"
+import { Fuel } from "./entities/Fuel/Fuel"
 import { pipeInit_07 } from "./pipelines/pipeInit_07"
 import { pipePlay_07 } from "./pipelines/pipePlay_07"
 import { pipeEnd_07 } from "./pipelines/pipeEnd_07"
@@ -27,6 +28,7 @@ export interface Root extends Core {
     audio: AudioManager,
     materials: Materials,
     flyer: Flyer
+    fuel: Fuel
 }
 
 
@@ -48,7 +50,8 @@ window.addEventListener("DOMContentLoaded", async () => {
         backTower: new BackTower(),
         audio: new AudioManager(),
         materials: new Materials(),
-        flyer: new Flyer()
+        flyer: new Flyer(),
+        fuel: new Fuel(),
     }
 
     await pipeInit_07(root)

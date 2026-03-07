@@ -5,6 +5,8 @@ import { PLAYER_POS_START } from '../constants/CONSTANTS'
 import { pause } from '_CORE/helpers/htmlHelpers'
 import { STRUCTURES } from '../Structure03/constants/constants_elements'
 import * as THREE from 'three'
+import { W, H } from '../Structure03/constants/constants_elements'
+import { SCALE } from '../Structure03/constants/const_structures'
 
 export const pipeInit_07 = async (root: Root) => {
     const {
@@ -19,6 +21,7 @@ export const pipeInit_07 = async (root: Root) => {
         audio,
         materials,
         flyer,
+        fuel,
     } = root
 
     loader.init()
@@ -49,12 +52,28 @@ export const pipeInit_07 = async (root: Root) => {
     studio.add(m)
     
     lab.init(root)
-    await lab.generateStructure(STRUCTURES[0])
-
+    const dataS = STRUCTURES[0]
+    await lab.generateStructure(dataS)
+    const coordsFuel = lab.getCoordsForItem('fuel')
 
     flyer.init(root)
     studio.add(flyer.mesh)
 
+    fuel.init(root)
+    studio.add(fuel.mesh)
+
+    if (coordsFuel) {
+        // @ts-ignore
+        fuel.mesh.position.set(
+            // @ts-ignore
+            ((coordsFuel[0] + .5) * W + dataS.X) * SCALE,
+            // @ts-ignore 
+            ((coordsFuel[1] + .5) * H + dataS.Y) * SCALE,
+            // @ts-ignore 
+            ((coordsFuel[2] + .5) * W + dataS.Z) * SCALE
+        )
+        console.log('$$%$% coordsFuel', coordsFuel)
+    }
 
 
     ui.init(root)
