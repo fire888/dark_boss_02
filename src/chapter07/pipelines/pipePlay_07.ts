@@ -6,15 +6,18 @@ import { W, H } from '../Structure03/constants/constants_elements'
 import { SCALE } from '../Structure03/constants/const_structures'
 import * as TWEEN from '@tweenjs/tween.js'
 
-const D = 300
+const D = 200
 
 const waiterPlayerFindFlyerFlyOut = async (root: Root) => {
     const { ticker, studio, lab, fuel, flyer, ui, phisics, controls } = root
 
+    const posTriggerFlyer = new THREE.Vector3() 
+    flyer.objectForCheck.getWorldPosition(posTriggerFlyer)
+
     const waitNear = () => {
         return new Promise<void>((resolve) => {
             const removerUpdater = ticker.on(() => {
-                if (studio.camera.position.distanceTo(flyer.mesh.position) < .7) {
+                if (studio.camera.position.distanceTo(posTriggerFlyer) < .7) {
                     removerUpdater()
                     resolve()
                 }
@@ -24,20 +27,20 @@ const waiterPlayerFindFlyerFlyOut = async (root: Root) => {
 
     await waitNear()
 
-    phisics.stopPlayerBody()
     phisics.setIsUpdate(false)
     controls.disableMove()
+
+    const savedCamPos = studio.camera.position.clone()
 
     const waiterFlyer = async () => {
         return new Promise<void>(res => {
             const obj = { v: 0}
             new TWEEN.Tween(obj)
-                .interpolation(TWEEN.Interpolation.Linear)
-                .to({ v: 1 }, 5000)
+                .easing(TWEEN.Easing.Quadratic.In)
+                .to({ v: 1 }, 8000)
                 .onUpdate(() => {
-                    flyer.mesh.position.z = -obj.v * D
-                    studio.camera.position.z = -obj.v * D
-                    //phisics.setPlayerPosition(camPos.x, camPos.y, -obj.v * D)
+                    flyer.mesh.position.z = obj.v * -D
+                    studio.camera.position.z = obj.v * -D + savedCamPos.z
                     ui.setEnergyLevel(1 - (obj.v * .5))
                 })
                 .onComplete(() => {
@@ -54,10 +57,8 @@ const waiterPlayerFindFlyerFlyOut = async (root: Root) => {
 const waiterPlayerFindFlyerFlyTo = async (root: Root) => {
     const { ticker, studio, lab, fuel, flyer, ui, phisics, controls } = root
 
-    flyer.mesh.position.z = D
-
     const camPos = studio.camera.position.clone()
-    //phisics.setPlayerPosition(camPos.x, camPos.y, D)
+    camPos.z += D
 
     const waiterFlyer = async () => {
         return new Promise<void>(res => {
@@ -67,7 +68,7 @@ const waiterPlayerFindFlyerFlyTo = async (root: Root) => {
                 .to({ v: 1 }, 5000)
                 .onUpdate(() => {
                     flyer.mesh.position.z = (1 - obj.v) * D
-                    studio.camera.position.z = (1 -obj.v) * D
+                    studio.camera.position.z = (1 -obj.v) * D + camPos.z
                     ui.setEnergyLevel(.5 - (obj.v * .5))
                 })
                 .onComplete(() => {

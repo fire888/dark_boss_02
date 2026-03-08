@@ -203,7 +203,11 @@ export class ControlsSystem {
     }
 
     disableMove() {
+        if (this._isMoveDisabled) {
+            return;
+        }
         this._isMoveDisabled = true
+        this._changeForwardSpeedTo(0)
     }
 
     enableMove() {

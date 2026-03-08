@@ -57,16 +57,14 @@ export class Flyer {
         collisionGeom.scale(SCALE, SCALE, SCALE)
         const meshCollision = new THREE.Mesh(collisionGeom, basicMat)
         meshCollision.name = 'Flyer_Collision'
-        root.studio.add(meshCollision)
         root.phisics.addMeshToCollision(meshCollision)
-        //meshCollision.visible = false
 
-        // !! TODO MAKE PHISICS 
-        //root.system_PlayerMoveOnLevel.addItemToPlayerCollision(meshCollision)
-        //root.system_PlayerMoveOnLevel.addItemToPlayerCollisionWalls(meshCollision)
-
-        const playerNearObj = new THREE.Object3D()
-        playerNearObj.position.set(0, 10, -100)
+        const playerNearObj = new THREE.Mesh(
+            new THREE.BoxGeometry(.3, .3, .3),
+            new THREE.MeshBasicMaterial({ color: 0x000000 })
+        )
+        playerNearObj.position.set(0, .3, -2)
+        playerNearObj.visible = false
         mesh.add(playerNearObj)
 
         const arrow = new THREE.Mesh(
@@ -74,8 +72,8 @@ export class Flyer {
             new THREE.MeshBasicMaterial({ color: 0x000000 })
         )
         arrow.rotation.x = -0.25
-        arrow.position.z = -106
-        arrow.position.y = 5
+        arrow.position.z = -106 * SCALE
+        arrow.position.y = 5 * SCALE
         mesh.add(arrow)
 
         this.arrow = arrow
