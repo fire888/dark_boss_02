@@ -13,7 +13,7 @@ const PHISICS_CONF = {
     IS_DEBUG: false
 }
 
-const PLAYER_START_POS: number[] = [15.076315508474185, 3, -10]
+const PLAYER_START_POS: number[] = [15.076315508474185, 3, -10, Math.PI]
 const ENERGY_FIRST_POS: number[] = [15.076315508474185, 0, -4]
 const ENERGY_PERCENTAGE_MUST_GET: number = .3
 
@@ -26,7 +26,10 @@ export const STUDIO_CONF: StudioConf = {
         pos: new THREE.Vector3(0, 20, 0)
     },
     cameraPos: new THREE.Vector3(1, 30, 70),
-    cameraLookAt: new THREE.Vector3(150, 1, 150),
+    cameraLookAt: new THREE.Vector3(1, 30, 73),
+    // cameraLookAt: new THREE.Vector3().fromArray(PLAYER_START_POS)
+    //     .add(new THREE.Vector3(0, 0, 1)
+    //     .applyAxisAngle(new THREE.Vector3(0, 1, 0), PLAYER_START_POS[3])),
     SSMA: true,
     bokehPass: { focus: 50, aperture: 0.00002, maxblur: 0.01 }
 }

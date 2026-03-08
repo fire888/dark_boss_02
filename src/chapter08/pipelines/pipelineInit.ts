@@ -36,7 +36,8 @@ export const pipelineInit = async (root: Root) => {
 
     phisics.init(root)
     ticker.on(phisics.update.bind(phisics))
-    phisics.createPlayerPhisicsBody(CONSTANTS.PLAYER_START_POS)
+    phisics.createPlayer()
+    phisics.setPlayerPosition(CONSTANTS.PLAYER_START_POS[0], CONSTANTS.PLAYER_START_POS[1], CONSTANTS.PLAYER_START_POS[2])
 
     floor.init(root)
     studio.add(floor.mesh)
@@ -62,5 +63,6 @@ export const pipelineInit = async (root: Root) => {
 
     audio.playAmbient()
     controls.init(root, false)
+    controls.setRotation(0, CONSTANTS.PLAYER_START_POS[3], 0)
     ticker.on(controls.update.bind(controls))
 }
