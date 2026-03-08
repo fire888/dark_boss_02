@@ -36,7 +36,8 @@ export const pipelineInit = async (root: Root) => {
     ticker.on(studio.render.bind(studio))
 
     phisics.init(root)
-    phisics.createPlayerPhisicsBody(PLAYER_POS_START)
+    phisics.createPlayer()
+    phisics.setPlayerPosition(PLAYER_POS_START[0], PLAYER_POS_START[1], PLAYER_POS_START[2])
     
     await lab.init(root)
     await lab.buildNext('fast')
@@ -71,5 +72,6 @@ export const pipelineInit = async (root: Root) => {
     audio.playAmbient()
     
     controls.init(root, IS_DEV_START_ORBIT)
+    controls.setRotation(0, PLAYER_POS_START[3], 0)
     ticker.on(controls.update.bind(controls))
 }

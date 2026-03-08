@@ -251,7 +251,7 @@ export class Studio {
     }
 
     animateFogTo(far: number, color: number[], time: number) {
-        console.log('animateFogTo !!! deplecated')
+        console.log(' !!! deplecated')
 
         const startFogFar = this.fog.far
         const endFogFar = far
@@ -272,7 +272,7 @@ export class Studio {
                 })
                 .start()
         })
-    }
+    } 
 
     animateBackgroundTo(color: number[], time: number) {
         // @ts-ignore
