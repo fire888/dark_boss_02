@@ -103,53 +103,72 @@ const waiterPlayerFindFlyerFlyTo = async (root: Root) => {
 }
 
 
-const findFuelIteration = async (root: Root, structureIndex: number) => {
+const levelIteration = async (root: Root, structureIndex: number) => {
     const { ticker, studio, lab, fuel, ui } = root
+
+    // @ts-ignore
+    const currentBackColor = root.studio.scene.background.clone()
+    const targetColor = STRUCTURES[structureIndex].ENV_COLOR
+    const obj = { v: 0}
+    new TWEEN.Tween(obj)
+        .easing(TWEEN.Easing.Quadratic.In)
+        .to({ v: 1 }, 2000)
+        .onUpdate(() => {
+            // @ts-ignore
+            studio.fog.color.lerpColors(currentBackColor, targetColor, obj.v)
+            // @ts-ignore
+            studio.scene.background.lerpColors(currentBackColor, targetColor, obj.v)
+        })
+    .start()
+
+    await pause(2000)
 
     lab.destroyStructure()
 
     const dataS = STRUCTURES[structureIndex]
     await lab.generateStructure(dataS)
     const coordsFuel = lab.getCoordsForItem('fuel')
-
-    if (coordsFuel) {
+    fuel.mesh.position.set(
         // @ts-ignore
-        fuel.mesh.position.set(
-            // @ts-ignore
-            ((coordsFuel[0]) * W + dataS.X) * SCALE,
-            // @ts-ignore 
-            ((coordsFuel[1] + .5) * H + dataS.Y) * SCALE,
-            // @ts-ignore 
-            ((coordsFuel[2]) * W + dataS.Z) * SCALE
-        )
+        ((coordsFuel[0]) * W + dataS.X) * SCALE, ((coordsFuel[1] + .5) * H + dataS.Y) * SCALE, ((coordsFuel[2]) * W + dataS.Z) * SCALE
+    )
+
+    // АНИМИРУЕМ ТУМАН С ЦВЕТВ ФОНА В СОБСТВЕННЫЙ ЧТОБ УВИДЕТЬ НОВЫЙ УРОВЕНЬ 
+    {
+        const { color, near, far } = dataS.FOG
+        const targetFogColor = new THREE.Color(color)
+        const currentFar = studio.fog.far
+        const currentNear = studio.fog.near
+        const obj = { v: 0}
+        new TWEEN.Tween(obj)
+            .easing(TWEEN.Easing.Quadratic.In)
+            .to({ v: 1 }, 2000)
+            .onUpdate(() => {
+                // @ts-ignore
+                studio.fog.color.lerpColors(targetColor, targetFogColor, obj.v)
+                studio.fog.near = currentNear + (near * SCALE - currentNear) * obj.v 
+                studio.fog.far = currentFar + (far  * SCALE - currentFar) * obj.v
+            })
+        .start()  
     }
-    
-    const { color, near, far } = dataS.FOG
-    root.studio.fog.color.setHex(color)
-    root.studio.fog.near = near * SCALE
-    root.studio.fog.far = far * SCALE
-
-    root.studio.setSceneBackground(dataS.ENV_COLOR.toArray())
-
+  
     await waiterPlayerFindFlyerFlyTo(root)
 
-    // const waiter = () => {
-    //     return new Promise<void>((resolve) => {
-    //         const removerUpdater = ticker.on(() => {
-    //             if (studio.camera.position.distanceTo(fuel.mesh.position) < .7) {
-    //                 removerUpdater()
-    //                 resolve()
-    //             }
-    //         })
-    //     })
-    // }
+    // ДОЖДАТЬСЯ ПОКА НАЙДЕМ БОЧКУ С БЕНЗИНОМ
+    const waiter = () => {
+        return new Promise<void>((resolve) => {
+            const removerUpdater = ticker.on(() => {
+                if (studio.camera.position.distanceTo(fuel.mesh.position) < .7) {
+                    removerUpdater()
+                    resolve()
+                }
+            })
+        })
+    }
 
-    //await waiter()
-
-    await pause(2000)
+    await waiter()
 
     ui.setEnergyLevel(1)
-
     fuel.mesh.position.x = -10000
     
     await waiterPlayerFindFlyerFlyOut(root)
@@ -183,7 +202,7 @@ export const pipePlay_07 = async (root: Root) => {
             const iterateStructure = async () => {
                 ++newIndexStruct
                 if (STRUCTURES[newIndexStruct]) {
-                    await findFuelIteration(root, newIndexStruct) 
+                    await levelIteration(root, newIndexStruct) 
                     iterateStructure()
                 } else {
                     resolve()

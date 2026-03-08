@@ -28,7 +28,7 @@ export class ControlsPointer {
         this._controls = new PointerLockControls(this._camera, this._domElem)
         this._controls.maxPolarAngle = Math.PI - .01
         this._controls.minPolarAngle = .01
-        const rotY = _M.getAngleDirY(this._root.studio.camera)
+        const rotY = _M.getAngleDirY(this._camera) + Math.PI
         this._controls.getObject().rotation.set(0, rotY, 0)
         this._controls.addEventListener('lock', () => {
             this.isEnabled = true

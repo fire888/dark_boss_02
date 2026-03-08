@@ -42,18 +42,9 @@ export const pipeInit_07 = async (root: Root) => {
     phisics.createPlayer()
     phisics.setPlayerPosition(PLAYER_POS_START[0], PLAYER_POS_START[1], PLAYER_POS_START[2], PLAYER_POS_START[3])
 
-    // TEST MESH
-    const m = new THREE.Mesh(
-        new THREE.BoxGeometry(0.1, 0.1, 0.1),
-        new THREE.MeshBasicMaterial({ color: 0x00ff00 })
-    )
-    m.position.set(PLAYER_POS_START[0], PLAYER_POS_START[1], PLAYER_POS_START[2] + 3)
-    studio.add(m)
-    
     lab.init(root)
     const dataS = STRUCTURES[0]
     await lab.generateStructure(dataS)
-    // const coordsFuel = lab.getCoordsForItem('fuel')
 
     flyer.init(root)
     studio.add(flyer.mesh)
@@ -61,20 +52,6 @@ export const pipeInit_07 = async (root: Root) => {
     fuel.init(root)
     fuel.mesh.position.set(0, 0, 1000)
     studio.add(fuel.mesh)
-
-    // if (coordsFuel) {
-    //     // @ts-ignore
-    //     fuel.mesh.position.set(
-    //         // @ts-ignore
-    //         ((coordsFuel[0] + .5) * W + dataS.X) * SCALE,
-    //         // @ts-ignore 
-    //         ((coordsFuel[1] + .5) * H + dataS.Y) * SCALE,
-    //         // @ts-ignore 
-    //         ((coordsFuel[2] + .5) * W + dataS.Z) * SCALE
-    //     )
-    //     console.log('$$%$% coordsFuel', coordsFuel)
-    // }
-
 
     ui.init(root)
     ui.setTransparentBackground()

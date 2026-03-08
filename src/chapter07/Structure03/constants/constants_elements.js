@@ -30,7 +30,8 @@ export const STRUCTURES = [
         SIZE_Z: 5,
         X: -320,
         Y: -270,
-        Z: -170,
+        //Z: -170,
+        Z: -470,
         mapFill: [
             { tile: 'empty', place: [3, 4, 2] },
             { tile: 'empty', place: [3, 3, 2] },
