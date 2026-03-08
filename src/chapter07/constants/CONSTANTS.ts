@@ -100,7 +100,7 @@ export const STUDIO_CONF: StudioConf = {
         .add(new THREE.Vector3(0, 0, 1)
         .applyAxisAngle(new THREE.Vector3(1, 0, 0), PLAYER_POS_START[3])),
     sceneBackground: new THREE.Color().fromArray(GRAY_GRAY.colorB),
-    fogParams: { color: new THREE.Color().fromArray(GRAY_GRAY.colorF), near: 80, far: GRAY_GRAY.fogFar },
+    fogParams: { color: new THREE.Color().fromArray(GRAY_GRAY.colorF), near: 0, far: 5},
     directionalLightParams: { 
         color: new THREE.Color(0xffffff), intensity: 8.5,
         pos: new THREE.Vector3(-3, 3, -2)

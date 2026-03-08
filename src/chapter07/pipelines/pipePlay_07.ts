@@ -6,7 +6,7 @@ import { W, H } from '../Structure03/constants/constants_elements'
 import { SCALE } from '../Structure03/constants/const_structures'
 import * as TWEEN from '@tweenjs/tween.js'
 
-const D = 200
+const D = 300
 
 const waiterPlayerFindFlyerFlyOut = async (root: Root) => {
     const { ticker, studio, lab, fuel, flyer, ui, phisics, controls } = root
@@ -14,6 +14,7 @@ const waiterPlayerFindFlyerFlyOut = async (root: Root) => {
     const posTriggerFlyer = new THREE.Vector3() 
     flyer.objectForCheck.getWorldPosition(posTriggerFlyer)
 
+    // ОЖИДАЕМ КОГДА ПОЛЬЗОВАТЕЛЬ НАЙДЕТ ПЛАТФОРМУ
     const waitNear = () => {
         return new Promise<void>((resolve) => {
             const removerUpdater = ticker.on(() => {
@@ -32,6 +33,7 @@ const waiterPlayerFindFlyerFlyOut = async (root: Root) => {
 
     const savedCamPos = studio.camera.position.clone()
 
+    // АНИМИРУЕМ УЛЕТ ПЛАТФОРМЫ
     const waiterFlyer = async () => {
         return new Promise<void>(res => {
             const obj = { v: 0}
@@ -47,6 +49,22 @@ const waiterPlayerFindFlyerFlyOut = async (root: Root) => {
                     res()
                 })
                 .start()
+
+            // АНИМИРУЕМ ТУМАН
+            setTimeout(() => {
+                // @ts-ignore
+                const currentBackColor = root.studio.scene.background.clone()
+                const currentFogColor = root.studio.fog.color.clone() 
+                const obj = { v: 0}
+                new TWEEN.Tween(obj)
+                    .easing(TWEEN.Easing.Quadratic.In)
+                    .to({ v: 1 }, 2000)
+                    .onUpdate(() => {
+                        // @ts-ignore
+                        studio.fog.color.lerpColors(currentFogColor, currentBackColor, obj.v)
+                    })
+                .start()
+            }, 3000)    
         })
     }
 
@@ -108,8 +126,8 @@ const findFuelIteration = async (root: Root, structureIndex: number) => {
     
     const { color, near, far } = dataS.FOG
     root.studio.fog.color.setHex(color)
-    root.studio.fog.near = near * 0.25
-    root.studio.fog.far = far * 0.25
+    root.studio.fog.near = near * SCALE
+    root.studio.fog.far = far * SCALE
 
     root.studio.setSceneBackground(dataS.ENV_COLOR.toArray())
 

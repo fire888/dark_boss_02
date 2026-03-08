@@ -251,6 +251,8 @@ export class Studio {
     }
 
     animateFogTo(far: number, color: number[], time: number) {
+        console.log('animateFogTo !!! deplecated')
+
         const startFogFar = this.fog.far
         const endFogFar = far
         const startColor = new THREE.Color().copy(this.fog.color)
@@ -270,7 +272,7 @@ export class Studio {
                 })
                 .start()
         })
-    } 
+    }
 
     animateBackgroundTo(color: number[], time: number) {
         // @ts-ignore

@@ -7,7 +7,6 @@ import { DeviceData } from "../_CORE/DeviceData"
 import { UiCustom } from "./entities/UiCustom"
 import { Phisics } from "../_CORE/Phisics"
 import { Structure } from "./Structure03/Structure03"
-import { BackTower } from "./entities/BackTower"
 import { AudioManager } from "./entities/AudioManager"
 import { Materials } from "./entities/Materials"
 import { Flyer } from "./entities/Flyer/Flyer"
@@ -25,7 +24,6 @@ export interface Root extends Core {
     loader: LoaderAssets,
     deviceData: DeviceData,
     lab: Structure,
-    backTower: BackTower,
     audio: AudioManager,
     materials: Materials,
     flyer: Flyer
@@ -50,7 +48,6 @@ window.addEventListener("DOMContentLoaded", async () => {
         deviceData: new DeviceData(),
         phisics: new Phisics(),
         lab: new Structure(),
-        backTower: new BackTower(),
         audio: new AudioManager(),
         materials: new Materials(),
         flyer: new Flyer(),

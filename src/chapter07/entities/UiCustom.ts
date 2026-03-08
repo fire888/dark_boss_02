@@ -71,7 +71,6 @@ export class UiCustom extends Ui {
     }
 
     setEnergyLevel (val: number) {
-        console.log('setEnergyLevel', val)
         this._countEnergyInner.style.opacity = '1'
 
         const obj = { v: this._currentEnergyMinWidth }

@@ -2,11 +2,11 @@ import { Root } from '../index'
 import { update } from '@tweenjs/tween.js'
 import { IS_DEV_START_ORBIT } from '../constants/CONSTANTS'
 import { PLAYER_POS_START } from '../constants/CONSTANTS'
-import { pause } from '_CORE/helpers/htmlHelpers'
 import { STRUCTURES } from '../Structure03/constants/constants_elements'
 import * as THREE from 'three'
-import { W, H } from '../Structure03/constants/constants_elements'
-import { SCALE } from '../Structure03/constants/const_structures'
+import * as TWEEN from '@tweenjs/tween.js'
+import { pause } from '_CORE/helpers/htmlHelpers'
+import { SCALE } from 'chapter07/Structure03/constants/const_structures'
 
 export const pipeInit_07 = async (root: Root) => {
     const {
@@ -17,7 +17,6 @@ export const pipeInit_07 = async (root: Root) => {
         loader,
         phisics,
         lab,
-        backTower,
         audio,
         materials,
         flyer,
@@ -54,7 +53,7 @@ export const pipeInit_07 = async (root: Root) => {
     lab.init(root)
     const dataS = STRUCTURES[0]
     await lab.generateStructure(dataS)
-    const coordsFuel = lab.getCoordsForItem('fuel')
+    // const coordsFuel = lab.getCoordsForItem('fuel')
 
     flyer.init(root)
     studio.add(flyer.mesh)
@@ -84,8 +83,8 @@ export const pipeInit_07 = async (root: Root) => {
     root.studio.addFog()
     const { color, near, far } = STRUCTURES[0].FOG
     root.studio.fog.color.set(color)
-    root.studio.fog.near = near
-    root.studio.fog.far = far
+    root.studio.fog.near = near * SCALE
+    root.studio.fog.far = far * SCALE
 
     if (IS_DEV_START_ORBIT) {
         await ui.hideStartScreenForce()

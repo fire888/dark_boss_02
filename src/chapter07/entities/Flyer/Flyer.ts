@@ -2,10 +2,8 @@ import * as THREE from 'three'
 import { createPlatformData } from '../../Structure03/geometries/geomElemPlatform'
 import { createElemDrive } from '../../Structure03/geometries/geomElemDrive'
 import { createGeomFromBuffer } from '../../Structure03/geometries/createBufferGeom'
-//import { translateArr } from "../../helpers/geomHelpers";
 import { translateArr } from "../../Structure03/helpers/geomHelpers";
 
-//import { SIZE_Z, W } from "../../Structure03/constants/constants_elements";
 import { Root } from '../../index';
 import { SCALE } from 'chapter07/Structure03/constants/const_structures';
 
@@ -68,7 +66,7 @@ export class Flyer {
         mesh.add(playerNearObj)
 
         const arrow = new THREE.Mesh(
-            new THREE.PlaneGeometry(1 * SCALE, 6 * SCALE, 1 * SCALE, 1),
+            new THREE.PlaneGeometry(1 * SCALE, 6 * SCALE),
             new THREE.MeshBasicMaterial({ color: 0x000000 })
         )
         arrow.rotation.x = -0.25
@@ -79,7 +77,6 @@ export class Flyer {
         this.arrow = arrow
         this.mesh = mesh
         this.objectForCheck = playerNearObj
-
     }
 }
 
