@@ -37,7 +37,7 @@ export class Phisics {
     _cbsOnCollision: (() => void)[] = []
     _bodies: BodyN[] = []
     _bodiesToRemove: BodyN[] = []
-    _isUpdate = true
+    isUpdate = true
     world: World
     isGround = false
     physicsMaterial: Material
@@ -203,7 +203,7 @@ export class Phisics {
         if (!this.playerBody) {
             return
         }
-        if (!this._isUpdate) {
+        if (!this.isUpdate) {
             return
         }
         this.world.fixedStep()
@@ -239,7 +239,7 @@ export class Phisics {
     }
 
     setIsUpdate(is: boolean) {
-        this._isUpdate = is
+        this.isUpdate = is
     }
 
     switchToAntiGravity () {

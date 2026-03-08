@@ -1,4 +1,5 @@
 import { Ticker } from "_CORE/Ticker"
+import { Keyboard } from "_CORE/Keyboard"
 import { Phisics } from "_CORE/Phisics"
 import { ControlsSystem } from "_CORE/controls/ControlsSystem"
 import { DeviceData } from "_CORE/DeviceData"
@@ -50,6 +51,7 @@ window.addEventListener("DOMContentLoaded", async () => {
         ticker: new Ticker(),
         studioConf: STUDIO_CONF, 
         studio: new Studio(),
+        keyboard: new Keyboard(),
         controls: new ControlsSystem(),
         ui: new UiCustom(),
         floor: new Floor(),

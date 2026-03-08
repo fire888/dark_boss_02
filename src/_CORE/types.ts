@@ -3,7 +3,20 @@ import { Studio } from "./Studio";
 import { Phisics } from "./Phisics";
 import { Ticker } from "./Ticker";
 import { DeviceData } from "./DeviceData";
+import { Keyboard } from "./Keyboard";
 import { Ui } from "./Ui";
+
+export const FORWARD = 'FORWARD'
+export const BACKWARD = 'BACKWARD'
+export const LEFT = 'LEFT'
+export const RIGHT = 'RIGHT'
+export const JUMP = 'JUMP'
+
+export type T_Keys = typeof FORWARD | typeof BACKWARD | typeof LEFT | typeof RIGHT | typeof JUMP
+
+export type T_Callbacks = {
+    [key: string]: ((is: boolean) => void)[]
+}
 
 type SpotLightConf = {
     color: THREE.Color
@@ -43,6 +56,7 @@ export interface Core {
     studioConf: StudioConf
     studio: Studio
     
+    keyboard: Keyboard
     phisics: Phisics
     ticker: Ticker
     deviceData: DeviceData

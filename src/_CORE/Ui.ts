@@ -1,3 +1,4 @@
+import './stylesheets/controls.css'
 import { Tween, Interpolation } from '@tweenjs/tween.js'
 import { elementClickOnce, pause } from './helpers/htmlHelpers'
 import { Core } from './types'
@@ -23,7 +24,11 @@ export class Ui {
     _infoButton: HTMLDivElement
     finalDark: HTMLDivElement
 
-    _currentEnergyMinWidth = 0
+    moveForwardDiv: HTMLElement
+    moveBackDiv: HTMLElement
+    moveLeftDiv: HTMLElement
+    moveRightDiv: HTMLElement
+
     init (root: Core) {
         this._root = root
         this.lockButton = document.createElement('div')
@@ -31,6 +36,31 @@ export class Ui {
         this.lockButton.classList.add('control-small')
         this.lockButton.style.display = 'none'
         document.body.appendChild(this.lockButton)
+
+        this.moveForwardDiv = document.createElement('div')
+        this.moveForwardDiv.classList.add('control')
+        this.moveForwardDiv.classList.add('butt-front')
+        document.body.appendChild(this.moveForwardDiv)
+
+        this.moveBackDiv = document.createElement('div')
+        this.moveBackDiv.classList.add('control')
+        this.moveBackDiv.classList.add('butt-back')
+        document.body.appendChild(this.moveBackDiv)
+
+        this.moveLeftDiv = document.createElement('div')
+        this.moveLeftDiv.classList.add('control')
+        this.moveLeftDiv.classList.add('butt-left')
+        document.body.appendChild(this.moveLeftDiv)
+
+        this.moveRightDiv = document.createElement('div')
+        this.moveRightDiv.classList.add('control')
+        this.moveRightDiv.classList.add('butt-right')
+        document.body.appendChild(this.moveRightDiv)
+
+        this.moveForwardDiv.style.display = 'none'
+        this.moveBackDiv.style.display = 'none'
+        this.moveLeftDiv.style.display = 'none'
+        this.moveRightDiv.style.display = 'none'
 
         if (IS_SHOW_INFO) {
             this._infoButton = document.createElement('div')

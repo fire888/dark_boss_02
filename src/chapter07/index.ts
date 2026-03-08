@@ -1,4 +1,5 @@
 import { Studio } from "../_CORE/Studio"
+import { Keyboard } from "_CORE/Keyboard"
 import { ControlsSystem } from "../_CORE/controls/ControlsSystem"
 import { Ticker } from "../_CORE/Ticker"
 import { LoaderAssets } from "./entities/Loader"
@@ -18,7 +19,6 @@ import { pipeEnd_07 } from "./pipelines/pipeEnd_07"
 import { Core } from '_CORE/types'
 
 import { STUDIO_CONF } from "./constants/CONSTANTS"
-import { Ui } from "_CORE/Ui"
 
 export interface Root extends Core {
     controls: ControlsSystem,
@@ -41,6 +41,7 @@ window.addEventListener("DOMContentLoaded", async () => {
     const root: Root = {
         studioConf: STUDIO_CONF,
         studio: new Studio(),
+        keyboard: new Keyboard(),
         ticker: new Ticker(),
         ui: new UiCustom(),
         controls: new ControlsSystem(),

@@ -1,4 +1,5 @@
 import { Studio } from "../_CORE/Studio"
+import { Keyboard } from "_CORE/Keyboard"
 import { ControlsSystem } from "../_CORE/controls/ControlsSystem"
 import { Ticker } from "../_CORE/Ticker"
 import { LoaderAssets } from "./entities/Loader"
@@ -38,6 +39,7 @@ window.addEventListener("DOMContentLoaded", async () => {
         studioConf: STUDIO_CONF,
         studio: new Studio(),
         ticker: new Ticker(),
+        keyboard: new Keyboard(),
         ui: new Ui(),
         controls: new ControlsSystem(),
 
