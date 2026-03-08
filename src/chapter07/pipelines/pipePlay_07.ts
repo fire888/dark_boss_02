@@ -1,6 +1,9 @@
 import { Root } from '../index'
 import * as THREE from 'three'
 import { STRUCTURES } from '../Structure03/constants/constants_elements'
+import { 
+    FINAL_STRUCTURE, FINAL_MAP
+} from '../Structure03/constants/const_structures'
 import { pause } from '_CORE/helpers/htmlHelpers'
 import { W, H } from '../Structure03/constants/constants_elements'
 import { SCALE } from '../Structure03/constants/const_structures'
@@ -106,6 +109,7 @@ const waiterPlayerFindFlyerFlyTo = async (root: Root) => {
 const levelIteration = async (root: Root, structureIndex: number) => {
     const { ticker, studio, lab, fuel, ui } = root
 
+    // АНИМИРУЕМ ФОН ПОД НОВЫЙ ЦВЕТ
     // @ts-ignore
     const currentBackColor = root.studio.scene.background.clone()
     const targetColor = STRUCTURES[structureIndex].ENV_COLOR
@@ -123,8 +127,8 @@ const levelIteration = async (root: Root, structureIndex: number) => {
 
     await pause(2000)
 
+    // ПЕРЕСОЗДАЕМ УРОВЕНЬ
     lab.destroyStructure()
-
     const dataS = STRUCTURES[structureIndex]
     await lab.generateStructure(dataS)
     const coordsFuel = lab.getCoordsForItem('fuel')
@@ -152,6 +156,7 @@ const levelIteration = async (root: Root, structureIndex: number) => {
         .start()  
     }
   
+    // ПОДЛЕТАЕМ К УРОВНЮ НА ПЛАТФОРМЕ
     await waiterPlayerFindFlyerFlyTo(root)
 
     // ДОЖДАТЬСЯ ПОКА НАЙДЕМ БОЧКУ С БЕНЗИНОМ
@@ -165,16 +170,60 @@ const levelIteration = async (root: Root, structureIndex: number) => {
             })
         })
     }
-
     await waiter()
 
     ui.setEnergyLevel(1)
     fuel.mesh.position.x = -10000
     
+    // УЛЕТАЕМ ОТ ТЕКУЩЕГО УРОВНЯ
     await waiterPlayerFindFlyerFlyOut(root)
-
-    await pause(1000)
 } 
+
+
+const generateFinalStructure = async (root: Root) => {
+    const { studio, lab } = root
+
+    // @ts-ignore
+    const currentBackColor = root.studio.scene.background.clone()
+    const targetColor = FINAL_STRUCTURE.ENV_COLOR
+    const obj = { v: 0}
+    new TWEEN.Tween(obj)
+        .easing(TWEEN.Easing.Quadratic.In)
+        .to({ v: 1 }, 2000)
+        .onUpdate(() => {
+            // @ts-ignore
+            studio.fog.color.lerpColors(currentBackColor, targetColor, obj.v)
+            // @ts-ignore
+            studio.scene.background.lerpColors(currentBackColor, targetColor, obj.v)
+        })
+    .start()
+
+    await pause(2000)
+
+    lab.destroyStructure()
+    await lab.generateStructureFinal(FINAL_MAP, FINAL_STRUCTURE)
+
+    // АНИМИРУЕМ ТУМАН В СОБСТВЕННЫЙ ЦВЕТ ЧТОБ УВИДЕТЬ НОВЫЙ УРОВЕНЬ 
+    {
+        const { color, near, far } = FINAL_STRUCTURE.FOG
+        const targetFogColor = new THREE.Color(color)
+        const currentFar = studio.fog.far
+        const currentNear = studio.fog.near
+        const obj = { v: 0}
+        new TWEEN.Tween(obj)
+            .easing(TWEEN.Easing.Quadratic.In)
+            .to({ v: 1 }, 2000)
+            .onUpdate(() => {
+                // @ts-ignore
+                studio.fog.color.lerpColors(targetColor, targetFogColor, obj.v)
+                studio.fog.near = currentNear + (near * SCALE - currentNear) * obj.v 
+                studio.fog.far = currentFar + (far  * SCALE - currentFar) * obj.v
+            })
+        .start()  
+    }
+  
+    await waiterPlayerFindFlyerFlyTo(root)
+}
 
 
 
@@ -187,11 +236,11 @@ export const pipePlay_07 = async (root: Root) => {
         if (studio.camera.position.y < -40) {
             const startPoint = new THREE.Vector3(0, 25, 0)
             phisics.setPlayerPosition(...startPoint.toArray())
-            studio.camera.rotation.y = Math.PI * 1.5
+            // studio.camera.rotation.y = Math.PI * 1.5
         }
     })
 
-    // first walking    
+    // // first walking    
     await waiterPlayerFindFlyerFlyOut(root)
 
     // waiter iterator structures
@@ -214,4 +263,7 @@ export const pipePlay_07 = async (root: Root) => {
     }
 
     await waiterStructures()
+
+    await waiterPlayerFindFlyerFlyOut(root)
+    await generateFinalStructure(root)
 }

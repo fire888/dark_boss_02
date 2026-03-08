@@ -23,49 +23,6 @@ export class UiCustom extends Ui {
         this._countEnergy.appendChild(this._countEnergyInner)
     }
 
-    // async hideStartScreen () {
-    //     const finalDark = document.createElement('div')
-    //     finalDark.classList.add('final-dark')
-    //     finalDark.style.opacity = '1'
-    //     document.body.appendChild(finalDark)
-
-    //     const loaderCont = document.body.getElementsByClassName('loader')[0]
-
-    //     opacityByTransition(loaderCont, 0, 300)
-    //     await pause(300)
-    //     loaderCont.style.display = 'none'
-        
-    //     const startButton = document.body.getElementsByClassName('start-but')[0]
-    //     startButton.style.display = 'block'
-    //     opacityByTransition(startButton, 1, 300)      
-    
-    //     await elementClickOnce(startButton)
-
-    //     const controlsM = document.body.getElementsByClassName('controls-mess')[0]
-    //     await opacityByTransition(controlsM, 0, 300)
-    //     await pause(100)  
-
-    //     await opacityByTransition(startButton, 0, 300)
-    //     await pause(100)
-
-    //     const img = document.body.getElementsByTagName('svg')[0]
-    //     await opacityByTransition(img, 0, 300)
-    //     await pause(100)
-
-    //     const startScreen = document.body.getElementsByClassName('start-screen')[0]
-    //     await opacityByTransition(startScreen, 0, 300)
-    //     await pause(100)
-
-    //     setTimeout(async () => {
-    //         await opacityByTransition(finalDark, 0, 300)
-    //         await pause(300)
-    //         await opacityByTransition(this._countEnergyInner, 1, 300)
-    //         document.body.removeChild(startScreen)
-    //         document.body.removeChild(finalDark)
-    //     }, 300)
-    // }
-
-
     toggleVisibleEnergy (visible: boolean) {
         opacityByTransition(this._countEnergy, visible ? 1 : 0, 300) 
     }

@@ -136,6 +136,10 @@ export class ControlsSystem {
     update (delta: number) {
         this._orbit.update()
 
+        if (this._isDisabled) {
+            return
+        }
+
         if (!this._currentWalkingControls.enable) {
             return
         }
