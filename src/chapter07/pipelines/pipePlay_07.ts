@@ -1,14 +1,15 @@
 import { Root } from '../index'
 import * as THREE from 'three'
-import { THEMES } from 'chapter10/constants/CONSTANTS'
-import { Tween, Easing } from '@tweenjs/tween.js'
 import { STRUCTURES } from '../Structure03/constants/constants_elements'
 import { pause } from '_CORE/helpers/htmlHelpers'
 import { W, H } from '../Structure03/constants/constants_elements'
 import { SCALE } from '../Structure03/constants/const_structures'
+import * as TWEEN from '@tweenjs/tween.js'
 
-const waiterPlayerFindFlyer = async (root: Root) => {
-    const { ticker, studio, lab, fuel, flyer, ui } = root
+const D = 300
+
+const waiterPlayerFindFlyerFlyOut = async (root: Root) => {
+    const { ticker, studio, lab, fuel, flyer, ui, phisics, controls } = root
 
     const waitNear = () => {
         return new Promise<void>((resolve) => {
@@ -22,7 +23,64 @@ const waiterPlayerFindFlyer = async (root: Root) => {
     }
 
     await waitNear()
-    ui.setEnergyLevel(0)
+
+    phisics.stopPlayerBody()
+    phisics.setIsUpdate(false)
+    controls.disableMove()
+
+    const waiterFlyer = async () => {
+        return new Promise<void>(res => {
+            const obj = { v: 0}
+            new TWEEN.Tween(obj)
+                .interpolation(TWEEN.Interpolation.Linear)
+                .to({ v: 1 }, 5000)
+                .onUpdate(() => {
+                    flyer.mesh.position.z = -obj.v * D
+                    studio.camera.position.z = -obj.v * D
+                    //phisics.setPlayerPosition(camPos.x, camPos.y, -obj.v * D)
+                    ui.setEnergyLevel(1 - (obj.v * .5))
+                })
+                .onComplete(() => {
+                    res()
+                })
+                .start()
+        })
+    }
+
+    await waiterFlyer()
+}
+
+
+const waiterPlayerFindFlyerFlyTo = async (root: Root) => {
+    const { ticker, studio, lab, fuel, flyer, ui, phisics, controls } = root
+
+    flyer.mesh.position.z = D
+
+    const camPos = studio.camera.position.clone()
+    //phisics.setPlayerPosition(camPos.x, camPos.y, D)
+
+    const waiterFlyer = async () => {
+        return new Promise<void>(res => {
+            const obj = { v: 0}
+            new TWEEN.Tween(obj)
+                .interpolation(TWEEN.Interpolation.Linear)
+                .to({ v: 1 }, 5000)
+                .onUpdate(() => {
+                    flyer.mesh.position.z = (1 - obj.v) * D
+                    studio.camera.position.z = (1 -obj.v) * D
+                    ui.setEnergyLevel(.5 - (obj.v * .5))
+                })
+                .onComplete(() => {
+                    res()
+                })
+                .start()
+        })
+    }
+
+    await waiterFlyer()
+
+    controls.enableMove()
+    phisics.setIsUpdate(true)
 }
 
 
@@ -54,24 +112,28 @@ const findFuelIteration = async (root: Root, structureIndex: number) => {
 
     root.studio.setSceneBackground(dataS.ENV_COLOR.toArray())
 
-    const waiter = () => {
-        return new Promise<void>((resolve) => {
-            const removerUpdater = ticker.on(() => {
-                if (studio.camera.position.distanceTo(fuel.mesh.position) < .7) {
-                    removerUpdater()
-                    resolve()
-                }
-            })
-        })
-    }
+    await waiterPlayerFindFlyerFlyTo(root)
 
-    await waiter()
+    // const waiter = () => {
+    //     return new Promise<void>((resolve) => {
+    //         const removerUpdater = ticker.on(() => {
+    //             if (studio.camera.position.distanceTo(fuel.mesh.position) < .7) {
+    //                 removerUpdater()
+    //                 resolve()
+    //             }
+    //         })
+    //     })
+    // }
+
+    //await waiter()
+
+    await pause(2000)
 
     ui.setEnergyLevel(1)
 
     fuel.mesh.position.x = -10000
     
-    await waiterPlayerFindFlyer(root)
+    await waiterPlayerFindFlyerFlyOut(root)
 
     await pause(1000)
 } 
@@ -92,7 +154,7 @@ export const pipePlay_07 = async (root: Root) => {
     })
 
     // first walking    
-    await waiterPlayerFindFlyer(root)
+    await waiterPlayerFindFlyerFlyOut(root)
 
     // waiter iterator structures
     const waiterStructures = () => {

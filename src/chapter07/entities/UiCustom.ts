@@ -93,4 +93,10 @@ export class UiCustom extends Ui {
             })
             .start()
     }
+
+    setEnergyLevelForce (val: number) {
+        this._countEnergyInner.style.opacity = '1'
+
+        this._countEnergyInner.style.minWidth = val * ENERGY_MAX_WIDTH + 'vw'
+    }
 }
