@@ -4,6 +4,7 @@ import { Phisics } from "./Phisics";
 import { Ticker } from "./Ticker";
 import { DeviceData } from "./DeviceData";
 import { Keyboard } from "./Keyboard";
+import { AudioManager } from "./AudioManager";
 import { Ui } from "./Ui";
 
 export const FORWARD = 'FORWARD'
@@ -67,4 +68,11 @@ export interface Core {
     ticker: Ticker
     deviceData: DeviceData
     ui: Ui
+
+    audioConf?: {
+        stepsVolume?: number
+        ambientVolume?: number
+        [key: string]: any
+    } 
+    audio: AudioManager
 }

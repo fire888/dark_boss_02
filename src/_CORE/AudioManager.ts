@@ -7,6 +7,8 @@ export class AudioManager {
     private _soundAmbient: Audio
     private _steps: Audio
     private _isCanPlaySteps: boolean = true
+    private _ambientVolumeMax = .2
+    private _stepsVolumeMax = .15 
 
     init (root: Core) {
         this._root = root
@@ -14,6 +16,9 @@ export class AudioManager {
         const cam = root.studio.camera
         cam.add(listener)
 
+        if (root.audioConf.ambientVolume) {
+            this._ambientVolumeMax = root.audioConf.ambientVolume
+        }
         if (root.assets.soundAmbient) {
             this._soundAmbient = new Audio(listener)
             this._soundAmbient.setBuffer(root.assets.soundAmbient)
@@ -21,12 +26,15 @@ export class AudioManager {
             this._soundAmbient.setVolume(0)
         }
 
+        if (root.audioConf.stepsVolume) {
+            this._stepsVolumeMax = root.audioConf.stepsVolume
+        }
         if (root.assets.soundStepsMetal) {
             this._steps = new Audio(listener)
             this._steps.setBuffer(root.assets.soundStepsMetal)
             this._steps.setLoop(true)
             this._steps.playbackRate = 2
-            this._steps.setVolume(.15)
+            this._steps.setVolume(this._stepsVolumeMax)
         }
     }
 
@@ -43,9 +51,9 @@ export class AudioManager {
         const obj = { v: 0 } 
         new Tween(obj)
             .interpolation(Interpolation.Linear)
-            .to({ v: .2 }, 400)
+            .to({ v: 1 }, 400)
             .onUpdate(() => {
-                this._soundAmbient.setVolume(obj.v)
+                this._soundAmbient.setVolume(obj.v * this._ambientVolumeMax)
             })
             .start()
     }

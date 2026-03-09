@@ -21,7 +21,6 @@ import { SCALE } from './constants/const_structures'
 
 
 export const createrMesh = (root) => {
-    console.log('#$#$#$#$ !!!!')
     const mat = new THREE.MeshBasicMaterial({
         vertexColors: true,
         map: new THREE.TextureLoader().load(tile)
@@ -88,8 +87,6 @@ export const createrMesh = (root) => {
                 const g = createGeomFromBuffer({ v, c, u })
                 g.scale(SCALE, SCALE, SCALE)
 
-
-                console.log('structureData', structureData)
                 let useMat = mat
                 if (structureData.mat === 'structureMaterialInv') {
                     useMat = new THREE.MeshBasicMaterial({

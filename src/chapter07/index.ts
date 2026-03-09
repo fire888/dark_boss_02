@@ -50,6 +50,10 @@ window.addEventListener("DOMContentLoaded", async () => {
         phisics: new Phisics(),
         lab: new Structure(),
 
+        audioConf: {
+            stepsVolume: .15, 
+            ambientVolume: .06,
+        }, 
         audio: new AudioManagerCustom(),
         materials: new Materials(),
         flyer: new Flyer(),

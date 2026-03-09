@@ -12,7 +12,7 @@ import * as TWEEN from '@tweenjs/tween.js'
 const D = 300
 
 const waiterPlayerFindFlyerFlyOut = async (root: Root) => {
-    const { ticker, studio, lab, fuel, flyer, ui, phisics, controls } = root
+    const { ticker, studio, lab, fuel, flyer, ui, phisics, controls, audio } = root
 
     const posTriggerFlyer = new THREE.Vector3() 
     flyer.objectForCheck.getWorldPosition(posTriggerFlyer)
@@ -28,8 +28,8 @@ const waiterPlayerFindFlyerFlyOut = async (root: Root) => {
             })
         })
     }
-
     await waitNear()
+    audio.disableSteps()
 
     phisics.setIsUpdate(false)
     controls.disableMove()
@@ -107,7 +107,7 @@ const waiterPlayerFindFlyerFlyTo = async (root: Root) => {
 
 
 const levelIteration = async (root: Root, structureIndex: number) => {
-    const { ticker, studio, lab, fuel, ui } = root
+    const { ticker, studio, lab, fuel, ui, audio } = root
 
     // АНИМИРУЕМ ФОН ПОД НОВЫЙ ЦВЕТ
     // @ts-ignore
@@ -160,6 +160,7 @@ const levelIteration = async (root: Root, structureIndex: number) => {
     await waiterPlayerFindFlyerFlyTo(root)
 
     // ДОЖДАТЬСЯ ПОКА НАЙДЕМ БОЧКУ С БЕНЗИНОМ
+    audio.enableSteps()
     const waiter = () => {
         return new Promise<void>((resolve) => {
             const removerUpdater = ticker.on(() => {
