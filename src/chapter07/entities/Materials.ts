@@ -28,23 +28,23 @@ export class Materials {
         // })
 
 
-        root.loader.assets.textureTiles.magFilter = THREE.NearestFilter
-        root.loader.assets.textureTiles.minFilter = THREE.NearestFilter
+        root.assets.textureTiles.magFilter = THREE.NearestFilter
+        root.assets.textureTiles.minFilter = THREE.NearestFilter
         this.structureMaterial = new THREE.MeshBasicMaterial({
             color: 0xffffff,
-            map: root.loader.assets.textureTiles,
+            map: root.assets.textureTiles,
             vertexColors: true,
         })
-        root.loader.assets.textureTilesInv.magFilter = THREE.NearestFilter
-        root.loader.assets.textureTilesInv.minFilter = THREE.NearestFilter
+        root.assets.textureTilesInv.magFilter = THREE.NearestFilter
+        root.assets.textureTilesInv.minFilter = THREE.NearestFilter
         this.structureMaterialInv = new THREE.MeshBasicMaterial({
             color: 0xffffff,
-            map: root.loader.assets.textureTilesInv,
+            map: root.assets.textureTilesInv,
             vertexColors: true,
         })
         this.matNotFog = new THREE.MeshBasicMaterial({
             color: 0xffffff,
-            map: root.loader.assets.textureTilesInv,
+            map: root.assets.textureTilesInv,
             vertexColors: true,
         })
         this.matNotFogOuter = new THREE.MeshBasicMaterial({

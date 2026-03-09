@@ -20,7 +20,7 @@ export const pipeInit_07 = async (root: Root) => {
         fuel,
     } = root
 
-    loader.init()
+    loader.init(root)
     await loader.loadAssets()
 
     ticker.start()

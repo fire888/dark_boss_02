@@ -1,43 +1,42 @@
 import {  
     AudioLoader, 
     TextureLoader,
+    CubeTextureLoader
 } from 'three'
-
-
 
 import audioAmbient from '../assets/ambient.mp3'
 import steps from '../assets/steps_metal.mp3'
 import tex01 from '../assets/texture01.jpg'
 import tex01_inv from '../assets/texture01_inv.jpg'
 
-type Assets = {
-    textureTiles: any
-    textureTilesInv: any
-    soundAmbient: any
-    soundStepsMetal: any
-}
+import { Root } from '../index'
+
 type ResultLoad = {
     texture: any
-    key: keyof Assets
+    key: string
 }
 
 export class LoaderAssets {
-    assets: Assets = {
-        textureTiles: null,
-        textureTilesInv: null,
-        soundAmbient: null,
-        soundStepsMetal: null,
-    }
+    // assets: Assets = {
+    //     textureTiles: null,
+    //     textureTilesInv: null,
+    //     soundAmbient: null,
+    //     soundStepsMetal: null,
+    // }
+
+    _root: Root
 
     _textureLoader: TextureLoader = new TextureLoader()
-    // cubeTextureLoader: CubeTextureLoader = new CubeTextureLoader()
+    _cubeTextureLoader: CubeTextureLoader = new CubeTextureLoader()
 
-    init () {}
+    init (root: Root) {
+        this._root = root
+    }
 
     loadAssets (): Promise<void> {
         return new Promise(res => {
 
-            const loadTexture = (key: keyof Assets, src: string) => {
+            const loadTexture = (key: string, src: string) => {
                 return new Promise<ResultLoad>(res => {
                     this._textureLoader.load(src, texture => {
                         res({ key, texture })
@@ -45,7 +44,7 @@ export class LoaderAssets {
                 })
             }
 
-            const loadAudio = ( key: keyof Assets, src: string) => {
+            const loadAudio = ( key: string, src: string) => {
                 return new Promise<ResultLoad>(res => {
                     const loader = new AudioLoader()
                     loader.load(src, buffer => {
@@ -54,13 +53,13 @@ export class LoaderAssets {
                 })
             }
 
-            // const loadCubeTexture = (key: keyof Assets, src: string[]) => {
-            //     return new Promise<ResultLoad>(res => {
-            //         this._cubeTextureLoader.load(src, cubeTexture => {
-            //             res({ key, texture: cubeTexture })
-            //         })
-            //     })
-            // }
+            const loadCubeTexture = (key: string, src: string[]) => {
+                return new Promise<ResultLoad>(res => {
+                    this._cubeTextureLoader.load(src, cubeTexture => {
+                        res({ key, texture: cubeTexture })
+                    })
+                })
+            }
 
             const promises = [
                 loadAudio('soundAmbient', audioAmbient),
@@ -71,7 +70,7 @@ export class LoaderAssets {
 
             Promise.all(promises).then(result => {
                 for (let i = 0; i < result.length; ++i) {
-                     this.assets[result[i].key as keyof Assets] = result[i].texture
+                     this._root.assets[result[i].key as string] = result[i].texture
                 }
                 res()
             })

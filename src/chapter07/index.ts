@@ -7,7 +7,7 @@ import { DeviceData } from "../_CORE/DeviceData"
 import { UiCustom } from "./entities/UiCustom"
 import { Phisics } from "../_CORE/Phisics"
 import { Structure } from "./Structure03/Structure03"
-import { AudioManager } from "../_CORE/AudioManager"
+import { AudioManagerCustom } from "./entities/AudioManagerCustom"
 import { Materials } from "./entities/Materials"
 import { Flyer } from "./entities/Flyer/Flyer"
 import { Fuel } from "./entities/Fuel/Fuel"
@@ -24,7 +24,7 @@ export interface Root extends Core {
     loader: LoaderAssets,
     deviceData: DeviceData,
     lab: Structure,
-    audio: AudioManager,
+    audio: AudioManagerCustom,
     materials: Materials,
     flyer: Flyer
     fuel: Fuel
@@ -50,7 +50,7 @@ window.addEventListener("DOMContentLoaded", async () => {
         phisics: new Phisics(),
         lab: new Structure(),
 
-        audio: new AudioManager(),
+        audio: new AudioManagerCustom(),
         materials: new Materials(),
         flyer: new Flyer(),
         fuel: new Fuel(),
