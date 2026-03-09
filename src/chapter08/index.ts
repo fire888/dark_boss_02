@@ -51,6 +51,7 @@ window.addEventListener("DOMContentLoaded", async () => {
     console.log("branch:" + __GIT_CURRENT_BRANCH__ + ' commit:' + __HASH_COMMIT__)
 
     const root: Root = {
+        assets: {},
         studioConf: STUDIO_CONF,
         CONSTANTS,
         ticker: new Ticker(),

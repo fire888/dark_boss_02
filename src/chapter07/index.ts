@@ -7,7 +7,7 @@ import { DeviceData } from "../_CORE/DeviceData"
 import { UiCustom } from "./entities/UiCustom"
 import { Phisics } from "../_CORE/Phisics"
 import { Structure } from "./Structure03/Structure03"
-import { AudioManager } from "./entities/AudioManager"
+import { AudioManager } from "../_CORE/AudioManager"
 import { Materials } from "./entities/Materials"
 import { Flyer } from "./entities/Flyer/Flyer"
 import { Fuel } from "./entities/Fuel/Fuel"
@@ -37,6 +37,7 @@ window.addEventListener("DOMContentLoaded", async () => {
     console.log("branch:" + __GIT_CURRENT_BRANCH__ + ' commit:' + __HASH_COMMIT__)
 
     const root: Root = {
+        assets: {},
         studioConf: STUDIO_CONF,
         studio: new Studio(),
         keyboard: new Keyboard(),
@@ -48,6 +49,7 @@ window.addEventListener("DOMContentLoaded", async () => {
         deviceData: new DeviceData(),
         phisics: new Phisics(),
         lab: new Structure(),
+
         audio: new AudioManager(),
         materials: new Materials(),
         flyer: new Flyer(),

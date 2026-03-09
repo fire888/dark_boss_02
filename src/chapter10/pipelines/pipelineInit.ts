@@ -18,7 +18,7 @@ export const pipelineInit = async (root: Root) => {
         materials,
     } = root
 
-    loader.init()
+    loader.init(root)
     await loader.loadAssets()
 
     await texturesCanvas.init()

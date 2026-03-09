@@ -4,23 +4,23 @@ import {
 
 import audioAmbient from '../assets/ambient.mp3'
 import steps from '../assets/steps_metal.mp3'
+import { Root } from '../index'
 
 type Assets = {
     soundAmbient: any,
     soundStepsMetal: any
 }
 type ResultLoad = {
-    texture: any
     key: keyof Assets
+    texture: any
 }
 
 export class LoaderAssets {
-    assets: Assets = {
-        soundAmbient: null,
-        soundStepsMetal: null,
-    }
+    _root: Root
 
-    init () {}
+    init (root: Root) {
+        this._root = root
+    }
 
     loadAssets (): Promise<void> {
         return new Promise(res => {
@@ -57,7 +57,7 @@ export class LoaderAssets {
 
             Promise.all(promises).then(result => {
                 for (let i = 0; i < result.length; ++i) {
-                     this.assets[result[i].key as keyof Assets] = result[i].texture
+                    this._root.assets[result[i].key as keyof Assets] = result[i].texture
                 }
                 res()
             })

@@ -48,6 +48,7 @@ window.addEventListener("DOMContentLoaded", async () => {
 
     const root: Root = {
         CONSTANTS,
+        assets: {},
         ticker: new Ticker(),
         studioConf: STUDIO_CONF, 
         studio: new Studio(),

@@ -9,7 +9,7 @@ import { Ui } from "../_CORE/Ui"
 import { Phisics } from "../_CORE/Phisics"
 import { Labyrinth } from './entityLab01/Lab'
 import { BackTower } from "./entities/BackTower"
-import { AudioManager } from "./entities/AudioManager"
+import { AudioManager } from "../_CORE/AudioManager"
 import { Materials } from "./entities/Materials"
 import { pipelineInit } from "./pipelines/pipelineInit"
 import { pipelinePlay } from "./pipelines/pipelinePlay"
@@ -36,6 +36,7 @@ window.addEventListener("DOMContentLoaded", async () => {
     console.log("branch:" + __GIT_CURRENT_BRANCH__ + ' commit:' + __HASH_COMMIT__)
 
     const root: Root = {
+        assets: {},
         studioConf: STUDIO_CONF,
         studio: new Studio(),
         ticker: new Ticker(),

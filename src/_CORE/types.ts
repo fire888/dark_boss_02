@@ -34,7 +34,11 @@ type HemisphereLightConf = {
     groundColor: THREE.Color
     intensity: number
     pos: THREE.Vector3
-} 
+}
+
+type T_assets = {
+    [key: string]: any
+}
 
 export type StudioConf = {
     cameraPos: THREE.Vector3
@@ -54,6 +58,7 @@ export type StudioConf = {
 } 
 
 export interface Core {
+    assets: T_assets
     studioConf: StudioConf
     studio: Studio
     
