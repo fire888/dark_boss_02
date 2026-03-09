@@ -13,9 +13,9 @@ export class StudioCustom extends Studio {
     init (root: Root) {
         super.init(root)
 
-        root.loader.assets.mapEnv.mapping = EquirectangularReflectionMapping;
-        root.loader.assets.mapEnv.colorSpace = SRGBColorSpace;
-        this.scene.background = root.loader.assets.mapEnv
+        root.assets.mapEnv.mapping = EquirectangularReflectionMapping;
+        root.assets.mapEnv.colorSpace = SRGBColorSpace;
+        this.scene.background = root.assets.mapEnv
     }
 
     cameraFlyAway (dir: string) {

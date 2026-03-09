@@ -15,19 +15,19 @@ export class AudioManagerCustom extends AudioManager {
         cam.add(listener)
 
         this._energy = new Audio(listener)
-        this._energy.setBuffer(root.loader.assets.soundBzink)
+        this._energy.setBuffer(root.assets.soundBzink)
         this._energy.setLoop(false)
         this._energy.playbackRate = 1
         this._energy.setVolume(.5)
 
         this._door = new Audio(listener)
-        this._door.setBuffer(root.loader.assets.soundDoor)
+        this._door.setBuffer(root.assets.soundDoor)
         this._door.setLoop(false)
         this._door.playbackRate = 1
         this._door.setVolume(.5)
 
         this._fly = new Audio(listener)
-        this._fly.setBuffer(root.loader.assets.soundFly)
+        this._fly.setBuffer(root.assets.soundFly)
         this._fly.setLoop(true)
         this._fly.playbackRate = 1
         this._fly.setVolume(1.5)

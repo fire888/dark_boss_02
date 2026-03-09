@@ -62,7 +62,7 @@ export class Lab {
             this._material = new MeshPhongMaterial({ 
                 color: 0xFFFFFF, 
                 vertexColors: true,
-                envMap: root.loader.assets.sky,
+                envMap: root.assets.sky,
                 reflectivity: .6,
             })
             this._collisionMaterial = new MeshBasicMaterial({ color: 0xFFFF00 })

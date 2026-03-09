@@ -14,7 +14,7 @@ export class Particles {
         this._geometry = new BufferGeometry()
         this._vertices = []
         this._speeds = []
-        const sprite = root.loader.assets.sprite
+        const sprite = root.assets.sprite
         sprite.colorSpace = SRGBColorSpace;
 
         for ( let i = 0; i < 500; i ++ ) {

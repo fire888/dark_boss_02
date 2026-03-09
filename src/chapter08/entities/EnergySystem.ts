@@ -45,7 +45,7 @@ export class EnergySystem {
                             _M.ran(.2, 1),
                             _M.ran(.2, 1),
                         ),
-                        envMap: root.loader.assets.sky,
+                        envMap: root.assets.sky,
                         reflectivity: _M.ran(.2, 1),
                     }) 
                 })
@@ -98,7 +98,7 @@ export class EnergySystem {
                     _M.ran(.2, 1),
                     _M.ran(.2, 1),
                 ),
-                envMap: root.loader.assets.sky,
+                envMap: root.assets.sky,
                 reflectivity: _M.ran(.2, 1),
             }) 
         })

@@ -28,17 +28,6 @@ export class LoaderAssets {
     _textureLoader: TextureLoader = new TextureLoader()
     _root: Root
 
-    assets: Assets = {
-        mapEnv: null,
-        sky: null,
-        sprite: null,
-        soundAmbient: null,
-        soundStepsMetal: null,
-        soundBzink: null,
-        soundDoor: null,
-        soundFly: null,
-    }
-
     init (root: Root) {
         this._root = root
     }
@@ -77,8 +66,7 @@ export class LoaderAssets {
 
             Promise.all(promises).then(result => {
                 for (let i = 0; i < result.length; ++i) {
-                    this.assets[result[i].key as keyof Assets] = result[i].texture
-                    this._root.assets[result[i].key as keyof Assets] = result[i].texture
+                    this._root.assets[result[i].key as string] = result[i].texture
                 }
                 res()
             })
