@@ -14,21 +14,7 @@ export class AudioManagerCustom extends AudioManager {
 
     init (root: Root) {
         super.init(root)
-        //this._root = root
         const listener = new AudioListener()
-        //const cam = root.studio.camera
-        //cam.add(listener)
-
-        // this._soundAmbient = new Audio(listener)
-        // this._soundAmbient.setBuffer(root.loader.assets.soundAmbient)
-        // this._soundAmbient.setLoop(true)
-        // this._soundAmbient.setVolume(0)
-
-        // this._steps = new Audio(listener)
-        // this._steps.setBuffer(root.loader.assets.soundStepsMetal)
-        // this._steps.setLoop(true)
-        // this._steps.playbackRate = 1.5
-        // this._steps.setVolume(.3)
 
         this._energy = new Audio(listener)
         this._energy.setBuffer(root.assets.soundBzink)
@@ -48,52 +34,6 @@ export class AudioManagerCustom extends AudioManager {
         this._fly.playbackRate = 1
         this._fly.setVolume(1.5)
     }
-
-    // playAmbient () {
-    //     if (this._soundAmbient.isPlaying) {
-    //         return;
-    //     }
-
-    //     this._soundAmbient.play()
-
-    //     const obj = { v: 0 } 
-    //     new Tween(obj)
-    //         .interpolation(Interpolation.Linear)
-    //         .to({ v: .2 }, 400)
-    //         .onUpdate(() => {
-    //             this._soundAmbient.setVolume(obj.v)
-    //         })
-    //         .start()
-    // }
-
-    // disableSteps () {
-    //     this._isCanPlaySteps = false 
-    //     this._stopSteps() 
-    // }
-
-    // enableSteps () {
-    //     this._isCanPlaySteps = true
-    // }
-
-    // update () {
-    //     if (!this._isCanPlaySteps) {
-    //         return
-    //     }
-
-    //     if (
-    //         Math.abs(this._root.phisics.playerBody.velocity.x) > .05 || 
-    //         Math.abs(this._root.phisics.playerBody.velocity.z) > .05 
-    //     ) { 
-    //         this._playSteps()
-    //     }
-
-    //     if (
-    //         Math.abs(this._root.phisics.playerBody.velocity.x) < .05 && 
-    //         Math.abs(this._root.phisics.playerBody.velocity.x) < .05
-    //     ) { 
-    //         this._stopSteps()
-    //     }
-    // }
 
     playEnergy () {
         this._energy.play()
