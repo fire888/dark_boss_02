@@ -1,5 +1,18 @@
 import * as THREE from 'three'
 
+export type T_Assets = {
+    sprite: THREE.Texture,
+    soundAmbient: any,
+    soundStepsMetal: any,
+    soundBzink: any, 
+    soundDoor: any,
+    soundFly: any,
+    roadImg: THREE.Texture,
+    lightMap: THREE.Texture,
+    mapWall_01: THREE.Texture,
+    noise00: THREE.Texture,
+}
+
 export enum SegmentType {
     HOUSE_00 = 'HOUSE_00',
     HOUSE_01 = 'HOUSE_01',

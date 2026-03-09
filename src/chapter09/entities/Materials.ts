@@ -10,8 +10,8 @@ export class Materials {
     init (root: Root) {
         this.walls00 =  new THREE.MeshStandardMaterial({ 
             color: 0xffffff,
-            map: root.loader.assets.mapWall_01,
-            bumpMap: root.loader.assets.mapWall_01,
+            map: root.assets.mapWall_01,
+            bumpMap: root.assets.mapWall_01,
             bumpScale: 3,
             vertexColors: true,
         })
@@ -44,7 +44,7 @@ export class Materials {
         }
 
         {
-            const map = root.loader.assets.roadImg
+            const map = root.assets.roadImg
             map.wrapS = THREE.RepeatWrapping
             map.wrapT = THREE.RepeatWrapping
             map.repeat.set(40, 40)
@@ -52,14 +52,14 @@ export class Materials {
 
         this.road = new THREE.MeshStandardMaterial({ 
             color: 0xffffff,
-            map: root.loader.assets.roadImg,
-            bumpMap: root.loader.assets.roadImg,
+            map: root.assets.roadImg,
+            bumpMap: root.assets.roadImg,
             bumpScale: 17,
             vertexColors: true,
         })
 
         {
-            const map = root.loader.assets.noise00
+            const map = root.assets.noise00
             map.wrapS = THREE.RepeatWrapping
             map.wrapT = THREE.RepeatWrapping
             map.repeat.set(50, 50)
@@ -67,8 +67,8 @@ export class Materials {
 
         this.desert = new THREE.MeshStandardMaterial({
             color: 0x323341,
-            map: root.loader.assets.noise00,
-            bumpMap: root.loader.assets.noise00,
+            map: root.assets.noise00,
+            bumpMap: root.assets.noise00,
             bumpScale: 4,
         })
 

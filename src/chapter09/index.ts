@@ -7,8 +7,6 @@ import { Studio } from "_CORE/Studio"
 
 import { CONSTANTS, STUDIO_CONF } from "./constants/CONSTANTS"
 
-
-
 import { Floor } from "./entities/Floor"
 import { Particles } from './entities/Particles'
 import { LoaderAssets } from "./entities/Loader";
@@ -19,12 +17,13 @@ import { Labyrinth } from './entityLabyrinth/Labyrinth'
 import { EnergySystem } from "./entities/EnergySystem"
 import { AntigravSystem } from "./entities/AntigravSystem"
 import { AntigravLast } from "./entities/AntigravLast"
-import { AudioManager } from "./entities/AudioManager"
+import { AudioManagerCustom } from "./entities/AudioManagerCustom"
 import { Materials } from "./entities/Materials"
 import { pipelineInit } from "./pipelines/pipelineInit"
 import { pipelinePlay } from "./pipelines/pipelinePlay"
 import { pipelineEnd } from "./pipelines/pipelineEnd"
 import { Core } from '_CORE/types'
+import { T_Assets } from "./types/GeomTypes"
 
 export interface Root extends Core {
     CONSTANTS: typeof CONSTANTS,
@@ -34,11 +33,12 @@ export interface Root extends Core {
     particles: Particles,
     loader: LoaderAssets,
     lab: Labyrinth,
-    audio: AudioManager,
+    audio: AudioManagerCustom,
     materials: Materials,
     energySystem: EnergySystem,
     antigravSystem: AntigravSystem,
     antigravLast: AntigravLast,
+    assets: T_Assets
 }
 
 
@@ -48,7 +48,18 @@ window.addEventListener("DOMContentLoaded", async () => {
 
     const root: Root = {
         CONSTANTS,
-        assets: {},
+        assets: {
+            sprite: null,
+            soundAmbient: null,
+            soundStepsMetal: null,
+            soundBzink: null,
+            soundDoor: null,
+            soundFly: null,
+            roadImg: null,
+            lightMap: null,
+            mapWall_01: null,
+            noise00: null,
+        },
         ticker: new Ticker(),
         studioConf: STUDIO_CONF, 
         studio: new Studio(),
@@ -61,7 +72,7 @@ window.addEventListener("DOMContentLoaded", async () => {
         deviceData: new DeviceData(),
         phisics: new Phisics(),
         lab: new Labyrinth(),
-        audio: new AudioManager(),
+        audio: new AudioManagerCustom(),
         materials: new Materials(),
         energySystem: new EnergySystem(),
         antigravSystem: new AntigravSystem(),

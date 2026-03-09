@@ -18,14 +18,13 @@ export const pipelineInit = async (root: Root) => {
         lab,
         audio,
         materials,
-        deviceData,
         particles,
         energySystem,
         antigravSystem,
         antigravLast,
     } = root
 
-    loader.init()
+    loader.init(root)
     await loader.loadAssets()
 
     ticker.start()
