@@ -17,13 +17,6 @@ type ResultLoad = {
 }
 
 export class LoaderAssets {
-    // assets: Assets = {
-    //     textureTiles: null,
-    //     textureTilesInv: null,
-    //     soundAmbient: null,
-    //     soundStepsMetal: null,
-    // }
-
     _root: Root
 
     _textureLoader: TextureLoader = new TextureLoader()
