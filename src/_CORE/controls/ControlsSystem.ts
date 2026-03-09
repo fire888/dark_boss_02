@@ -199,11 +199,18 @@ export class ControlsSystem {
 
     disable () {
         this._isDisabled = true
-        const { ui } = this._root
         this._currentWalkingControls = null
         this._pointer.disable()
         this._phone.disable()
-        ui.toggleVisibleButtonLock(false) 
+        this._root.ui.toggleVisibleButtonLock(false) 
+    }
+
+    enable () {
+        this._currentWalkingControls = this._root.deviceData.device === 'desktop' 
+            ? this._pointer
+            : this._phone
+        this._currentWalkingControls.enable()    
+        this._isDisabled = false
     }
 
     disableMove() {

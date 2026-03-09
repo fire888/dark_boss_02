@@ -72,6 +72,6 @@ export const pipelineInit = async (root: Root) => {
     audio.playAmbient()
     
     controls.init(root, IS_DEV_START_ORBIT)
-    controls.setRotation(0, PLAYER_POS_START[3], 0)
+    // controls.setRotation(0, PLAYER_POS_START[3], 0)
     ticker.on(controls.update.bind(controls))
 }

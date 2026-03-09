@@ -40,7 +40,7 @@ export const STUDIO_CONF: StudioConf = {
         pos: new THREE.Vector3(-3, 3, -2)
     },
     cameraPos: new THREE.Vector3(1, 30, 70),
-    cameraLookAt: new THREE.Vector3(150, 1, 150),
+    cameraLookAt: new THREE.Vector3(1, 30, 50),
     ambientLightParams: { color: new THREE.Color().setHex(0x897fa0), intensity: 3 },
     sceneBackground: new THREE.Color().setHex(0x0e2535),
     fogParams: { color: new THREE.Color().setHex(0x0e2535), near: .2, far: 1000 },

@@ -96,7 +96,9 @@ export const THEMES = {
 
 export const STUDIO_CONF: StudioConf = {
     cameraPos: new THREE.Vector3().fromArray(PLAYER_POS_START),
-    cameraLookAt: new THREE.Vector3(33, .55, 0),
+    cameraLookAt: new THREE.Vector3(0, 0, -1)
+        .applyAxisAngle(new THREE.Vector3(0, 1, 0), PLAYER_POS_START[3])
+        .add(new THREE.Vector3().fromArray(PLAYER_POS_START)),
     sceneBackground: new THREE.Color().fromArray(GRAY_GRAY.colorB),
     fogParams: { color: new THREE.Color().fromArray(GRAY_GRAY.colorF), near: 80, far: GRAY_GRAY.fogFar },
     directionalLightParams: { 
