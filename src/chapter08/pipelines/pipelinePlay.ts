@@ -66,6 +66,7 @@ export const pipelinePlay = async (root: Root) => {
     await lab.openDoor()
     ui.setEnergyLevel(0)
     await pause(1000)
+    controls.disable()
     ui.toggleVisibleEnergy(false)
     phisics.stopPlayerBody()
     audio.disableSteps()
@@ -86,9 +87,11 @@ export const pipelinePlay = async (root: Root) => {
     await lab.init(root, LABS_CONF[indexLevel])
     energySystem.init(root, lab.posesSleepEnds)
     await studio.cameraFlyToLevel(CONSTANTS.PLAYER_START_POS)
+    controls.enable()
     audio.stopFly()
     phisics.setPlayerPosition(PLAYER_START_POS[0], PLAYER_START_POS[1], PLAYER_START_POS[2])
     audio.enableSteps()
     ui.toggleVisibleEnergy(true)
+
     await pipelinePlay(root)
 }

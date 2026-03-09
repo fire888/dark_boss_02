@@ -1,32 +1,18 @@
 import { Root } from '../index'
 import { AudioListener, Audio } from 'three'
 import { Tween, Interpolation} from '@tweenjs/tween.js'
+import { AudioManager } from '_CORE/AudioManager'
 
-export class AudioManager {
-    private _root: Root
-    private _soundAmbient: Audio
-    private _steps: Audio
+export class AudioManagerCustom extends AudioManager {
     private _energy: Audio
     private _door: Audio 
     private _fly: Audio
-    private _isCanPlaySteps: boolean = true
 
     init (root: Root) {
-        this._root = root
+        super.init(root)
         const listener = new AudioListener()
         const cam = root.studio.camera
         cam.add(listener)
-
-        this._soundAmbient = new Audio(listener)
-        this._soundAmbient.setBuffer(root.loader.assets.soundAmbient)
-        this._soundAmbient.setLoop(true)
-        this._soundAmbient.setVolume(0)
-
-        this._steps = new Audio(listener)
-        this._steps.setBuffer(root.loader.assets.soundStepsMetal)
-        this._steps.setLoop(true)
-        this._steps.playbackRate = 1.5
-        this._steps.setVolume(.15)
 
         this._energy = new Audio(listener)
         this._energy.setBuffer(root.loader.assets.soundBzink)
@@ -45,52 +31,6 @@ export class AudioManager {
         this._fly.setLoop(true)
         this._fly.playbackRate = 1
         this._fly.setVolume(1.5)
-    }
-
-    playAmbient () {
-        if (this._soundAmbient.isPlaying) {
-            return;
-        }
-
-        this._soundAmbient.play()
-
-        const obj = { v: 0 } 
-        new Tween(obj)
-            .interpolation(Interpolation.Linear)
-            .to({ v: .35 }, 400)
-            .onUpdate(() => {
-                this._soundAmbient.setVolume(obj.v)
-            })
-            .start()
-    }
-
-    disableSteps () {
-        this._isCanPlaySteps = false 
-        this._stopSteps() 
-    }
-
-    enableSteps () {
-        this._isCanPlaySteps = true
-    }
-
-    update () {
-        if (!this._isCanPlaySteps) {
-            return
-        }
-
-        if (
-            Math.abs(this._root.phisics.playerBody.velocity.x) > .05 || 
-            Math.abs(this._root.phisics.playerBody.velocity.z) > .05 
-        ) { 
-            this._playSteps()
-        }
-
-        if (
-            Math.abs(this._root.phisics.playerBody.velocity.x) < .05 && 
-            Math.abs(this._root.phisics.playerBody.velocity.x) < .05
-        ) { 
-            this._stopSteps()
-        }
     }
 
     playEnergy () {
@@ -137,23 +77,5 @@ export class AudioManager {
                 this._fly.stop()
             })
             .start()
-    }
-
-    private _playSteps () {
-        if (!this._isCanPlaySteps) {
-            return;
-        }
-        if (this._steps.isPlaying) {
-            return;
-        }
-            
-        this._steps.play()
-    }
-
-    private _stopSteps () {
-        if (!this._steps.isPlaying) {
-            return;
-        }
-        this._steps.stop()
     }
 }

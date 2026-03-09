@@ -7,6 +7,7 @@ import steps from '../assets/steps_metal.mp3'
 import audioBzink from '../assets/bzink.mp3'
 import audioDoor from '../assets/door.mp3'
 import audioFly from '../assets/fly.mp3'
+import { Root } from '../index'
 
 type Assets = {
     mapEnv: Texture,
@@ -25,6 +26,8 @@ type ResultLoad = {
 
 export class LoaderAssets {
     _textureLoader: TextureLoader = new TextureLoader()
+    _root: Root
+
     assets: Assets = {
         mapEnv: null,
         sky: null,
@@ -36,7 +39,9 @@ export class LoaderAssets {
         soundFly: null,
     }
 
-    init () {}
+    init (root: Root) {
+        this._root = root
+    }
 
     loadAssets (): Promise<void> {
         return new Promise(res => {
@@ -72,7 +77,8 @@ export class LoaderAssets {
 
             Promise.all(promises).then(result => {
                 for (let i = 0; i < result.length; ++i) {
-                     this.assets[result[i].key as keyof Assets] = result[i].texture
+                    this.assets[result[i].key as keyof Assets] = result[i].texture
+                    this._root.assets[result[i].key as keyof Assets] = result[i].texture
                 }
                 res()
             })

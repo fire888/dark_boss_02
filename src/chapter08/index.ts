@@ -22,7 +22,7 @@ import { DeviceData } from "./entities/DeviceData"
 
 import { EnergySystem } from './entities/EnergySystem'
 import { Lab } from './entities/labyrinth/Lab'
-import { AudioManager } from "./entities/AudioManager"
+import { AudioManagerCustom } from "./entities/AudioManagerCustom"
 
 import { pipelineInit } from "./pipelines/pipelineInit"
 import { pipelinePlay } from "./pipelines/pipelinePlay"
@@ -42,7 +42,7 @@ export interface Root extends Core {
     phisics: Phisics,
     energySystem: EnergySystem,
     lab: Lab,
-    audio: AudioManager,
+    audio: AudioManagerCustom,
 }
 
 
@@ -67,7 +67,7 @@ window.addEventListener("DOMContentLoaded", async () => {
         phisics: new Phisics(),
         energySystem: new EnergySystem(),
         lab: new Lab(),
-        audio: new AudioManager(),
+        audio: new AudioManagerCustom(),
     }
 
     await pipelineInit(root)
