@@ -38,6 +38,7 @@ type HemisphereLightConf = {
 
 export type StudioConf = {
     cameraPos: THREE.Vector3
+    cameraFov?: number,
     cameraLookAt: THREE.Vector3
     spotLightParams?: SpotLightConf
     ambientLightParams?: { color?: THREE.Color, intensity?: number }

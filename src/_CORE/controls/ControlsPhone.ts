@@ -10,6 +10,8 @@ import {
 } from '../types'
 
 export class ControlsPhone {
+    isEnabled = false
+
     _isLeft = false
     _isRight = false
     _isEnabled = false
@@ -93,7 +95,7 @@ export class ControlsPhone {
     }
 
     update() {
-        if (!this._isEnabled) {
+        if (!this.isEnabled) {
             return
         }
         this._obj.position.x = 0
@@ -120,7 +122,7 @@ export class ControlsPhone {
 
         this._currentSpeedLeft = 0
 
-        this._isEnabled = true
+        this.isEnabled = true
     }
 
     disable() {
@@ -130,7 +132,7 @@ export class ControlsPhone {
         ui.moveLeftDiv.style.display = 'none'
         ui.moveRightDiv.style.display = 'none'
 
-        this._isEnabled = false
+        this.isEnabled = false
     }
 
     on(key: string, callback: (is: boolean) => void) {

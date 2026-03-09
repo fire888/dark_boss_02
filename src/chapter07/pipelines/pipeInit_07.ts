@@ -3,9 +3,6 @@ import { update } from '@tweenjs/tween.js'
 import { IS_DEV_START_ORBIT } from '../constants/CONSTANTS'
 import { PLAYER_POS_START } from '../constants/CONSTANTS'
 import { STRUCTURES } from '../Structure03/constants/constants_elements'
-import * as THREE from 'three'
-import * as TWEEN from '@tweenjs/tween.js'
-import { pause } from '_CORE/helpers/htmlHelpers'
 import { SCALE } from 'chapter07/Structure03/constants/const_structures'
 
 export const pipeInit_07 = async (root: Root) => {
@@ -40,7 +37,7 @@ export const pipeInit_07 = async (root: Root) => {
 
     phisics.init(root)
     phisics.createPlayer()
-    phisics.setPlayerPosition(PLAYER_POS_START[0], PLAYER_POS_START[1], PLAYER_POS_START[2], PLAYER_POS_START[3])
+    phisics.setPlayerPosition(PLAYER_POS_START[0], PLAYER_POS_START[1], PLAYER_POS_START[2])
 
     lab.init(root)
     const dataS = STRUCTURES[0]
@@ -76,6 +73,6 @@ export const pipeInit_07 = async (root: Root) => {
     audio.playAmbient()
     
     controls.init(root, IS_DEV_START_ORBIT)
-
+    //controls.setRotation(0, 0, 0)
     ticker.on(controls.update.bind(controls))
 }

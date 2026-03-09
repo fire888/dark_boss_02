@@ -24,7 +24,8 @@ export class ControlsPointer {
 
         this._camera = root.studio.camera
         this._domElem = root.studio.containerDom
-        const rotY = _M.getAngleDirY(this._camera)
+        const rotY = _M.getAngleDirY(this._camera) + Math.PI
+        console.log('rotY', rotY)
 
         this._controls = new PointerLockControls(this._camera, this._domElem)
         this._controls.maxPolarAngle = Math.PI - .01

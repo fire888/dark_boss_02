@@ -51,7 +51,7 @@ export class ControlsSystem {
 
         if (isStartOrbit) {
             this._orbit.enable()
-            ui.toggleVisibleButtonLock(true) 
+            ui.toggleVisibleButtonLock(false) 
         } else {
             this._currentWalkingControls.enable()
         }
@@ -120,7 +120,7 @@ export class ControlsSystem {
 
         root.keyboard.on('JUMP', (is: boolean) => {
             if (is && root.phisics.isGround) {
-                this._root.phisics.playerBody.velocity.y = 6
+                this._root.phisics.playerBody.velocity.y += 6
             }
         })
 
@@ -140,7 +140,7 @@ export class ControlsSystem {
             return
         }
 
-        if (!this._currentWalkingControls.enable) {
+        if (!this._currentWalkingControls.isEnabled) {
             return
         }
 

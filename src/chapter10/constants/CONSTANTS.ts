@@ -5,7 +5,7 @@ export const IS_DEV_START_ORBIT = false
 export const IS_PHISICS_DEBUG = false
 export const IS_SHOW_INFO = true
 export const IS_USE_WORKER = true
-export const PLAYER_POS_START = [3, .55, 0, Math.PI * 1.5]
+export const PLAYER_POS_START = [3, .55, 0]
 
 const START_BLUE = { colorB: [0.08437621153575764,0.10702310296918527,0.21952619971859377], colorF: [0.07421356837213867,0.13563332964548108,0.5332764040016892], fogFar: 200 }
 const GREEN_L = {"colorB":[0.329140835620299,0.5425764472881666,0.08181476230578975],"colorF":[0.47212430651742254,0.9131701427732191,0.5838277189679422],"fogFar":138.71571049554447}
@@ -96,9 +96,8 @@ export const THEMES = {
 
 export const STUDIO_CONF: StudioConf = {
     cameraPos: new THREE.Vector3().fromArray(PLAYER_POS_START),
-    cameraLookAt: new THREE.Vector3(0, 0, -1)
-        .applyAxisAngle(new THREE.Vector3(0, 1, 0), PLAYER_POS_START[3])
-        .add(new THREE.Vector3().fromArray(PLAYER_POS_START)),
+    cameraFov: 55,
+    cameraLookAt: new THREE.Vector3(1, 0, 0).add(new THREE.Vector3().fromArray(PLAYER_POS_START)),
     sceneBackground: new THREE.Color().fromArray(GRAY_GRAY.colorB),
     fogParams: { color: new THREE.Color().fromArray(GRAY_GRAY.colorF), near: 80, far: GRAY_GRAY.fogFar },
     directionalLightParams: { 

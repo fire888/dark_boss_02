@@ -21,16 +21,6 @@ import { BokehPass } from 'three/examples/jsm/postprocessing/BokehPass';
 import { Core } from "./types"
 import { Tween, Easing } from '@tweenjs/tween.js'
 
-// const params = {
-//     threshold: 0.65,
-//     strength: 0.2,
-//     radius: 0,
-
-//     focus: 500.0,
-//     aperture: 5,
-//     maxblur: 0.01
-// }
-
 export class Studio {
     containerDom: HTMLElement
     camera: PerspectiveCamera
@@ -49,12 +39,13 @@ export class Studio {
     init (root: Core) {
         this._root = root
         this.containerDom = document.getElementById('container-game')
-        this.camera = new PerspectiveCamera(45, window.innerWidth / window.innerHeight, .1, 1000)
 
         this.scene = new Scene()
-
+        
         const { studioConf } = this._root
 
+        const fov = studioConf.cameraFov ?? 45
+        this.camera = new PerspectiveCamera(fov, window.innerWidth / window.innerHeight, .1, 1000)
         this.camera.position.copy(studioConf.cameraPos)
         this.camera.lookAt(...studioConf.cameraLookAt.toArray())
 

@@ -2,7 +2,6 @@ import { Root } from '../index'
 import { update } from '@tweenjs/tween.js'
 import { IS_DEV_START_ORBIT } from '../constants/CONSTANTS'
 import { PLAYER_POS_START } from '../constants/CONSTANTS'
-import { pause } from '_CORE/helpers/htmlHelpers'
 
 export const pipelineInit = async (root: Root) => {
     const {
@@ -72,6 +71,6 @@ export const pipelineInit = async (root: Root) => {
     audio.playAmbient()
     
     controls.init(root, IS_DEV_START_ORBIT)
-    // controls.setRotation(0, PLAYER_POS_START[3], 0)
+    controls.setRotation(0, Math.PI * 1.5, 0)
     ticker.on(controls.update.bind(controls))
 }
