@@ -13,15 +13,13 @@ import { LoaderAssets } from "./entities/Loader";
 
 import { UiCustom } from "./entities/Ui"
 
-import { Labyrinth } from './entityLabyrinth/Labyrinth'
-import { EnergySystem } from "./entities/EnergySystem"
-import { AntigravSystem } from "./entities/AntigravSystem"
-import { AntigravLast } from "./entities/AntigravLast"
+//import { Labyrinth } from './entityLabyrinth/Labyrinth'
+import { Labyrinth } from './EntityLab02/Lab02'
 import { AudioManagerCustom } from "./entities/AudioManagerCustom"
 import { Materials } from "./entities/Materials"
-import { pipelineInit } from "./pipelines/pipelineInit"
-import { pipelinePlay } from "./pipelines/pipelinePlay"
-import { pipelineEnd } from "./pipelines/pipelineEnd"
+import { pipeInit_06 } from "./pipelines/pipeInit_06"
+import { pipePlay_06 } from "./pipelines/pipePlay_06"
+import { pipeEnd_06 } from "./pipelines/pipeEnd_06"
 import { Core } from '_CORE/types'
 import { T_Assets } from "./types/GeomTypes"
 
@@ -35,9 +33,6 @@ export interface Root extends Core {
     lab: Labyrinth,
     audio: AudioManagerCustom,
     materials: Materials,
-    energySystem: EnergySystem,
-    antigravSystem: AntigravSystem,
-    antigravLast: AntigravLast,
     assets: T_Assets
 }
 
@@ -74,12 +69,9 @@ window.addEventListener("DOMContentLoaded", async () => {
         lab: new Labyrinth(),
         audio: new AudioManagerCustom(),
         materials: new Materials(),
-        energySystem: new EnergySystem(),
-        antigravSystem: new AntigravSystem(),
-        antigravLast: new AntigravLast(),
     }
 
-    await pipelineInit(root)
-    await pipelinePlay(root)
-    await pipelineEnd(root)
+    await pipeInit_06(root)
+    await pipePlay_06(root)
+    await pipeEnd_06(root)
 })

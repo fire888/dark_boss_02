@@ -20,7 +20,7 @@ import { IS_PHISICS_DEBUG } from 'chapter10/constants/CONSTANTS'
 
 class BodyN extends Body {
     myName: string
-    myObject3D: THREE.Object3D
+    //myObject3D: THREE.Object3D
 }
 
 const createTrimesh = (geometry: THREE.BufferGeometry) => {
@@ -85,50 +85,6 @@ export class Phisics {
         }
     }
 
-    createPlayerPhisicsBody (playerPosition: number[]) {
-        console.log('Must depricade !!!!')
-        const sphere = new Sphere(.5);
-        this.playerBody = new BodyN({ 
-            mass: 5,
-            linearDamping: 0.9,
-        })
-        this.playerBody.myName = 'playerBody'
-        this.playerBody.addShape(sphere)
-
-        this.playerBody.position.x = playerPosition[0]
-        this.playerBody.position.y = playerPosition[1]
-        this.playerBody.position.z = playerPosition[2]
-
-        this.playerBody.myObject3D = new Object3D()
-        this.playerBody.myObject3D.position.set(this.playerBody.position.x, this.playerBody.position.y, this.playerBody.position.z)
-
-        this.playerBody.myObject3D.rotation.y = Math.PI
-
-        this.playerBody.myObject3D.position.set(this.playerBody.position.x, this.playerBody.position.y, this.playerBody.position.z)
-        this.playerBody.quaternion.set(
-            this.playerBody.myObject3D.quaternion.x,
-            this.playerBody.myObject3D.quaternion.y,
-            this.playerBody.myObject3D.quaternion.z,
-            this.playerBody.myObject3D.quaternion.w,
-        )
-
-
-        this.world.addBody(this.playerBody)
-
-        this.world.addEventListener('beginContact', (event: any) => {
-            const { bodyA, bodyB } = event;
-            if (bodyA.id === 0 && bodyB.id !== 0) {
-                this.isGround = true 
-            }
-        })
-        this.world.addEventListener('endContact', (event: any) => {
-            const { bodyA, bodyB } = event;
-            if (bodyA && bodyB && bodyA.id === 0 && bodyB.id !== 0) {
-                this.isGround = false
-            }
-        })
-    }
-
     createPlayer () {
         const sphere = new Sphere(.5)
         this.playerBody = new BodyN({ 
@@ -138,7 +94,7 @@ export class Phisics {
         this.playerBody.myName = 'playerBody'
         this.playerBody.addShape(sphere)
 
-        this.playerBody.myObject3D = new Object3D()
+        //this.playerBody.myObject3D = new Object3D()
 
         this.world.addBody(this.playerBody)
 
@@ -217,20 +173,16 @@ export class Phisics {
         }
     }
 
-    setPlayerPosition (x: number, y: number, z: number, rotY = Math.PI) {
+    setPlayerPosition (x: number, y: number, z: number) {
         this.playerBody.position.x = x
         this.playerBody.position.y = y
         this.playerBody.position.z = z
 
-        this.playerBody.myObject3D.rotation.y = rotY
-
-        this.playerBody.myObject3D.position.set(this.playerBody.position.x, this.playerBody.position.y, this.playerBody.position.z)
-        this.playerBody.quaternion.set(
-            this.playerBody.myObject3D.quaternion.x,
-            this.playerBody.myObject3D.quaternion.y,
-            this.playerBody.myObject3D.quaternion.z,
-            this.playerBody.myObject3D.quaternion.w,
-        )
+        // this.playerBody.myObject3D.position.set(
+        //     this.playerBody.position.x, 
+        //     this.playerBody.position.y, 
+        //     this.playerBody.position.z
+        // )
     }
 
     stopPlayerBody () {

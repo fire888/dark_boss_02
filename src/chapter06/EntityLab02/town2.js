@@ -115,23 +115,24 @@ export const createTown2 = (root) => {
         }
     }
 
-    console.log(root)
-
-    console.log()
-
+    const Y = 2.2
+    const SCALE = .06
 
     const mesh = createMeshFromBuffer({ 
-        v, 
-        c, 
-        u, 
+        v, c, u, 
         mat: root.materials.iron
     })
-    root.studio.addToScene(mesh)
+
+    mesh.geometry.scale(SCALE, SCALE, SCALE)
+    mesh.position.y = Y
+    root.studio.add(mesh)
 
     const mCollision = createMeshFromBuffer({ v: b })
     mCollision.visible = false
-    root.studio.addToScene(mCollision)
-
+    mCollision.geometry.scale(SCALE, SCALE, SCALE)
+    mCollision.position.y = Y + 1
+    //root.studio.add(mCollision)
+    //root.phisics.addMeshToCollision(mCollision)
 
     return {
         mesh,

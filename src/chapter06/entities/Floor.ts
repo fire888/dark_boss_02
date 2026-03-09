@@ -1,6 +1,6 @@
 import { Mesh } from 'three'
 import { Root } from "../index";
-import { _M } from '../geometry/_m';
+import { _M } from '_CORE/';
 
 export class Floor {
     mesh: Mesh

@@ -1,5 +1,5 @@
 import { Tween, Interpolation } from '@tweenjs/tween.js'
-import { pause, elementClickOnce } from '../helpers/htmlHelpers'
+import {elementClickOnce } from '../helpers/htmlHelpers'
 import { Ui } from '_CORE/Ui'
 
 const ENERGY_MAX_WIDTH = 30
@@ -22,38 +22,24 @@ export class UiCustom extends Ui {
     }
 
     async hideStartScreen () {
-        this.finalDark = document.createElement('div')
-        this.finalDark.classList.add('final-dark')
-        this.finalDark.style.opacity = 1
-        document.body.appendChild(this.finalDark)
-
         const loaderCont = document.body.getElementsByClassName('loader')[0]
-
-        opacityByTransition(loaderCont, 0, 300)
-        await pause(300)
         loaderCont.style.display = 'none'
+
+        const startScreen = document.body.getElementsByClassName('start-screen')[0]
+        startScreen.style.background = 'rgba(0, 0, 0, 0)'
         
         const startButton = document.body.getElementsByClassName('start-but')[0]
-        startButton.style.display = 'block'
-        opacityByTransition(startButton, 1, 300)      
+        startButton.style.display = 'block'   
     
         await elementClickOnce(startButton)
 
         const controlsM = document.body.getElementsByClassName('controls-mess')[0]
-        await opacityByTransition(controlsM, 0, 300)
+        await opacityByTransition(controlsM, 0, 1)
 
         const h1 = document.body.getElementsByTagName('h1')[0]
-        await opacityByTransition(h1, 0, 300)
+        await opacityByTransition(h1, 0, 1)
 
-        const startScreen = document.body.getElementsByClassName('start-screen')[0]
-        await opacityByTransition(startScreen, 0, 300)
-
-        setTimeout(async () => {
-            this.toggleVisibleDark(false)
-            await pause(600)
-            document.body.removeChild(startScreen)
-            await opacityByTransition(this._countEnergyInner, 1, 300)
-        }, 300)
+        document.body.removeChild(startScreen)
     }
 
     async hideStartScreenForce () {

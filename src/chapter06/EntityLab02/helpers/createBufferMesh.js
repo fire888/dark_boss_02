@@ -25,7 +25,6 @@ export const createMeshFromBuffer = ({
 
     g.computeVertexNormals()
 
-
     if (!mat && !material) {
         material = new THREE.MeshPhongMaterial({ color: 0xFFFFFF, vertexColors: true })
     }

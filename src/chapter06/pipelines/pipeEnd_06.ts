@@ -1,6 +1,6 @@
 import { Root } from "../index"
 
-export const pipelineEnd = async (root: Root) => {
+export const pipeEnd_06 = async (root: Root) => {
     const {
         CONSTANTS,
         studio,
