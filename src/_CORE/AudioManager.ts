@@ -16,7 +16,7 @@ export class AudioManager {
         const cam = root.studio.camera
         cam.add(listener)
 
-        if (root.audioConf.ambientVolume) {
+        if (root.audioConf && root.audioConf.ambientVolume) {
             this._ambientVolumeMax = root.audioConf.ambientVolume
         }
         if (root.assets.soundAmbient) {
@@ -26,7 +26,7 @@ export class AudioManager {
             this._soundAmbient.setVolume(0)
         }
 
-        if (root.audioConf.stepsVolume) {
+        if (root.audioConf && root.audioConf.stepsVolume) {
             this._stepsVolumeMax = root.audioConf.stepsVolume
         }
         if (root.assets.soundStepsMetal) {
