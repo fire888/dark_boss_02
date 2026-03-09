@@ -6,6 +6,7 @@ import { DeviceData } from "./DeviceData";
 import { Keyboard } from "./Keyboard";
 import { AudioManager } from "./AudioManager";
 import { Ui } from "./Ui";
+import { ControlsSystem } from "./controls/ControlsSystem";
 
 export const FORWARD = 'FORWARD'
 export const BACKWARD = 'BACKWARD'
@@ -68,6 +69,7 @@ export interface Core {
     ticker: Ticker
     deviceData: DeviceData
     ui: Ui
+    controls: ControlsSystem
 
     audioConf?: {
         stepsVolume?: number

@@ -1,11 +1,7 @@
-import { Studio } from "../_CORE/Studio"
-import { Keyboard } from "_CORE/Keyboard"
-import { ControlsSystem } from "../_CORE/controls/ControlsSystem"
-import { Ticker } from "../_CORE/Ticker"
+import * as CORE from '../_CORE'
+
 import { LoaderAssets } from "./entities/Loader"
-import { DeviceData } from "../_CORE/DeviceData"
 import { UiCustom } from "./entities/UiCustom"
-import { Phisics } from "../_CORE/Phisics"
 import { Structure } from "./Structure03/Structure03"
 import { AudioManagerCustom } from "./entities/AudioManagerCustom"
 import { Materials } from "./entities/Materials"
@@ -15,14 +11,10 @@ import { pipeInit_07 } from "./pipelines/pipeInit_07"
 import { pipePlay_07 } from "./pipelines/pipePlay_07"
 import { pipeEnd_07 } from "./pipelines/pipeEnd_07"
 
-import { Core } from '_CORE/types'
-
 import { STUDIO_CONF } from "./constants/CONSTANTS"
 
-export interface Root extends Core {
-    controls: ControlsSystem,
+export interface Root extends CORE.Core {
     loader: LoaderAssets,
-    deviceData: DeviceData,
     lab: Structure,
     audio: AudioManagerCustom,
     materials: Materials,
@@ -39,15 +31,15 @@ window.addEventListener("DOMContentLoaded", async () => {
     const root: Root = {
         assets: {},
         studioConf: STUDIO_CONF,
-        studio: new Studio(),
-        keyboard: new Keyboard(),
-        ticker: new Ticker(),
+        studio: new CORE.Studio(),
+        keyboard: new CORE.Keyboard(),
+        ticker: new CORE.Ticker(),
         ui: new UiCustom(),
-        controls: new ControlsSystem(),
+        controls: new CORE.ControlsSystem(),
 
         loader: new LoaderAssets(),
-        deviceData: new DeviceData(),
-        phisics: new Phisics(),
+        deviceData: new CORE.DeviceData(),
+        phisics: new CORE.Phisics(),
         lab: new Structure(),
 
         audioConf: {
