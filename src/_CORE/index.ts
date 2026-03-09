@@ -10,6 +10,7 @@ import { Ui } from './Ui'
 import { ControlsSystem } from './controls/ControlsSystem'
 
 export { 
+    Core,
     _M,
     Studio,
     Keyboard,
@@ -18,7 +19,5 @@ export {
     DeviceData,
     Ui,
     AudioManager,
-    ControlsSystem,
+    ControlsSystem
 }
-
-export { Core }
