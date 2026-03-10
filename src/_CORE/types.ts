@@ -57,7 +57,13 @@ export type StudioConf = {
     },
     SSMA?: boolean
     bokehPass?: { focus: number, aperture: number, maxblur: number }
-} 
+    saturatePass?: boolean 
+}
+
+export type ControlsConf = {
+     playerSpeedForward?: number,
+     amplitudeLeftRightWalk?: number 
+}
 
 export interface Core {
     assets: T_assets
@@ -69,6 +75,8 @@ export interface Core {
     ticker: Ticker
     deviceData: DeviceData
     ui: Ui
+
+    controlsConf?: ControlsConf
     controls: ControlsSystem
 
     audioConf?: {

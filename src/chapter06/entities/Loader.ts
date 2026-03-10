@@ -18,7 +18,19 @@ import roadImg from '../assets/road_stone.webp'
 import wallTile from '../assets/tiles_wall.webp'
 import noise00 from '../assets/noise00.webp'
 import sprite from '../assets/sprite.webp'
-import { T_Assets } from 'chapter09/types/GeomTypes'
+
+import ironNormal from '../assets/concrete/broken_down_concrete2_Normal-dx.jpg'
+import ironAO from '../assets/concrete/broken_down_concrete2_ao.jpg'
+import ironAlbedo from '../assets/concrete/broken_down_concrete2_albedo.jpg'
+
+import pX from '../assets/matIronBox/posx.jpg'
+import nX from '../assets/matIronBox/negx.jpg'
+import pY from '../assets/matIronBox/posy.jpg'
+import nY from '../assets/matIronBox/negy.jpg'
+import pZ from '../assets/matIronBox/posz.jpg'
+import nZ from '../assets/matIronBox/negz.jpg'
+
+import mapTop from '../assets/mapGround.jpg'
 
 type ResultLoad = { key: string, texture: Texture | any }
 
@@ -71,11 +83,18 @@ export class LoaderAssets {
                 loadTexture('roadImg', roadImg),
                 loadTexture('mapWall_01', wallTile),
                 loadTexture('noise00', noise00),
+
+                loadTexture('ironNormal', ironNormal),
+                loadTexture('ironAO', ironAO),
+                loadTexture('ironAlbedo', ironAlbedo),
+
+                loadTexture('mapGround', mapTop),
+                loadCubeTexture('matIronBox', [pX, nX, pY, nY, pZ, nZ]),
             ]
 
             Promise.all(promises).then(result => {
                 for (let i = 0; i < result.length; ++i) {
-                    this._root.assets[result[i].key as keyof T_Assets] = result[i].texture
+                    this._root.assets[result[i].key as string] = result[i].texture
                 }
                 res()
             })

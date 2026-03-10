@@ -32,6 +32,6 @@ export class Floor {
             }
         }
 
-        this.mesh = _M.createMesh({ v, c, uv, material: root.materials.desert })
+        this.mesh = _M.createMesh({ v, c, uv, material: root.materials.floorMat1 })
     }
 }

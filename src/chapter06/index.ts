@@ -5,7 +5,7 @@ import { ControlsSystem } from "_CORE/controls/ControlsSystem"
 import { DeviceData } from "_CORE/DeviceData"
 import { Studio } from "_CORE/Studio"
 
-import { CONSTANTS, STUDIO_CONF } from "./constants/CONSTANTS"
+import { CONSTANTS, STUDIO_CONF, CONTROLS_CONF } from "./constants/CONSTANTS"
 
 import { Floor } from "./entities/Floor"
 import { Particles } from './entities/Particles'
@@ -21,7 +21,6 @@ import { pipeInit_06 } from "./pipelines/pipeInit_06"
 import { pipePlay_06 } from "./pipelines/pipePlay_06"
 import { pipeEnd_06 } from "./pipelines/pipeEnd_06"
 import { Core } from '_CORE/types'
-import { T_Assets } from "./types/GeomTypes"
 
 export interface Root extends Core {
     CONSTANTS: typeof CONSTANTS,
@@ -33,7 +32,9 @@ export interface Root extends Core {
     lab: Labyrinth,
     audio: AudioManagerCustom,
     materials: Materials,
-    assets: T_Assets
+    assets: {
+        [key: string]: any
+    }
 }
 
 
@@ -43,23 +44,15 @@ window.addEventListener("DOMContentLoaded", async () => {
 
     const root: Root = {
         CONSTANTS,
-        assets: {
-            sprite: null,
-            soundAmbient: null,
-            soundStepsMetal: null,
-            soundBzink: null,
-            soundDoor: null,
-            soundFly: null,
-            roadImg: null,
-            lightMap: null,
-            mapWall_01: null,
-            noise00: null,
-        },
+        assets: {},
         ticker: new Ticker(),
         studioConf: STUDIO_CONF, 
         studio: new Studio(),
         keyboard: new Keyboard(),
+
+        controlsConf: CONTROLS_CONF,
         controls: new ControlsSystem(),
+        
         ui: new UiCustom(),
         floor: new Floor(),
         particles: new Particles(),

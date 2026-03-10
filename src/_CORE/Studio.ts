@@ -18,6 +18,8 @@ import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js';
 import { SSAOPass } from 'three/examples/jsm/postprocessing/SSAOPass.js'
 import { SMAAPass } from 'three/examples/jsm/postprocessing/SMAAPass.js';
 import { BokehPass } from 'three/examples/jsm/postprocessing/BokehPass';
+import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js'
+import { Saturate3 } from './shaders/saturate';
 import { Core } from "./types"
 import { Tween, Easing } from '@tweenjs/tween.js'
 
@@ -34,6 +36,7 @@ export class Studio {
     spotLight: SpotLight
     amb: THREE.AmbientLight
     ssaoPass: SSAOPass
+    saturatePass: ShaderPass
     composer: EffectComposer | null
 
     init (root: Core) {
@@ -100,11 +103,10 @@ export class Studio {
         this.renderer.setSize(window.innerWidth, window.innerHeight)
         this.containerDom.appendChild(this.renderer.domElement)
 
-        if (studioConf.SSAO || studioConf.SSMA || studioConf.bokehPass) {
+        if (studioConf.SSAO || studioConf.SSMA || studioConf.bokehPass || studioConf.saturatePass) {
             this.composer = new EffectComposer(this.renderer)
             const renderPass = new RenderPass(this.scene, this.camera)
             this.composer.addPass(renderPass)
-
         }
 
         if (studioConf.SSMA) {
@@ -126,6 +128,11 @@ export class Studio {
             this.composer.addPass(bokehPass)
         }
 
+        if (studioConf.saturatePass) {
+            this.saturatePass = new ShaderPass(Saturate3)
+            this.composer.addPass(this.saturatePass) 
+        }
+
         if (this.composer) {
             const outputPass = new OutputPass()
             this.composer.addPass(outputPass)
@@ -142,7 +149,7 @@ export class Studio {
         }
 
         if (this.composer) {
-            this.composer.render(140)
+            this.composer.render()
         } else {
             this.renderer.render(this.scene, this.camera)
         }

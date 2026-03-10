@@ -15,6 +15,7 @@ export class ControlsSystem {
     _isDisabled = false
     _isMoveDisabled = false
 
+    _amplitudeLeftRightWalk = 0.002
     _currentSpeedForward = 0.
     _maxSpeedForward = 5.
     _tweenSpeedForward: Tween<any> | null = null
@@ -31,10 +32,16 @@ export class ControlsSystem {
         this._root = root
     
         const { 
-            deviceData, 
-            ui,
-            studio,
+            deviceData, ui, studio,
+            controlsConf
         } = root
+
+        if (controlsConf && controlsConf.playerSpeedForward) {
+            this._maxSpeedForward = controlsConf.playerSpeedForward
+        }
+        if (controlsConf && controlsConf.amplitudeLeftRightWalk) {
+            this._amplitudeLeftRightWalk = controlsConf.amplitudeLeftRightWalk
+        }
 
         this._orbit = new ControlsOrbit()
         this._orbit.init(studio.camera, studio.containerDom)
@@ -182,7 +189,7 @@ export class ControlsSystem {
         // camera debounce
         this._timeRot += delta
         // качаем камеру влево-вправо если есть скорость вперед
-        const walkingDebounce = Math.sin(this._timeRot * 0.015) * 0.002 * this._currentSpeedForward
+        const walkingDebounce = Math.sin(this._timeRot * 0.015) * this._amplitudeLeftRightWalk * this._currentSpeedForward
         // качаем медленно камеру если стоим 
         const idleDebounceStrength = Math.sin(this._timeRot * 0.001) * 0.01
         const idleDebounce = idleDebounceStrength * (1 - (Math.abs(this._currentSpeedForward) / this._maxSpeedForward))

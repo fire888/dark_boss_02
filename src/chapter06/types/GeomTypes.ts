@@ -11,6 +11,10 @@ export type T_Assets = {
     lightMap: THREE.Texture,
     mapWall_01: THREE.Texture,
     noise00: THREE.Texture,
+
+    ironAO: THREE.Texture,
+    ironNormal: THREE.Texture,
+    ironAlbedo: THREE.Texture,
 }
 
 export enum SegmentType {

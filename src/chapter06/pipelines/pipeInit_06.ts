@@ -1,7 +1,6 @@
 import { Root } from '../index'
 import { update } from '@tweenjs/tween.js'
 import { IS_DEV_START_ORBIT } from '../constants/CONSTANTS'
-import { createChangerGameTheme } from '../helpers/changerGameTheme'
 
 export const pipeInit_06 = async (root: Root) => {
     const {
@@ -54,7 +53,7 @@ export const pipeInit_06 = async (root: Root) => {
     if (IS_DEV_START_ORBIT) {
         await ui.hideStartScreenForce()
     } else {
-        studio.animateFogTo(100, [,3, .3, .3], 4)
+        //studio.animateFogTo(100, [,3, .3, .3], 4)
         await ui.hideStartScreen()
     }
     controls.init(root, IS_DEV_START_ORBIT)
@@ -64,9 +63,4 @@ export const pipeInit_06 = async (root: Root) => {
     audio.init(root)
     ticker.on(audio.update.bind(audio))
     audio.playAmbient()
-
-
-    
-
-    createChangerGameTheme(root)
 }
