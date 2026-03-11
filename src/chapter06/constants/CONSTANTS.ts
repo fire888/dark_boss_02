@@ -21,11 +21,11 @@ export const IS_OLD_GAMES_INFO = true
 export const STUDIO_CONF: StudioConf = {
     spotLightParams: {
         color: new THREE.Color().setHex(0xffffff),
-        intensity: 15,
+        intensity: 2.3,
         pos: new THREE.Vector3(0, 3, 5),
         angle: Math.PI * .2,
         penumbra: 1,
-        decay: 1,
+        decay: .1,
         distance: 300,
         targetPos: new THREE.Vector3(0, 0, -50)
     },
@@ -37,22 +37,24 @@ export const STUDIO_CONF: StudioConf = {
     // pos: [0, 10, 0],
     directionalLightParams: { 
         //color: new THREE.Color(0x97e6eb), intensity: 30,
-        color: new THREE.Color(0x777777), intensity: 5,
+        color: new THREE.Color(0x777777), intensity: 7,
         pos: new THREE.Vector3(-3, 3, -2)
     },
-    cameraPos: new THREE.Vector3(30, 1, 70),
+    cameraPos: new THREE.Vector3(30, 1, -10),
+    cameraLookAt: new THREE.Vector3(30, 1, 0),
     cameraFov: 55,
-    cameraLookAt: new THREE.Vector3(30, 1, 50),
-    ambientLightParams: { color: new THREE.Color().setHex(0x455861), intensity: .4 },
-    sceneBackground: new THREE.Color().setHex(0x0e2535),
-    fogParams: { color: new THREE.Color().setHex(0x4a0a46), near: 20, far: 150 },
+    ambientLightParams: { color: new THREE.Color().setHex(0x455861), intensity: 2 },
+    sceneBackground: new THREE.Color().setHex(0x0f1f2a),
+    //sceneBackground: new THREE.Color().setHex(0x4a0a46),
+    fogParams: { color: new THREE.Color().setHex(0x0f1f2a), near: 5, far: 80 },
     // SSAO: { kernelRadius: 5, minDistance: 2, maxDistance: 0, enabled: true },
     saturatePass: true,
 }
 
 export const CONTROLS_CONF: ControlsConf = {
     playerSpeedForward: 10,
-    amplitudeLeftRightWalk: 0.0002, 
+    amplitudeLeftRightWalk: 0.0002,
+    jumpSpeed: 8
 }
 
 // ************************************************/

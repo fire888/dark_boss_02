@@ -61,8 +61,9 @@ export type StudioConf = {
 }
 
 export type ControlsConf = {
-     playerSpeedForward?: number,
-     amplitudeLeftRightWalk?: number 
+    playerSpeedForward?: number
+    amplitudeLeftRightWalk?: number
+    jumpSpeed?: number
 }
 
 export interface Core {

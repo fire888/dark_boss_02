@@ -115,8 +115,8 @@ export class Materials {
             normalMap: root.assets.ironNormal,
             normalScale: new THREE.Vector2(.2, .2),
             envMap: root.assets.matIronBox,
-            //reflectivity: .02,
-            reflectivity: .1,
+            reflectivity: .04,
+            //reflectivity: .1,
             shininess: 100,
             specular: 0x020201,
             vertexColors: true,
@@ -125,15 +125,15 @@ export class Materials {
         const mapGround = root.assets.mapGround
         mapGround.wrapS = THREE.RepeatWrapping
         mapGround.wrapT = THREE.RepeatWrapping
-        mapGround.repeat.set(50, 50)
+        mapGround.repeat.set(30, 30)
 
         this.floorMat1 = new THREE.MeshPhongMaterial({
             color: 0xffffff,
             map: root.assets.mapGround,
             bumpMap: root.assets.mapGround,
             //bumpScale: 2,
-            bumpScale: 5,
-            reflectivity: 0.1,
+            bumpScale: 8,
+            reflectivity: 0.04,
             shininess: .01,
             specular: 0xffffff,
             emissive: 0x555555,

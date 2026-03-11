@@ -15,6 +15,8 @@ export class ControlsSystem {
     _isDisabled = false
     _isMoveDisabled = false
 
+    _jumpSpeed = 6
+
     _amplitudeLeftRightWalk = 0.002
     _currentSpeedForward = 0.
     _maxSpeedForward = 5.
@@ -41,6 +43,9 @@ export class ControlsSystem {
         }
         if (controlsConf && controlsConf.amplitudeLeftRightWalk) {
             this._amplitudeLeftRightWalk = controlsConf.amplitudeLeftRightWalk
+        }
+        if (controlsConf && controlsConf.jumpSpeed) {
+            this._jumpSpeed = controlsConf.jumpSpeed
         }
 
         this._orbit = new ControlsOrbit()
@@ -127,7 +132,7 @@ export class ControlsSystem {
 
         root.keyboard.on('JUMP', (is: boolean) => {
             if (is && root.phisics.isGround) {
-                this._root.phisics.playerBody.velocity.y += 6
+                this._root.phisics.playerBody.velocity.y += this._jumpSpeed
             }
         })
 

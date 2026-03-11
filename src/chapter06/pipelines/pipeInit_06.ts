@@ -31,6 +31,7 @@ export const pipeInit_06 = async (root: Root) => {
 
     studio.init(root)
     ticker.on(studio.render.bind(studio))
+    studio.addAxisHelper()
 
     phisics.init(root)
     ticker.on(phisics.update.bind(phisics))
@@ -57,7 +58,7 @@ export const pipeInit_06 = async (root: Root) => {
         await ui.hideStartScreen()
     }
     controls.init(root, IS_DEV_START_ORBIT)
-    controls.setRotation(0, 0, 0)
+    controls.setRotation(0, Math.PI, 0)
     ticker.on(controls.update.bind(controls))
 
     audio.init(root)
