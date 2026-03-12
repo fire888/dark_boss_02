@@ -5,6 +5,12 @@ import { createTown2 } from './town2'
 
 export class Labyrinth {
     _root: Root
+    floors: {
+        p0: number[]
+        p1: number[]
+        p2: number[]
+        p3: number[]
+    }[]  = []
 
     constructor() {}
     async init (root: Root) {
@@ -17,6 +23,7 @@ export class Labyrinth {
         groundC.position.y = 0
         root.phisics.addMeshToCollision(groundC)
 
-        const t = createTown2(root)
+        const { floors } = createTown2(root)
+        this.floors = floors
     }
 }

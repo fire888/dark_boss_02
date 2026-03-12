@@ -39,6 +39,11 @@ export const createTown2 = (root) => {
         floors,
     } = createTown2Scheme()
 
+    console.log('#@#@# arrOuterWalls', arrOuterWalls)
+    console.log('#@#@# doors', doors)
+    console.log('#@#@# arrWallsPrepared' , arrWallsPrepared)
+    console.log('#@#@# floors', floors)
+
     const v = []
     const c = []
     const b = []
@@ -128,7 +133,7 @@ export const createTown2 = (root) => {
     root.studio.add(mesh)
 
     const mCollision = createMeshFromBuffer({ v: b })
-    //mCollision.visible = false
+    mCollision.visible = false
     mCollision.geometry.scale(SCALE, SCALE, SCALE)
     mCollision.position.y = Y + 1
     mCollision.scale.y = 3
@@ -138,5 +143,6 @@ export const createTown2 = (root) => {
     return {
         mesh,
         mCollision,
+        floors,
     }
 }

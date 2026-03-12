@@ -38,7 +38,7 @@ export class Studio {
     ssaoPass: SSAOPass
     saturatePass: ShaderPass
     composer: EffectComposer | null
-
+    
     init (root: Core) {
         this._root = root
         this.containerDom = document.getElementById('container-game')
@@ -334,5 +334,11 @@ export class Studio {
     
     setSceneBackground(color: number[]) {
         this.scene.background = new THREE.Color().fromArray(color)
+    }
+
+    setSaturation(sat: number) { 
+        if (this.saturatePass) {
+            this.saturatePass.uniforms['effect'].value = sat
+        }
     }
 }

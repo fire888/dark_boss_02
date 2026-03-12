@@ -60,7 +60,13 @@ window.addEventListener("DOMContentLoaded", async () => {
         deviceData: new DeviceData(),
         phisics: new Phisics(),
         lab: new Labyrinth(),
+
+        audioConf: { 
+            stepsSpeed: 1 
+        },
         audio: new AudioManagerCustom(),
+        
+        
         materials: new Materials(),
     }
 

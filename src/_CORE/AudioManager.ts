@@ -8,7 +8,8 @@ export class AudioManager {
     private _steps: Audio
     private _isCanPlaySteps: boolean = true
     private _ambientVolumeMax = .2
-    private _stepsVolumeMax = .15 
+    private _stepsVolumeMax = .15
+    private _stepsSpeed = 2
 
     init (root: Core) {
         this._root = root
@@ -29,11 +30,14 @@ export class AudioManager {
         if (root.audioConf && root.audioConf.stepsVolume) {
             this._stepsVolumeMax = root.audioConf.stepsVolume
         }
+        if (root.audioConf && root.audioConf.stepsSpeed) {
+            this._stepsSpeed = root.audioConf.stepsSpeed
+        }
         if (root.assets.soundStepsMetal) {
             this._steps = new Audio(listener)
             this._steps.setBuffer(root.assets.soundStepsMetal)
             this._steps.setLoop(true)
-            this._steps.playbackRate = 2
+            this._steps.playbackRate = this._stepsSpeed
             this._steps.setVolume(this._stepsVolumeMax)
         }
     }
@@ -77,18 +81,22 @@ export class AudioManager {
 
         const { velocity } = this._root.phisics.playerBody
 
-        if (
-            this._root.phisics.isGround && 
-            (Math.abs(velocity.x) > .1 || Math.abs(velocity.z) > .1) 
-        ) { 
-            this._playSteps()
-        }
 
-        if (
-            !this._root.phisics.isGround ||
-            (Math.abs(velocity.x) < .1 && Math.abs(velocity.x) < .1)
-        ) { 
-            this._stopSteps()
+
+        if (this._steps.isPlaying) {
+            if (
+                !this._root.phisics.isGround ||
+                (Math.abs(velocity.x) < .1 && Math.abs(velocity.z) < .1)
+            ) {
+                this._stopSteps()
+            }
+        } else {
+            if (
+                this._root.phisics.isGround && 
+                (Math.abs(velocity.x) > .1 || Math.abs(velocity.z) > .1) 
+            ) { 
+                this._playSteps()
+            }
         }
     }
 

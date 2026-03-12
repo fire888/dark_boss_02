@@ -8,11 +8,12 @@ import {
 
 import { Root } from '../index'
 
-import audioAmbient from '../assets/ambient.mp3'
-import steps from '../assets/steps_metal.mp3'
-import audioBzink from '../assets/bzink.mp3'
-import audioDoor from '../assets/door.mp3'
-import audioFly from '../assets/fly.mp3'
+import audioAmbient from '../assets/audio/ambient_loop.mp3'
+import steps from '../assets/audio/steps.mp3'
+import symbol from '../assets/audio/symbol.mp3'
+//import audioBzink from '../assets/bzink.mp3'
+//import audioDoor from '../assets/door.mp3'
+//import audioFly from '../assets/fly.mp3'
 
 import roadImg from '../assets/road_stone.webp'
 import wallTile from '../assets/tiles_wall.webp'
@@ -75,9 +76,10 @@ export class LoaderAssets {
             const promises = [
                 loadAudio('soundAmbient', audioAmbient),
                 loadAudio('soundStepsMetal', steps),
-                loadAudio('soundBzink', audioBzink),
-                loadAudio('soundDoor', audioDoor),
-                loadAudio('soundFly', audioFly),
+                loadAudio('soundSymbol', symbol),
+                //loadAudio('soundBzink', audioBzink),
+                //loadAudio('soundDoor', audioDoor),
+                //loadAudio('soundFly', audioFly),
                 
                 loadTexture('sprite', sprite),
                 loadTexture('roadImg', roadImg),

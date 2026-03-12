@@ -82,6 +82,7 @@ export interface Core {
     controls: ControlsSystem
 
     audioConf?: {
+        stepsSpeed?: number 
         stepsVolume?: number
         ambientVolume?: number
         [key: string]: any

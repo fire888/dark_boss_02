@@ -93,4 +93,12 @@ export const pipeInit_06 = async (root: Root) => {
     audio.init(root)
     ticker.on(audio.update.bind(audio))
     audio.playAmbient()
+
+
+    // let v = 0
+    // ticker.on((vA) => {
+    //     v += vA * 0.001
+    //     studio.setSaturation(Math.sin(v) * .5 + .5)
+    // })
+
 }
