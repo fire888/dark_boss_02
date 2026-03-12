@@ -128,11 +128,12 @@ export const createTown2 = (root) => {
     root.studio.add(mesh)
 
     const mCollision = createMeshFromBuffer({ v: b })
-    mCollision.visible = false
+    //mCollision.visible = false
     mCollision.geometry.scale(SCALE, SCALE, SCALE)
     mCollision.position.y = Y + 1
-    //root.studio.add(mCollision)
-    //root.phisics.addMeshToCollision(mCollision)
+    mCollision.scale.y = 3
+    root.studio.add(mCollision)
+    root.phisics.addMeshToCollision(mCollision)
 
     return {
         mesh,

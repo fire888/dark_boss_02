@@ -24,9 +24,8 @@ varying vec2 vUv;
 void main() {
   vec4 texel = texture2D( tDiffuse, vUv );
   vec3 col = vec3(texel);
-  col *= sin(col.b * 100. * effect);
+  col *= sin(col.g * 100. * effect);
   gl_FragColor = (texel * texel * texel) * vec4(3.) + vec4(col, 1.);
-  //gl_FragColor = (texel * texel * texel) * vec4(3.);
 }`,
 
 }

@@ -130,11 +130,15 @@ export class ControlsSystem {
             this._changeLeftSpeedTo(is ? -this._maxSpeedLeft : 0) 
         })
 
-        root.keyboard.on('JUMP', (is: boolean) => {
-            if (is && root.phisics.isGround) {
-                this._root.phisics.playerBody.velocity.y += this._jumpSpeed
-            }
-        })
+        let isCanJump = true
+        if (controlsConf && controlsConf.isCanJump !== undefined) isCanJump = controlsConf.isCanJump
+        if (isCanJump) {
+            root.keyboard.on('JUMP', (is: boolean) => {
+                if (is && root.phisics.isGround) {
+                    this._root.phisics.playerBody.velocity.y += this._jumpSpeed
+                }
+            })
+        }
 
         this._phone.on('FORWARD', (is) => {
             this._changeForwardSpeedTo(is ? this._maxSpeedForward : 0) 

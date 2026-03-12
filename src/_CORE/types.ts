@@ -64,6 +64,7 @@ export type ControlsConf = {
     playerSpeedForward?: number
     amplitudeLeftRightWalk?: number
     jumpSpeed?: number
+    isCanJump?: boolean
 }
 
 export interface Core {

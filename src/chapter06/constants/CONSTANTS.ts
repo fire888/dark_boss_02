@@ -46,6 +46,7 @@ export const STUDIO_CONF: StudioConf = {
     ambientLightParams: { color: new THREE.Color().setHex(0x455861), intensity: 2 },
     sceneBackground: new THREE.Color().setHex(0x0f1f2a),
     //sceneBackground: new THREE.Color().setHex(0x4a0a46),
+    //fogParams: { color: new THREE.Color().setHex(0x0f1f2a), near: 5, far: 80 },
     fogParams: { color: new THREE.Color().setHex(0x0f1f2a), near: 5, far: 80 },
     // SSAO: { kernelRadius: 5, minDistance: 2, maxDistance: 0, enabled: true },
     saturatePass: true,
@@ -54,7 +55,8 @@ export const STUDIO_CONF: StudioConf = {
 export const CONTROLS_CONF: ControlsConf = {
     playerSpeedForward: 10,
     amplitudeLeftRightWalk: 0.0002,
-    jumpSpeed: 8
+    jumpSpeed: 8,
+    isCanJump: false
 }
 
 // ************************************************/
