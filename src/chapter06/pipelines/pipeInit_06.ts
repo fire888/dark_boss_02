@@ -1,6 +1,8 @@
 import { Root } from '../index'
 import { update } from '@tweenjs/tween.js'
 import { IS_DEV_START_ORBIT } from '../constants/CONSTANTS'
+import { Tween, Easing } from '@tweenjs/tween.js'
+import { PLAYER_POS_START } from '../constants/CONSTANTS'
 
 export const pipeInit_06 = async (root: Root) => {
     const {
@@ -32,6 +34,8 @@ export const pipeInit_06 = async (root: Root) => {
     studio.init(root)
     ticker.on(studio.render.bind(studio))
     studio.addAxisHelper()
+    studio.fog.far = 5
+    studio.fog.near = .2 
 
     phisics.init(root)
     ticker.on(phisics.update.bind(phisics))
@@ -48,15 +52,40 @@ export const pipeInit_06 = async (root: Root) => {
     particles.init(root)
     ticker.on(particles.update.bind(particles))
     studio.add(particles.m)
-
+    
     ui.init()
+    ui.hideBackgroundStartScreen()
+
+    const flyCameraToLevel = () => {
+        const nearStart = 0
+        const nearEnd = 5
+        const startFar = .1
+        const endFar = 80
+        return new Promise(res => {        
+            const obj = { v: 0 }
+            new Tween(obj)
+                .easing(Easing.Exponential.InOut)
+                .to({ v: 1 }, 3000)
+                .onUpdate(() => {
+                    studio.camera.position.z = PLAYER_POS_START[2] - (1 - obj.v) * 15
+                    studio.camera.rotation.x = -Math.PI + (1 - obj.v) * .8
+                    studio.setFogNearFar(nearStart + (nearEnd - nearStart) * obj.v, startFar + (endFar - startFar) * obj.v)
+                })
+                .onComplete(() => {
+                    res(true)
+                })
+                .start()
+        })
+    }
+    await flyCameraToLevel()
 
     if (IS_DEV_START_ORBIT) {
         await ui.hideStartScreenForce()
     } else {
-        //studio.animateFogTo(100, [,3, .3, .3], 4)
         await ui.hideStartScreen()
     }
+
+
     controls.init(root, IS_DEV_START_ORBIT)
     controls.setRotation(0, Math.PI, 0)
     ticker.on(controls.update.bind(controls))
