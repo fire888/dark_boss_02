@@ -39,25 +39,16 @@
             justify-content: center;
             align-items: center;
         }
-        .message {
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            /* font-weight: bold; */
-        }
         h1 {
-            font-size: 15vw;
-            line-height: 90px;
-            color: #6490ad;
+            font-size: 120px;
+            line-height: 130px;
+            color: #485769;
             font-style: normal;
-        }
-        .message img {
-            width: 250px;
-            max-width: 80vw;
-            height: auto;
-            border: 50px solid #0e0924;
-            margin-bottom: 30px;
+            text-shadow:
+                -5px 0 #ffffff, /* left shadow */
+                0 5px #34093a, /* bottom shadow */
+                5px 0 #000000, /* right shadow */
+                0 -5px #ffffff; /* top shadow */
         }
         .loader {
             border: 8px solid #a1ccea;
@@ -82,7 +73,7 @@
             border-radius: 5px;
             font-size: 20px;
             font-style: italic;
-            color: #a1ccea;;
+            color: #ffffff;;
             cursor: pointer;
             transition: 1s;
             font-style: normal;
@@ -94,6 +85,19 @@
             color: #3498db;
             cursor: pointer;
             transition: 1s;
+        }
+        .message {
+            font-size: 20px;
+            color: #ffffff;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-shadow:
+                -2px 0 #250c0c, /* left shadow */
+                0 2px #34093a, /* bottom shadow */
+                2px 0 #101010, /* right shadow */
+                0 -2px #0e0e0e; /* top shadow */
         }
         #cont-level-dev {
             position: absolute;
@@ -112,7 +116,7 @@
             </div>
             <button class="start-but" style="display: none;">P&nbsp;L&nbsp;A&nbsp;Y</button>
             <div class="loader"></div>
-            <div style="min-height: 40px;"></div>
+            <div style="min-height: 20px;"></div>
             <div class="controls-mess">&#8592;&#8593;&#8594;&#8595;&nbsp;&nbsp;&nbsp;W A S D</div>
         </div>
     </div>
