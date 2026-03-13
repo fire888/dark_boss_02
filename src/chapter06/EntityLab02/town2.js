@@ -8,6 +8,7 @@ import { createMeshFromBuffer } from './helpers/createBufferMesh'
 import { createTown2Scheme } from './town2shemeRooms'
 import { createFloor } from './geometryRoom/geometryFloor'
 import * as THREE from 'three' 
+import { _M } from '_CORE';
 
 const y0 = -61
 const white1 = [1, 1, 1]
@@ -38,11 +39,6 @@ export const createTown2 = (root) => {
         arrWallsPrepared,
         floors,
     } = createTown2Scheme()
-
-    console.log('#@#@# arrOuterWalls', arrOuterWalls)
-    console.log('#@#@# doors', doors)
-    console.log('#@#@# arrWallsPrepared' , arrWallsPrepared)
-    console.log('#@#@# floors', floors)
 
     const v = []
     const c = []
@@ -140,9 +136,43 @@ export const createTown2 = (root) => {
     root.studio.add(mCollision)
     root.phisics.addMeshToCollision(mCollision)
 
+    const floorsCopy = []
+    floors.forEach((fl, i) => {
+        const { p0, p1, p2, p3 } = fl
+        const fnew = { 
+            p0: [p0[0] * SCALE, p0[1] * SCALE],
+            p1: [p1[0] * SCALE, p1[1] * SCALE],
+            p2: [p2[0] * SCALE, p2[1] * SCALE],
+            p3: [p3[0] * SCALE, p3[1] * SCALE],
+        }
+        floorsCopy.push(fnew)
+
+        {
+            const label = _M.createLabel(i + '_p0', [1, 0, 0], 1)
+            label.position.set(fnew.p0[0], 7, fnew.p0[1])
+            root.studio.add(label)
+        }
+        {
+            const label = _M.createLabel(i + '_p1', [1, 0, 0], 1)
+            label.position.set(fnew.p1[0], 8, fnew.p1[1])
+            root.studio.add(label)
+        }
+        {
+            const label = _M.createLabel(i + '_p2', [1, 0, 0], 1)
+            label.position.set(fnew.p2[0], 9, fnew.p2[1])
+            root.studio.add(label)
+        }
+        {
+            const label = _M.createLabel(i + '_p3', [1, 0, 0], 1)
+            label.position.set(fnew.p3[0], 10, fnew.p3[1])
+            root.studio.add(label)
+        }
+
+    })
+
     return {
         mesh,
         mCollision,
-        floors,
+        floors: floorsCopy,
     }
 }
