@@ -293,7 +293,7 @@ const createChaptersList = () => {
     for (let i = 0; i < CHAPTERS.length; ++i) {
         const ind = i + 1
         const strI = ind < 10 ? '0' + ind : ind
-        LIST.push([ind, './../' + ind, 'Chapter ' + ind])
+        LIST.push([ind, './../' + strI, 'Chapter ' + ind])
         if (i === currentIndex) {
             LIST[LIST.length - 1].push('current chapter')
         }
