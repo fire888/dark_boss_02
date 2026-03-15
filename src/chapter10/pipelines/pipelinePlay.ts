@@ -62,7 +62,6 @@ export const pipelinePlay = async (root: Root, currentIndexLevel = 0) => {
         const theme = THEMES[keyTheme]
 
         const { colorB, colorF, fogFar } = theme
-        //const time = 120000
         const time = 60000
         
         studio.animateBackgroundTo(colorB, time)
@@ -89,6 +88,4 @@ export const pipelinePlay = async (root: Root, currentIndexLevel = 0) => {
     }
 
     changeThemeIndex(0)
-
-
 }
