@@ -120,16 +120,16 @@ const environmentIterator = (root: Root) => {
                 await pause(1400)
             }
 
-            // если сценариев больше нет выходим
-            if (!SCENARIO[indexScenario + 1]) {
-                unsubscribe()
-                resolve(true)
+            // ждем следующегои триггера
+            if (SCENARIO[indexScenario + 1]) {
+                ++indexScenario
+                countRooms = 0
                 return;
             }
 
-            // или ждем следующегои триггера
-            ++indexScenario
-            countRooms = 0
+            // или если сценариев больше нет выходим
+            unsubscribe()
+            resolve(true)
         }
 
         unsubscribe = ticker.on(update) 
