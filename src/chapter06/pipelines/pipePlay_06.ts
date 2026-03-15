@@ -95,7 +95,6 @@ const environmentIterator = (root: Root) => {
             }
             // проверка прошла счетчик делаем запредельным чтоб триггер больше не срабатывал
             countRooms = 1000 
-            console.log(SCENARIO[indexScenario])
 
 
             // выполняем нужное событие из конфига
@@ -121,12 +120,14 @@ const environmentIterator = (root: Root) => {
                 await pause(1400)
             }
 
+            // если сценариев больше нет выходим
             if (!SCENARIO[indexScenario + 1]) {
                 unsubscribe()
                 resolve(true)
                 return;
             }
 
+            // или ждем следующегои триггера
             ++indexScenario
             countRooms = 0
         }
@@ -135,14 +136,9 @@ const environmentIterator = (root: Root) => {
     })
 }
 
-
 export const pipePlay_06 = async (root: Root, currentIndexLevel = 0) => {
-    console.log('[MESSAGE:] START PLAY LEVEL: ', currentIndexLevel)
-    
-    const {
-        studio
-    } = root
 
+    console.log('[MESSAGE:] START PLAY LEVEL: ', currentIndexLevel)
     await environmentIterator(root)
     console.log('[MESSAGE:] COMPLETE SCENARIO')
 
