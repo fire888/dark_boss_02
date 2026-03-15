@@ -1,6 +1,5 @@
 import { Root } from '../index'
 import { AudioListener, Audio } from 'three'
-import { Tween, Interpolation} from '@tweenjs/tween.js'
 import { AudioManager } from '_CORE/AudioManager'
 
 export class AudioManagerCustom extends AudioManager {

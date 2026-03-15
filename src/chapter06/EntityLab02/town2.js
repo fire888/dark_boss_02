@@ -116,8 +116,9 @@ export const createTown2 = (root) => {
         }
     }
 
-    const Y = 2.2
-    const SCALE = .06
+    const Y = 4
+    //const SCALE = .06
+    const SCALE = .09
 
     const mesh = createMeshFromBuffer({ 
         v, c, u, 

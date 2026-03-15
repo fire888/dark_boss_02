@@ -64,7 +64,7 @@ const createStatue = (root: Root) => {
     //meshCollision.visible = false
     root.phisics.addMeshToCollision(meshCollision)
 
-    mesh.position.set(10, 0, 10)
+    mesh.position.set(1000, 0, 10)
     mesh.scale.set(.14, .14, .14)
     mesh.position.y = -1.5
     mesh.rotation.y = Math.PI
@@ -179,7 +179,7 @@ const createStatue = (root: Root) => {
             mesh.material.needsUpdate = true
         },
         toWhite () {
-            //mesh.material = root.materials.bodyWhite
+            mesh.material = root.materials.bodyWhite
             mesh.material.needsUpdate = true
         },
         setPosition (x: number, z: number) {
@@ -210,5 +210,12 @@ export class Statue {
             this._st.setPosition(-1000, 0)
         }, 1400)
     }
+    toBlack () {
+        this._st.toBlack()
+    }
+    toWhite () { 
+        this._st.toWhite()
+    }
+    
 } 
 

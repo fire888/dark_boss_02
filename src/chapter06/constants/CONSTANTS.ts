@@ -48,6 +48,7 @@ export const STUDIO_CONF: StudioConf = {
     ambientLightParams: { color: new THREE.Color().setHex(BACK_COLOR), intensity: 2 },
     sceneBackground: new THREE.Color().setHex(BACK_COLOR),
     fogParams: { color: new THREE.Color().setHex(BACK_COLOR), near: 5, far: 80 },
+    //SSAO: { kernelRadius: 1, minDistance: 2, maxDistance: 0, enabled: true },
     saturatePass: true,
 }
 

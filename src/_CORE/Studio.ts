@@ -51,6 +51,7 @@ export class Studio {
         this.camera = new PerspectiveCamera(fov, window.innerWidth / window.innerHeight, .1, 1000)
         this.camera.position.copy(studioConf.cameraPos)
         this.camera.lookAt(...studioConf.cameraLookAt.toArray())
+        this.camera.updateProjectionMatrix()
 
         if (studioConf.spotLightParams) {
             this.spotLight = new SpotLight()

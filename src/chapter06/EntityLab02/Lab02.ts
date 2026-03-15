@@ -16,10 +16,12 @@ export class Labyrinth {
         this._root = root
 
         const groundC = new THREE.Mesh(
-            new THREE.BoxGeometry(500, 0.1, 500),
+            new THREE.BoxGeometry(1500, 0.1, 1500),
             new THREE.MeshBasicMaterial({ color: 0xff0000 })
         )
         groundC.position.y = 0
+        groundC.position.z = 500
+        groundC.position.x = 500
         root.phisics.addMeshToCollision(groundC)
 
         const { floors } = createTown2(root)
@@ -54,6 +56,7 @@ export class Labyrinth {
         const p1 = this.floors[indRoom].p1
         const p2 = this.floors[indRoom].p2
         const p3 = this.floors[indRoom].p3
-        return { x: Math.random() * (p1[0] - p0[0] - 1) + p0[0] + 1, z: Math.random() * (p0[1] - p3[1] - 1) + p3[1] + 1 }
+
+        return { x: Math.random() * (p1[0] - p0[0] - 2) + p0[0] + 1, z: Math.random() * (p0[1] - p3[1] - 2) + p3[1] + 1 }
     }
 }
