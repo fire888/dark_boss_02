@@ -49,11 +49,11 @@ const environmentIterator = (root: Root) => {
     return new Promise((resolve) => {
         let indexScenario = 0
         const SCENARIO = [
-            { countRooms: 1, evnt: 'statue' },
-            { countRooms: 2, evnt: 'statue' },
-            { countRooms: 3, evnt: 'statue' },
-            { countRooms: 4, evnt: 'statue' },
-            { countRooms: 5, evnt: 'statue' },
+            { countRooms: 1, evnt: 'statue', timeStatue: 1000 },
+            { countRooms: 2, evnt: 'statue', timeStatue: 3000 },
+            { countRooms: 3, evnt: 'statue', timeStatue: 5000 },
+            { countRooms: 4, evnt: 'statue', timeStatue: 7000 },
+            { countRooms: 5, evnt: 'statue', timeStatue: 9000 },
             { countRooms: 5, evnt: 'envIron' },
             { countRooms: 5, evnt: 'envIron' },
             { countRooms: 2, evnt: 'envNormal' },
@@ -92,6 +92,9 @@ const environmentIterator = (root: Root) => {
                     statue.setPosition(x, z)
                     countRooms = 0
                     ++indexScenario
+                    setTimeout(() => {
+                        statue.hide()
+                    }, SCENARIO[indexScenario].timeStatue)
                 }
             }
         }) 

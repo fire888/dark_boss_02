@@ -56,7 +56,7 @@ const createStatue = (root: Root) => {
     shadow.position.z = -.8
     mesh.add(shadow)
     const meshCollision = new THREE.Mesh(
-        new THREE.BoxGeometry(.5, 3, .5).translate(0, .5, 0),
+        new THREE.BoxGeometry(1, 4, 1).translate(0, 1.5, 0),
         root.materials.bodyShadow,
     )
     meshCollision.name = 'statueCollision'
@@ -200,6 +200,13 @@ export class Statue {
     setPosition (x: number, z: number) { 
         this._st.appear(x, z)
         this._st.setPosition(x, z)
+    }
+
+    hide () {
+        this._st.hide()
+        setTimeout(() => {
+            this._st.setPosition(-1000, 0)
+        }, 1400)
     }
 } 
 

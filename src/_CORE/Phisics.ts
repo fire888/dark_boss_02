@@ -14,13 +14,10 @@ import {
 import { Object3D } from 'three'
 import CannonDebugger from 'cannon-es-debugger'
 import * as THREE from 'three'
-//import { Root } from 'chapter10'
 import { Core } from './types'
-import { IS_PHISICS_DEBUG } from 'chapter10/constants/CONSTANTS'
 
 class BodyN extends Body {
     myName: string
-    //myObject3D: THREE.Object3D
 }
 
 const createTrimesh = (geometry: THREE.BufferGeometry) => {
@@ -79,10 +76,8 @@ export class Phisics {
         // We must add the contact materials to the world
         this.world.addContactMaterial(physicsContactMaterial);
 
-        if (IS_PHISICS_DEBUG) {
-            // @ts-ignore
-            this.cannonDebugger = new CannonDebugger(root.studio.scene, this.world, {})
-        }
+        // @ts-ignore
+        this.cannonDebugger = new CannonDebugger(root.studio.scene, this.world, {})
     }
 
     createPlayer () {
@@ -93,8 +88,6 @@ export class Phisics {
         })
         this.playerBody.myName = 'playerBody'
         this.playerBody.addShape(sphere)
-
-        //this.playerBody.myObject3D = new Object3D()
 
         this.world.addBody(this.playerBody)
 
@@ -177,12 +170,6 @@ export class Phisics {
         this.playerBody.position.x = x
         this.playerBody.position.y = y
         this.playerBody.position.z = z
-
-        // this.playerBody.myObject3D.position.set(
-        //     this.playerBody.position.x, 
-        //     this.playerBody.position.y, 
-        //     this.playerBody.position.z
-        // )
     }
 
     stopPlayerBody () {
@@ -209,6 +196,7 @@ export class Phisics {
         for (let i = 0; i < this._bodies.length; ++i) {
             if (this._bodies[i].myName === key) {
                 this._bodies[i].position.set(x, y, z)
+                this._bodies[i].updateAABB()
             }
         }
     }

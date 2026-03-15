@@ -54,6 +54,6 @@ export class Labyrinth {
         const p1 = this.floors[indRoom].p1
         const p2 = this.floors[indRoom].p2
         const p3 = this.floors[indRoom].p3
-        return { x: Math.random() * (p1[0] - p0[0]) + p0[0], z: Math.random() * (p0[1] - p3[1]) + p3[1] }
+        return { x: Math.random() * (p1[0] - p0[0] - 1) + p0[0] + 1, z: Math.random() * (p0[1] - p3[1] - 1) + p3[1] + 1 }
     }
 }
