@@ -200,9 +200,11 @@ export class Statue {
     setPosition (x: number, z: number) { 
         this._st.appear(x, z)
         this._st.setPosition(x, z)
+        this._root.audio.playSymbol()
     }
 
     hide () {
+        this._root.audio.playSymbol()
         this._st.hide()
         setTimeout(() => {
             this._st.setPosition(-1000, 0)
