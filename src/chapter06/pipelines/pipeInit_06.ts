@@ -6,14 +6,15 @@ import { PLAYER_POS_START } from '../constants/CONSTANTS'
 
 export const pipeInit_06 = async (root: Root) => {
     const {
-        CONSTANTS,
+        CONSTANTS, LOAD_ASSETS,
         studio, controls, ui, ticker,
-        floor, loader, phisics, lab, statue,
+        floor,
+        loader, phisics, lab, statue,
         audio, materials, particles,
     } = root
 
     loader.init(root)
-    await loader.loadAssets()
+    await loader.loadAssets(LOAD_ASSETS)
 
     ticker.start()
 

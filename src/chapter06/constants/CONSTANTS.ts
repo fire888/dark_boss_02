@@ -1,5 +1,35 @@
 import * as THREE from 'three'
 import { StudioConf, ControlsConf } from "_CORE/types"
+import { LoadConf } from '_CORE/Loader'
+
+import audioAmbient from '../assets/audio/ambient_loop.mp3'
+import steps from '../assets/audio/steps.mp3'
+import symbol from '../assets/audio/symbol.mp3'
+//import audioBzink from '../assets/bzink.mp3'
+//import audioDoor from '../assets/door.mp3'
+//import audioFly from '../assets/fly.mp3'
+
+import roadImg from '../assets/road_stone.webp'
+import wallTile from '../assets/tiles_wall.webp'
+import noise00 from '../assets/noise00.webp'
+import sprite from '../assets/sprite.webp'
+
+import ironNormal from '../assets/concrete/broken_down_concrete2_Normal-dx.jpg'
+import ironAO from '../assets/concrete/broken_down_concrete2_ao.jpg'
+import ironAlbedo from '../assets/concrete/broken_down_concrete2_albedo.jpg'
+
+import pX from '../assets/matIronBox/posx.jpg'
+import nX from '../assets/matIronBox/negx.jpg'
+import pY from '../assets/matIronBox/posy.jpg'
+import nY from '../assets/matIronBox/negy.jpg'
+import pZ from '../assets/matIronBox/posz.jpg'
+import nZ from '../assets/matIronBox/negz.jpg'
+
+import mapTop from '../assets/mapGround.jpg'
+import shadowStatue from '../assets/mapShadowBody.jpg'
+
+import staueObj from '../assets/body.obj'
+
 
 // DEBUG FLAGS ************************************* / 
 //export const IS_DEV_START_ORBIT = true
@@ -78,3 +108,17 @@ export const CONSTANTS = {
 
 // export const INNER_HOUSE_FORCE: number = 0
 // export const OUTER_HOUSE_FORCE: number = 1.5
+
+export const LOAD_ASSETS: LoadConf = [
+    { key: 'soundAmbient', src: audioAmbient, loader: 'audio' },
+    { key: 'soundStepsMetal', src: steps, loader: 'audio' },
+    { key: 'soundSymbol', src: symbol, loader: 'audio' },
+    { key: 'sprite', src: sprite, loader: 'texture' },
+    { key: 'ironNormal', src: ironNormal, loader: 'texture' },
+    { key: 'ironAO', src: ironAO, loader: 'texture' },
+    { key: 'ironAlbedo', src: ironAlbedo, loader: 'texture' },
+    { key: 'mapGround', src: mapTop, loader: 'texture' },
+    { key: 'shadowStatue', src: shadowStatue, loader: 'texture' },
+    { key: 'matIronBox', src: [pX, nX, pY, nY, pZ, nZ], loader: 'cubeTexture' },
+    { key: 'staueObj', src: staueObj, loader: 'obj' },
+] 

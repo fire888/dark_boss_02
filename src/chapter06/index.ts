@@ -4,12 +4,13 @@ import { Phisics } from "_CORE/Phisics"
 import { ControlsSystem } from "_CORE/controls/ControlsSystem"
 import { DeviceData } from "_CORE/DeviceData"
 import { Studio } from "_CORE/Studio"
+import { LoaderAssets } from "_CORE/Loader"
 
-import { CONSTANTS, STUDIO_CONF, CONTROLS_CONF } from "./constants/CONSTANTS"
+import { CONSTANTS, STUDIO_CONF, CONTROLS_CONF, LOAD_ASSETS } from "./constants/CONSTANTS"
 
 import { Floor } from "./entities/Floor"
 import { Particles } from './entities/Particles'
-import { LoaderAssets } from "./entities/Loader";
+//import { LoaderAssets } from "./entities/Loader";
 
 import { UiCustom } from "./entities/Ui"
 
@@ -29,7 +30,10 @@ export interface Root extends Core {
     controls: ControlsSystem,
     floor: Floor,
     particles: Particles,
+
+    LOAD_ASSETS: typeof LOAD_ASSETS,
     loader: LoaderAssets,
+
     lab: Labyrinth,
     statue: Statue,
     audio: AudioManagerCustom,
@@ -58,7 +62,10 @@ window.addEventListener("DOMContentLoaded", async () => {
         ui: new UiCustom(),
         floor: new Floor(),
         particles: new Particles(),
+
+        LOAD_ASSETS,
         loader: new LoaderAssets(),
+        
         deviceData: new DeviceData(),
         phisics: new Phisics(),
         lab: new Labyrinth(),
@@ -69,7 +76,6 @@ window.addEventListener("DOMContentLoaded", async () => {
             stepsSpeed: 1 
         },
         audio: new AudioManagerCustom(),
-        
         
         materials: new Materials(),
     }
