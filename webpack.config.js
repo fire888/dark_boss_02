@@ -87,7 +87,7 @@ module.exports = (env, { mode }) => {
                     ],
                 },
                 {
-                    test: /\.(png|svg|jpg|jpeg|gif|webp|env|bin|glb|gltf|ogg|mp3|wav|avi|mp4|ktx2|json)$/i,
+                    test: /\.(png|svg|jpg|jpeg|gif|obj|webp|env|bin|glb|gltf|ogg|mp3|wav|avi|mp4|ktx2|json)$/i,
                     type: 'asset/resource',
                 },
             ],

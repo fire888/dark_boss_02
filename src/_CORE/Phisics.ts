@@ -204,4 +204,12 @@ export class Phisics {
     switchToGravityGorizontalBoost () {
         this.world.gravity.set(0, 0, 75)
     }
+
+    setPositionByKey(key: string, x: number, y: number, z: number) {
+        for (let i = 0; i < this._bodies.length; ++i) {
+            if (this._bodies[i].myName === key) {
+                this._bodies[i].position.set(x, y, z)
+            }
+        }
+    }
 }

@@ -3,60 +3,112 @@ import * as THREE from 'three'
 import { pause } from '_CORE/helpers/htmlHelpers'
 import { Tween, Easing, Interpolation } from '@tweenjs/tween.js'
 
-export const pipePlay_06 = async (root: Root, currentIndexLevel = 0) => {
-    console.log('[MESSAGE:] START PLAY LEVEL: ', currentIndexLevel)
-    
-    const {
-        phisics,
-        ticker,
-        ui,
-        controls,
-        studio,
-        particles,
-        lab,
-        audio,
-        materials,
-    } = root
+const effectEnv = (root: Root, env: string) => {
+    const { studio } = root
 
-    let currentArea: number = -1
-    let isEffect = false
-    let countRooms = 0 
-    ticker.on(() => {
-        const ihdArea = lab.checkArea(currentArea, studio.camera.position.x, studio.camera.position.z)
-        if (ihdArea !== currentArea) {
-            currentArea = ihdArea
-            ++countRooms
-        }
-        if (countRooms > 3) {
-            countRooms = 0            
+    return new Promise((resolve) => {
+        if (env === 'envIron') {
             const obj = { v: 0 }
             const int = root.studioConf.spotLightParams.intensity
             new Tween(obj)
                 .interpolation(Interpolation.Linear)
                 .to({ v: 1 }, 1000)
                 .onUpdate(() => {
-                    studio.setSaturation(isEffect ? 1 - obj.v : obj.v)
-                    studio.spotLight.intensity = (isEffect ? obj.v : 1 - obj.v) * int
+                    studio.setSaturation(obj.v)
+                    studio.spotLight.intensity = (1 - obj.v) * int
                 })
                 .onComplete(() => {
-                    isEffect = !isEffect
+                    resolve(true)
+                })
+                .start()
+        }
+
+        if (env === 'envNormal') {
+            const obj = { v: 0 }
+            const int = root.studioConf.spotLightParams.intensity
+            new Tween(obj)
+                .interpolation(Interpolation.Linear)
+                .to({ v: 1 }, 1000)
+                .onUpdate(() => {
+                    studio.setSaturation(1 - obj.v)
+                    studio.spotLight.intensity = (obj.v) * int
+                })
+                .onComplete(() => {
+                    resolve(true)
                 })
                 .start()
         }
     })
+}
 
-    //studio.setFogNearFar(.2, 1)
-    //ui.toggleVisibleDark(false)
-    //particles.startFlyPlayerAround()
-    //phisics.stopPlayerBody()
-    //ui.setEnergyLevel(0)
-    //phisics.switchToGravity()
+const environmentIterator = (root: Root) => {
+    const {
+        ticker, studio, lab, statue
+    } = root
 
-    //controls.setRotation(0, Math.PI, 0)
-    //controls.enableMove()
-    //ui.toggleVisibleEnergy(true)
+    return new Promise((resolve) => {
+        let indexScenario = 0
+        const SCENARIO = [
+            { countRooms: 1, evnt: 'statue' },
+            { countRooms: 2, evnt: 'statue' },
+            { countRooms: 3, evnt: 'statue' },
+            { countRooms: 4, evnt: 'statue' },
+            { countRooms: 5, evnt: 'statue' },
+            { countRooms: 5, evnt: 'envIron' },
+            { countRooms: 5, evnt: 'envIron' },
+            { countRooms: 2, evnt: 'envNormal' },
+            { countRooms: 1, evnt: 'statue' },
+            { countRooms: 5, evnt: 'envIron' },
+            { countRooms: 2, evnt: 'envNormal' },
+            { countRooms: 1, evnt: 'statue' },
+        ]        
+
+        let currentRoom: number = -1
+        let countRooms = 0 
+        const unsubscribe = ticker.on(() => {
+            const indRoom = lab.checkArea(currentRoom, studio.camera.position.x, studio.camera.position.z)
+            if (indRoom !== currentRoom) {
+                currentRoom = indRoom
+                ++countRooms
+            }
+            if (countRooms === SCENARIO[indexScenario].countRooms) {
+                console.log(SCENARIO[indexScenario])
+                ++countRooms
+
+                if (!SCENARIO[indexScenario + 1]) {
+                    unsubscribe()
+                    resolve(true)
+                    return
+                }
+
+                if (SCENARIO[indexScenario].evnt === 'envIron' || SCENARIO[indexScenario].evnt === 'envNormal') {
+                    effectEnv(root, SCENARIO[indexScenario].evnt).then(() => {
+                        countRooms = 0
+                        ++indexScenario
+                    })
+                }
+                if (SCENARIO[indexScenario].evnt === 'statue') {
+                    const { x, z } = lab.getRandomPosInRoom(currentRoom)
+                    statue.setPosition(x, z)
+                    countRooms = 0
+                    ++indexScenario
+                }
+            }
+        }) 
+    })
+}
+
+
+export const pipePlay_06 = async (root: Root, currentIndexLevel = 0) => {
+    console.log('[MESSAGE:] START PLAY LEVEL: ', currentIndexLevel)
+    
+    const {
+        phisics, ticker, ui, controls, studio, particles, lab,
+        audio, materials,
+    } = root
+
+    await environmentIterator(root)
+    console.log('[MESSAGE:] COMPLETE SCENARIO')
 
     await pause(100000000)
-    //await ui.hideStartScreen()
-    
 }

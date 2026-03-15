@@ -17,8 +17,8 @@ export let roomStart = null
 
 export const regenerate = () => {
     minS = Math.random() * 200 + 180
-    S2 = Math.random() * 2000 + 800
-    S1 = Math.random() * 2000 + 800
+    S2 = Math.random() * 2000 + 2000
+    S1 = Math.random() * 2000 + 2000
     roomStart = {
         id: getId(),
         walls: {

@@ -1,6 +1,5 @@
 import * as THREE from 'three'
 import { Root } from '../index'
-//import { _M } from '../geometry/_m'
 import { createTown2 } from './town2'
 
 export class Labyrinth {
@@ -48,5 +47,13 @@ export class Labyrinth {
             }
         }
         return -1
+    }
+
+    getRandomPosInRoom(indRoom: number) {
+        const p0 = this.floors[indRoom].p0
+        const p1 = this.floors[indRoom].p1
+        const p2 = this.floors[indRoom].p2
+        const p3 = this.floors[indRoom].p3
+        return { x: Math.random() * (p1[0] - p0[0]) + p0[0], z: Math.random() * (p0[1] - p3[1]) + p3[1] }
     }
 }

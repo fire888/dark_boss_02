@@ -5,6 +5,8 @@ import {
     CubeTextureLoader, 
     CubeTexture 
 } from 'three'
+import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader'
+// import { GLTFLoader } from  'three/examples/jsm/loaders/GLTFLoader'
 
 import { Root } from '../index'
 
@@ -32,13 +34,16 @@ import pZ from '../assets/matIronBox/posz.jpg'
 import nZ from '../assets/matIronBox/negz.jpg'
 
 import mapTop from '../assets/mapGround.jpg'
+import shadowStatue from '../assets/mapShadowBody.jpg'
+
+import staueObj from '../assets/body.obj'
 
 type ResultLoad = { key: string, texture: Texture | any }
-
 
 export class LoaderAssets {
     _textureLoader: TextureLoader = new TextureLoader()
     _cubeTextureLoader: CubeTextureLoader = new CubeTextureLoader()
+    _objLoader: OBJLoader
     _root: Root
 
     init (root: Root) {
@@ -73,6 +78,15 @@ export class LoaderAssets {
                 })
             }
 
+            const loadObj = (key: string, src: string) => {
+                return new Promise<ResultLoad>(res => {
+                    if (!this._objLoader) this._objLoader = new OBJLoader()
+                    this._objLoader.load(src, obj => {
+                        res({ key, texture: obj })
+                    })
+                })
+            }
+
             const promises = [
                 loadAudio('soundAmbient', audioAmbient),
                 loadAudio('soundStepsMetal', steps),
@@ -91,7 +105,10 @@ export class LoaderAssets {
                 loadTexture('ironAlbedo', ironAlbedo),
 
                 loadTexture('mapGround', mapTop),
+                loadTexture('shadowStatue', shadowStatue),
                 loadCubeTexture('matIronBox', [pX, nX, pY, nY, pZ, nZ]),
+
+                loadObj('staueObj', staueObj),
             ]
 
             Promise.all(promises).then(result => {

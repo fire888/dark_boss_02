@@ -7,17 +7,9 @@ import { PLAYER_POS_START } from '../constants/CONSTANTS'
 export const pipeInit_06 = async (root: Root) => {
     const {
         CONSTANTS,
-        studio,
-        controls,
-        ui,
-        ticker,
-        floor,
-        loader,
-        phisics,
-        lab,
-        audio,
-        materials,
-        particles,
+        studio, controls, ui, ticker,
+        floor, loader, phisics, lab, statue,
+        audio, materials, particles,
     } = root
 
     loader.init(root)
@@ -49,6 +41,8 @@ export const pipeInit_06 = async (root: Root) => {
     
     await lab.init(root)
 
+    await statue.init(root)
+
     particles.init(root)
     ticker.on(particles.update.bind(particles))
     studio.add(particles.m)
@@ -59,8 +53,8 @@ export const pipeInit_06 = async (root: Root) => {
     const flyCameraToLevel = () => {
         const nearStart = 0
         const nearEnd = 5
-        const startFar = .1
-        const endFar = 80
+        const farStart = .1
+        const farEnd = 50
         return new Promise(res => {        
             const obj = { v: 0 }
             new Tween(obj)
@@ -69,7 +63,7 @@ export const pipeInit_06 = async (root: Root) => {
                 .onUpdate(() => {
                     studio.camera.position.z = PLAYER_POS_START[2] - (1 - obj.v) * 15
                     studio.camera.rotation.x = -Math.PI + (1 - obj.v) * .8
-                    studio.setFogNearFar(nearStart + (nearEnd - nearStart) * obj.v, startFar + (endFar - startFar) * obj.v)
+                    studio.setFogNearFar(nearStart + (nearEnd - nearStart) * obj.v, farStart + (farEnd - farStart) * obj.v)
                 })
                 .onComplete(() => {
                     res(true)
@@ -85,7 +79,6 @@ export const pipeInit_06 = async (root: Root) => {
         await ui.hideStartScreen()
     }
 
-
     controls.init(root, IS_DEV_START_ORBIT)
     controls.setRotation(0, Math.PI, 0)
     ticker.on(controls.update.bind(controls))
@@ -93,12 +86,4 @@ export const pipeInit_06 = async (root: Root) => {
     audio.init(root)
     ticker.on(audio.update.bind(audio))
     audio.playAmbient()
-
-
-    // let v = 0
-    // ticker.on((vA) => {
-    //     v += vA * 0.001
-    //     studio.setSaturation(Math.sin(v) * .5 + .5)
-    // })
-
 }

@@ -105,6 +105,8 @@ export class Materials {
 
     iron: THREE.MeshPhongMaterial
     floorMat1: THREE.MeshPhongMaterial
+    body: THREE.MeshPhongMaterial
+    bodyShadow: THREE.MeshBasicMaterial
     
     init (root: Root) {
         this.iron = new THREE.MeshPhongMaterial({
@@ -139,6 +141,19 @@ export class Materials {
             emissive: 0x555555,
         }) 
 
+        this.body = new THREE.MeshPhongMaterial({
+            color: 0xffffff,
+            envMap: root.assets.matIronBox,
+            reflectivity: 3,
+            specular: 0xffffff,
+        })
+
+        this.bodyShadow = new THREE.MeshBasicMaterial({
+            color: 0x222230,
+            transparent: true,
+            alphaMap: root.assets.shadowStatue,
+            opacity: 1,
+        })
 
         // this.walls00 =  new THREE.MeshStandardMaterial({ 
         //     color: 0xffffff,
