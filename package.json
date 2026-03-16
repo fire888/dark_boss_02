@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "description": "",
   "scripts": {
+    "build05": "set FOLDER=chapter05 && webpack --mode=production",
+    "dev05": "set FOLDER=chapter05 && webpack serve --mode=development",
+
     "build06": "set FOLDER=chapter06 && webpack --mode=production",
     "dev06": "set FOLDER=chapter06 && webpack serve --mode=development",
 

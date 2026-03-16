@@ -1,6 +1,6 @@
 import * as THREE from "three"
 import * as TWEEN from '@tweenjs/tween.js'
-import { Root } from "chapter06"
+import { Root } from "../index"
 import { Tween, Easing, Interpolation } from '@tweenjs/tween.js'
 
 type T_ArrayAnimate = [
