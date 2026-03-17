@@ -16,7 +16,6 @@ import { UiCustom } from "./entities/Ui"
 
 //import { Labyrinth } from './entityLabyrinth/Labyrinth'
 import { Labyrinth } from './EntityLab02/Lab02'
-import { Statue } from "./entities/Statue"
 import { AudioManagerCustom } from "./entities/AudioManagerCustom"
 import { Materials } from "./entities/Materials"
 import { pipeInit_05 } from "./pipelines/pipeInit_05"
@@ -35,7 +34,6 @@ export interface Root extends Core {
     loader: LoaderAssets,
 
     lab: Labyrinth,
-    statue: Statue,
     audio: AudioManagerCustom,
     materials: Materials,
     assets: {
@@ -69,8 +67,6 @@ window.addEventListener("DOMContentLoaded", async () => {
         deviceData: new DeviceData(),
         phisics: new Phisics(),
         lab: new Labyrinth(),
-
-        statue: new Statue(),
 
         audioConf: { 
             stepsSpeed: 1 

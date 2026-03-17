@@ -26,7 +26,7 @@ export const pipeInit_06 = async (root: Root) => {
 
     studio.init(root)
     ticker.on(studio.render.bind(studio))
-    studio.addAxisHelper()
+    // studio.addAxisHelper()
     studio.fog.far = 5
     studio.fog.near = .2 
 

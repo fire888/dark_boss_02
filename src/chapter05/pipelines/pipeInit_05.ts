@@ -9,7 +9,7 @@ export const pipeInit_05 = async (root: Root) => {
         CONSTANTS, LOAD_ASSETS,
         studio, controls, ui, ticker,
         floor,
-        loader, phisics, lab, statue,
+        loader, phisics, lab,
         audio, materials, particles,
     } = root
 
@@ -27,8 +27,8 @@ export const pipeInit_05 = async (root: Root) => {
     studio.init(root)
     ticker.on(studio.render.bind(studio))
     studio.addAxisHelper()
-    studio.fog.far = 5
-    studio.fog.near = .2 
+    //studio.fog.far = 5
+    //studio.fog.near = .2 
 
     phisics.init(root)
     ticker.on(phisics.update.bind(phisics))
@@ -42,8 +42,6 @@ export const pipeInit_05 = async (root: Root) => {
     
     await lab.init(root)
 
-    await statue.init(root)
-
     particles.init(root)
     ticker.on(particles.update.bind(particles))
     studio.add(particles.m)
@@ -51,28 +49,28 @@ export const pipeInit_05 = async (root: Root) => {
     ui.init()
     ui.hideBackgroundStartScreen()
 
-    const flyCameraToLevel = () => {
-        const nearStart = 0
-        const nearEnd = 5
-        const farStart = .1
-        const farEnd = 50
-        return new Promise(res => {        
-            const obj = { v: 0 }
-            new Tween(obj)
-                .easing(Easing.Exponential.InOut)
-                .to({ v: 1 }, 3000)
-                .onUpdate(() => {
-                    studio.camera.position.z = PLAYER_POS_START[2] - (1 - obj.v) * 15
-                    studio.camera.rotation.x = -Math.PI + (1 - obj.v) * .8
-                    studio.setFogNearFar(nearStart + (nearEnd - nearStart) * obj.v, farStart + (farEnd - farStart) * obj.v)
-                })
-                .onComplete(() => {
-                    res(true)
-                })
-                .start()
-        })
-    }
-    await flyCameraToLevel()
+    // const flyCameraToLevel = () => {
+    //     const nearStart = 0
+    //     const nearEnd = 5
+    //     const farStart = .1
+    //     const farEnd = 50
+    //     return new Promise(res => {        
+    //         const obj = { v: 0 }
+    //         new Tween(obj)
+    //             .easing(Easing.Exponential.InOut)
+    //             .to({ v: 1 }, 3000)
+    //             .onUpdate(() => {
+    //                 studio.camera.position.z = PLAYER_POS_START[2] - (1 - obj.v) * 15
+    //                 studio.camera.rotation.x = -Math.PI + (1 - obj.v) * .8
+    //                 studio.setFogNearFar(nearStart + (nearEnd - nearStart) * obj.v, farStart + (farEnd - farStart) * obj.v)
+    //             })
+    //             .onComplete(() => {
+    //                 res(true)
+    //             })
+    //             .start()
+    //     })
+    // }
+    // await flyCameraToLevel()
 
     if (IS_DEV_START_ORBIT) {
         await ui.hideStartScreenForce()
