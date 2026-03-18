@@ -10,11 +10,13 @@ export const pipeInit_05 = async (root: Root) => {
         studio, controls, ui, ticker,
         floor,
         loader, phisics, lab,
-        audio, materials, particles,
+        audio, materials, particles, car, body
     } = root
 
     loader.init(root)
     await loader.loadAssets(LOAD_ASSETS)
+
+    console.log('root, ', root)
 
     ticker.start()
 
@@ -45,6 +47,11 @@ export const pipeInit_05 = async (root: Root) => {
     particles.init(root)
     ticker.on(particles.update.bind(particles))
     studio.add(particles.m)
+
+    car.init(root)
+    root.studio.add(car.getModel())
+
+    body.init(root)
     
     ui.init()
     ui.hideBackgroundStartScreen()

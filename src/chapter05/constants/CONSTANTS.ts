@@ -21,7 +21,10 @@ import nZ from '../assets/matIronBox/negz.jpg'
 import mapTop from '../assets/floor_outer_map.jpg'
 import shadowStatue from '../assets/mapShadowBody.jpg'
 
-import staueObj from '../assets/body.obj'
+//import staueObj from '../assets/body.obj'
+import levelObj from '../assets/level.obj'
+import mapBody from '../assets/botMap.png'
+import bodyShadow from '../assets/body_sh_map.jpg'
 
 
 // DEBUG FLAGS ************************************* / 
@@ -93,5 +96,7 @@ export const LOAD_ASSETS: LoadConf = [
     { key: 'mapGround', src: mapTop, loader: 'texture' },
     { key: 'shadowStatue', src: shadowStatue, loader: 'texture' },
     { key: 'matIronBox', src: [pX, nX, pY, nY, pZ, nZ], loader: 'cubeTexture' },
-    { key: 'staueObj', src: staueObj, loader: 'obj' },
+    { key: 'levelObj', src: levelObj, loader: 'obj' },
+    { key: 'mapBody', src: mapBody, loader: 'texture' },
+    { key: 'bodyShadow', src: bodyShadow, loader: 'texture' },
 ] 

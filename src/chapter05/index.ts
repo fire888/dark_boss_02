@@ -23,6 +23,9 @@ import { pipePlay_05 } from "./pipelines/pipePlay_05"
 import { pipeEnd_05 } from "./pipelines/pipeEnd_05"
 import { Core } from '_CORE/types'
 
+import { Car } from "./entities/Car"
+import { Body } from "./entities/Body"
+
 export interface Root extends Core {
     CONSTANTS: typeof CONSTANTS,
     ui: UiCustom,
@@ -38,7 +41,10 @@ export interface Root extends Core {
     materials: Materials,
     assets: {
         [key: string]: any
-    }
+    },
+    car: Car,
+    body: Body
+
 }
 
 
@@ -74,6 +80,8 @@ window.addEventListener("DOMContentLoaded", async () => {
         audio: new AudioManagerCustom(),
         
         materials: new Materials(),
+        car: new Car(),
+        body: new Body(),
     }
 
     await pipeInit_05(root)

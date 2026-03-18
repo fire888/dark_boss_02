@@ -1,10 +1,129 @@
 import * as THREE from 'three'
 import { Root } from '../index'
 
+// export const MATERIALS_CONF = {
+//     'unit': {
+//         mat: 'MeshPhongMaterial',
+//         props: {
+//             color: 0xffffff,
+//             emissive: 0x000000,
+//             reflectivity: 5,
+//             shininess: 5,
+//             vertexColors: true,
+//             flatShading: false,
+//             side: THREE.DoubleSide,
+//         },
+//     },
+//     'wallVirtual': {
+//         mat: 'MeshStandardMaterial',
+//         props: {
+//             color: 0xff00ff,
+//             emissive: 0x000000,
+//         },
+//     },
+//     'wallVirtualColor': {
+//         mat: 'MeshBasicMaterial',
+//         props: {
+//             color: 0xffffff,
+//             emissive: 0x001111,
+//             map: 'mapParams',
+//             bumpMap: 'mapParams',
+//             bumpScale: .1,
+//             specular: 0x0000ff,
+//             vertexColors: true,
+//         },
+//     },
+//     'body': {
+//         mat: 'MeshPhongMaterial',
+//         props: {
+//             color: 0xaaaaff,
+//             emissive: 0x000000,
+//             map: 'mapBody',
+//             bumpMap: 'mapBody',
+//             bumpScale: .1,
+//             reflectivity: .005,
+//             shininess: .005,
+//             specular: 0xffffff,
+//         },
+//     },
+//     'body_sh': {
+//         mat: 'MeshPhongMaterial',
+//         props: {
+//             color: 0x000000,
+//             emissive: 0x000000,
+//             transparent: true,
+//             alphaMap: 'mapBodySh',
+//         },
+//     },
+//     'floorMat1': {
+//         mat: 'MeshPhongMaterial',
+//         props: {
+//             color: 0xff77ff,
+//             map: 'mapTop',
+//             bumpMap: 'mapTop',
+//             bumpScale: 3,
+//             envMap: 'skyBox2',
+//             reflectivity: .01,
+//             shininess: .01,
+//             specular: 0xffffff,
+//         },
+//     },
+//     'floorMat': {
+//         mat: 'MeshPhongMaterial',
+//         props: {
+//             color: 0x00ff00,
+//             map: 'mapVirtual2',
+//             bumpMap: 'mapVirtual2',
+//             bumpScale: 3,
+//         },
+//     },
+//     'testWhite': {
+//         mat: 'MeshBasicMaterial',
+//         props: {
+//             color: 0xffff55,
+//         },
+//     },
+//     'testRed': {
+//         mat: 'MeshBasicMaterial',
+//         props: {
+//             color: 0xff0000,
+//         },
+//     },
+//     'carNorm': {
+//         mat: 'MeshStandardMaterial',
+//         props: {
+//             color: 0xaa00aa,
+//         },
+//     },
+//     'carBattery': {
+//         mat: 'MeshBasicMaterial',
+//         props: {
+//             color: 0xaa0000,
+//             transparent: true,
+//         },
+//     },
+//     'testGreen': {
+//         mat: 'MeshBasicMaterial',
+//         props: {
+//             color: 0x00aa00,
+//         },
+//     },
+//     'testGreen1': {
+//         mat: 'MeshBasicMaterial',
+//         props: {
+//             color: 0x009900,
+//         },
+//     },
+//     'testBlack': {
+//         mat: 'MeshBasicMaterial',
+//         props: {
+//             color: 0x000000,
+//             side: THREE.DoubleSide,
+//         },
+//     },
+// }
+
 export class Materials {
-    //walls00: THREE.MeshPhongMaterial | THREE.MeshStandardMaterial
-    //road: THREE.MeshStandardMaterial
-    //desert: THREE.MeshPhongMaterial | THREE.MeshStandardMaterial
     collision: THREE.MeshBasicMaterial
 
     iron: THREE.MeshPhongMaterial
@@ -12,8 +131,43 @@ export class Materials {
     body: THREE.MeshPhongMaterial
     bodyWhite: THREE.MeshPhongMaterial
     bodyShadow: THREE.MeshBasicMaterial
+    testGreen1: THREE.MeshBasicMaterial
+    carNorm: THREE.MeshStandardMaterial
+    testBlack: THREE.MeshBasicMaterial
+    carBattery: THREE.MeshBasicMaterial
     
     init (root: Root) {
+        this.testGreen1 = new THREE.MeshBasicMaterial({
+            color: 0x009900,
+        })
+
+        this.carNorm = new THREE.MeshStandardMaterial({
+            color: 0xaa00aa,
+        })
+
+        this.testBlack = new THREE.MeshBasicMaterial({
+            color: 0x000000,
+            side: THREE.DoubleSide,
+        })
+
+        this.carBattery = new THREE.MeshBasicMaterial({
+            color: 0xaa0000,
+            transparent: true,
+        })
+
+        this.body = new THREE.MeshPhongMaterial({ 
+            color: 0xaaaaff,
+            emissive: 0x000000,
+            map: root.assets.mapBody,
+            bumpMap: root.assets.mapBody,
+            bumpScale: .1,
+            reflectivity: .05,
+            shininess: .005,
+            specular: 0xffffff,
+            envMap: root.assets.matIronBox,
+        })
+
+
         this.iron = new THREE.MeshPhongMaterial({
             //color: 0xcccccc,
             color: 0xdddddd,
@@ -35,16 +189,6 @@ export class Materials {
         mapGround.repeat.set(30, 30)
 
         this.floorMat1 = new THREE.MeshPhongMaterial({
-            // color: 0xffffff,
-            // map: root.assets.mapGround,
-            // bumpMap: root.assets.mapGround,
-            // //bumpScale: 2,
-            // bumpScale: 8,
-            // reflectivity: 0.04,
-            // shininess: .01,
-            // specular: 0xffffff,
-            // emissive: 0x555555,
-
             color: 0xff77ff,
             map: root.assets.mapGround,
             bumpMap: root.assets.mapGround,
@@ -55,110 +199,14 @@ export class Materials {
             specular: 0xffffff,
         }) 
 
-        this.body = new THREE.MeshPhongMaterial({
-            color: 0xffffff,
-            envMap: root.assets.matIronBox,
-            reflectivity: 3,
-            specular: 0xffffff,
-        })
-
-        this.bodyWhite = new THREE.MeshPhongMaterial({
-            color: 0xFFFFFF,
-            envMap: root.assets.matIronBox,
-            emissive: 0x222222,
-            reflectivity: .5,
-            specular: 0xffffff,   
-        })
-
         this.bodyShadow = new THREE.MeshBasicMaterial({
+            alphaMap: root.assets.bodyShadow,
             color: 0x222230,
             transparent: true,
-            alphaMap: root.assets.shadowStatue,
             opacity: 1,
         })
-
-        // this.walls00 =  new THREE.MeshStandardMaterial({ 
-        //     color: 0xffffff,
-        //     map: root.assets.mapWall_01,
-        //     bumpMap: root.assets.mapWall_01,
-        //     bumpScale: 3,
-        //     vertexColors: true,
-        // })
-        
-        // this.walls00.onBeforeCompile = (shader) => {
-        //     shader.vertexShader =
-        //         `attribute float forcemat;
-        //         varying float vForceMat;
-        //         ` + shader.vertexShader
-
-        //     shader.vertexShader = shader.vertexShader.replace(
-        //         '#include <begin_vertex>',
-        //         `
-        //         #include <begin_vertex>
-        //         vForceMat = forcemat;
-        //         `
-        //     )
-
-        //     shader.fragmentShader =
-        //         `varying float vForceMat;
-        //         ` + shader.fragmentShader;
-
-        //     shader.fragmentShader = shader.fragmentShader.replace(
-        //         '#include <tonemapping_fragment>',
-        //         `
-        //         gl_FragColor.rgb *= (vForceMat - .5);
-        //         #include <tonemapping_fragment>
-        //         `
-        //     )
-        // }
-
-        // {
-        //     const map = root.assets.roadImg
-        //     map.wrapS = THREE.RepeatWrapping
-        //     map.wrapT = THREE.RepeatWrapping
-        //     map.repeat.set(40, 40)
-        // }
-
-        // this.road = new THREE.MeshStandardMaterial({ 
-        //     color: 0xffffff,
-        //     map: root.assets.roadImg,
-        //     bumpMap: root.assets.roadImg,
-        //     bumpScale: 17,
-        //     vertexColors: true,
-        // })
-
-        // {
-        //     const map = root.assets.noise00
-        //     map.wrapS = THREE.RepeatWrapping
-        //     map.wrapT = THREE.RepeatWrapping
-        //     map.repeat.set(50, 50)
-        // }
-
-        // this.desert = new THREE.MeshStandardMaterial({
-        //     color: 0x323341,
-        //     map: root.assets.noise00,
-        //     bumpMap: root.assets.noise00,
-        //     bumpScale: 4,
-        // })
 
         this.collision = new THREE.MeshBasicMaterial({ color: 0x00ff00 })
     }
 
-    // changeWallMaterial(data: { color: number[], emissive: number[], specular: number[] }) {
-    //     this.walls00.color.fromArray(data.color)
-    //     this.walls00.emissive.fromArray(data.emissive)
-    //     this.walls00.needsUpdate = true
-    // }
-
-    // changeRoadMaterial(data: { color: number[], emissive: number[] }) {
-    //     this.road.color.fromArray(data.color)
-    //     this.road.emissive.fromArray(data.emissive)
-    //     this.road.needsUpdate = true
-    // }
-
-    // changeDesertMaterial(data: { color: number[], emissive: number[], specular: number[] }) {
-    //     this.desert.color.fromArray(data.color)
-    //     this.desert.emissive.fromArray(data.emissive)
-    //     this.desert.needsUpdate = true
-    // }
 }
