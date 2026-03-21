@@ -80,6 +80,13 @@ export class Studio {
         if (studioConf.sceneBackground) {
             this.scene.background = studioConf.sceneBackground
         }
+        if (studioConf.sceneBackgroundCubeKeyAsset) {
+            this.envMap = this._root.assets[studioConf.sceneBackgroundCubeKeyAsset]
+            //this.envMap.mapping = THREE.EquirectangularReflectionMapping
+            //this.envMap.encoding = THREE.sRGBEncoding
+            this.envMap.colorSpace = SRGBColorSpace
+            this.scene.background = this.envMap
+        }
 
         if (studioConf.fogParams) {
             this.fog = new THREE.Fog(studioConf.fogParams.color, studioConf.fogParams.near, studioConf.fogParams.far)

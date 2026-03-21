@@ -42,6 +42,13 @@ export class Car {
         this._model.material = materials.carNorm
         this._model.scale.set(.1, .1, .1)
 
+        const shadow = new THREE.Mesh(new THREE.PlaneGeometry(45, 70), root.materials.carShadow)
+        shadow.rotation.x = -Math.PI / 2
+        shadow.position.x = -1
+        shadow.position.y = -9.5
+        shadow.position.z = 2
+        this._model.add(shadow)
+
         const part = assets['levelObj'].children.filter((item: THREE.Mesh) => item.name === 'CAR_102')[0]
         part.material = materials.testBlack
         this._model.add(part)
@@ -59,9 +66,11 @@ export class Car {
 
 
         this._collision = assets['levelObj'].children.filter((item: THREE.Mesh) => item.name === 'CAR_104')[0]
-        this._collision.visible = false
-
-        this._model.add(this._collision)
+        this._collision.name = 'car'
+        this._collision.geometry.scale(.1, .1, .1)
+        //this._collision.scale.set(.1, .1, .1)
+        //this._collision.visible = false
+        //this._model.add(this._collision)
 
         this._frontObj = new THREE.Object3D()
         this._frontObj.position.set(0, 0, -.5)

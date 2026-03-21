@@ -39,7 +39,7 @@ export const pipeInit_05 = async (root: Root) => {
     phisics.setPlayerPosition(camera.position.x, camera.position.y, camera.position.z)
 
     floor.init(root)
-    floor.mesh.position.set(0, -1.5, 0)
+    floor.mesh.position.set(0, -1, 0)
     studio.add(floor.mesh)
     
     await lab.init(root)
@@ -50,6 +50,8 @@ export const pipeInit_05 = async (root: Root) => {
 
     car.init(root)
     root.studio.add(car.getModel())
+    phisics.addMeshToCollision(car.getCollision())
+
 
     body.init(root)
     

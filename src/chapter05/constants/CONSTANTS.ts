@@ -18,11 +18,19 @@ import nY from '../assets/matIronBox/negy.jpg'
 import pZ from '../assets/matIronBox/posz.jpg'
 import nZ from '../assets/matIronBox/negz.jpg'
 
+import pX2 from "../assets/skybox/px.jpg"
+import nX2 from "../assets/skybox/nx.jpg"
+import pY2 from "../assets/skybox/py.jpg"
+import nY2 from "../assets/skybox/ny.jpg"
+import pZ2 from "../assets/skybox/pz.jpg"
+import nZ2 from "../assets/skybox/nz.jpg"
+
 import mapTop from '../assets/floor_outer_map.jpg'
 import shadowStatue from '../assets/mapShadowBody.jpg'
 
 //import staueObj from '../assets/body.obj'
 import levelObj from '../assets/level.obj'
+import carShadow from '../assets/car_sh.jpg'
 import mapBody from '../assets/botMap.png'
 import bodyShadow from '../assets/body_sh_map.jpg'
 
@@ -41,7 +49,7 @@ export const IS_OLD_GAMES_INFO = true
 
 export const PLAYER_POS_START = [0, 1, -3]
 
-const BACK_COLOR = 0x505f68 
+const BACK_COLOR = 0x17257d
 export const STUDIO_CONF: StudioConf = {
     spotLightParams: {
         color: new THREE.Color().setHex(0xffffff),
@@ -68,7 +76,8 @@ export const STUDIO_CONF: StudioConf = {
     cameraLookAt: new THREE.Vector3().fromArray(PLAYER_POS_START).add(new THREE.Vector3(0, 0, 10)),
     cameraFov: 55,
     ambientLightParams: { color: new THREE.Color().setHex(BACK_COLOR), intensity: 2 },
-    sceneBackground: new THREE.Color().setHex(BACK_COLOR),
+    //sceneBackground: new THREE.Color().setHex(BACK_COLOR),
+    sceneBackgroundCubeKeyAsset: 'skybox',
     fogParams: { color: new THREE.Color().setHex(BACK_COLOR), near: 5, far: 80 },
     //SSAO: { kernelRadius: 1, minDistance: 2, maxDistance: 0, enabled: true },
     saturatePass: true,
@@ -99,4 +108,6 @@ export const LOAD_ASSETS: LoadConf = [
     { key: 'levelObj', src: levelObj, loader: 'obj' },
     { key: 'mapBody', src: mapBody, loader: 'texture' },
     { key: 'bodyShadow', src: bodyShadow, loader: 'texture' },
+    { key: 'carShadow', src: carShadow, loader: 'texture' },
+    { key: 'skybox', src: [pX2, nX2, pY2, nY2, pZ2, nZ2], loader: 'cubeTexture' },
 ] 

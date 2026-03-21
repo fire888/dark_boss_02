@@ -133,6 +133,7 @@ export class Materials {
     bodyShadow: THREE.MeshBasicMaterial
     testGreen1: THREE.MeshBasicMaterial
     carNorm: THREE.MeshStandardMaterial
+    carShadow: THREE.MeshBasicMaterial
     testBlack: THREE.MeshBasicMaterial
     carBattery: THREE.MeshBasicMaterial
     
@@ -203,8 +204,16 @@ export class Materials {
             alphaMap: root.assets.bodyShadow,
             color: 0x222230,
             transparent: true,
-            opacity: 1,
+            opacity: .5,
         })
+
+        this.carShadow = new THREE.MeshBasicMaterial({
+            alphaMap: root.assets.carShadow,
+            color: 0x222230,
+            transparent: true,
+            opacity: .5,
+        })
+
 
         this.collision = new THREE.MeshBasicMaterial({ color: 0x00ff00 })
     }

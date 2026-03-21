@@ -51,6 +51,7 @@ export type StudioConf = {
     directionalLightParams?: { color?: THREE.Color, intensity?: number, pos?: THREE.Vector3 }
     hemisphereLightParams?: HemisphereLightConf
     sceneBackground?: THREE.Color
+    sceneBackgroundCubeKeyAsset?: string
     fogParams?: { color?: THREE.Color, near?: number, far?: number }
     SSAO?: {
         kernelRadius: number, minDistance: number, maxDistance: number, enabled: boolean
