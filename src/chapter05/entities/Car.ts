@@ -2,6 +2,7 @@ import * as THREE from "three";
 //import { helper_CollisionsItems_v02 } from '../../../_CORE/helpers/helper_CollisionsItems_v02'
 import { createCarCompas } from './CarCompas'
 import { Root  } from '../index'
+import { _M } from '_CORE/_M/_m'
 
 export class Car {
     _root: Root
@@ -37,10 +38,10 @@ export class Car {
         } = root
         this._root = root
 
-
         this._model = assets['levelObj'].children.filter((item: THREE.Mesh) => item.name === 'CAR_102G')[0]
         this._model.material = materials.carNorm
-        this._model.scale.set(.1, .1, .1)
+        this._model.scale.set(.05, .05, .05)
+        this._model.position.set(0, .5, 0)
 
         const shadow = new THREE.Mesh(new THREE.PlaneGeometry(45, 70), root.materials.carShadow)
         shadow.rotation.x = -Math.PI / 2
@@ -65,12 +66,7 @@ export class Car {
         this._model.add(this._camera)
 
 
-        this._collision = assets['levelObj'].children.filter((item: THREE.Mesh) => item.name === 'CAR_104')[0]
-        this._collision.name = 'car'
-        this._collision.geometry.scale(.1, .1, .1)
-        //this._collision.scale.set(.1, .1, .1)
-        //this._collision.visible = false
-        //this._model.add(this._collision)
+        this._createCarCollision()
 
         this._frontObj = new THREE.Object3D()
         this._frontObj.position.set(0, 0, -.5)
@@ -267,5 +263,31 @@ export class Car {
 
     batteryLight () {
         //this._battery.material.opacity = 0
+    }
+
+    _createCarCollision () {
+        const v: number[] = []
+
+        const x0 = -1
+        const x1 = 1
+        const z0 = 1.9
+        const z1 = -1.9
+
+        const h = .4
+        {
+            const _v = _M.createPolygon(
+                [x0, h, z0],
+                [x1, h, z0],
+                [x1, h, z1],
+                [x0, h, z1]
+            )
+            v.push(..._v)
+        }
+
+        const m = _M.createMesh({ v })
+        m.name = 'collisionCar'
+
+        //this._root.studio.add(m)
+        this._collision = m
     }
 }

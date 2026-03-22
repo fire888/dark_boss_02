@@ -34,6 +34,8 @@ import carShadow from '../assets/car_sh.jpg'
 import mapBody from '../assets/botMap.png'
 import bodyShadow from '../assets/body_sh_map.jpg'
 
+import carCollide from '../assets/car_coll.glb'
+
 
 // DEBUG FLAGS ************************************* / 
 //export const IS_DEV_START_ORBIT = true
@@ -47,13 +49,14 @@ export const IS_OLD_GAMES_INFO = true
 
 // ************************************************/ 
 
-export const PLAYER_POS_START = [0, 1, -3]
+//export const PLAYER_POS_START = [0, 1, -10]
+export const PLAYER_POS_START = [10, 1, 10]
 
 const BACK_COLOR = 0x17257d
 export const STUDIO_CONF: StudioConf = {
     spotLightParams: {
         color: new THREE.Color().setHex(0xffffff),
-        intensity: 2.3,
+        intensity: 1,
         pos: new THREE.Vector3(0, 3, 5),
         angle: Math.PI * .2,
         penumbra: 1,
@@ -69,13 +72,14 @@ export const STUDIO_CONF: StudioConf = {
     // pos: [0, 10, 0],
     directionalLightParams: { 
         //color: new THREE.Color(0x97e6eb), intensity: 30,
-        color: new THREE.Color(0x777777), intensity: 7,
-        pos: new THREE.Vector3(-3, 3, -2)
+        color: new THREE.Color(0x777777), intensity: 10,
+        pos: new THREE.Vector3(3, 3, 2)
     },
     cameraPos: new THREE.Vector3().fromArray(PLAYER_POS_START),
-    cameraLookAt: new THREE.Vector3().fromArray(PLAYER_POS_START).add(new THREE.Vector3(0, 0, 10)),
+    //cameraLookAt: new THREE.Vector3().fromArray(PLAYER_POS_START).add(new THREE.Vector3(0, 0, 10)),
+    cameraLookAt: new THREE.Vector3(0, 1, 0),
     cameraFov: 55,
-    ambientLightParams: { color: new THREE.Color().setHex(BACK_COLOR), intensity: 2 },
+    ambientLightParams: { color: new THREE.Color().setHex(BACK_COLOR), intensity: 3 },
     //sceneBackground: new THREE.Color().setHex(BACK_COLOR),
     sceneBackgroundCubeKeyAsset: 'skybox',
     fogParams: { color: new THREE.Color().setHex(BACK_COLOR), near: 5, far: 80 },
@@ -110,4 +114,5 @@ export const LOAD_ASSETS: LoadConf = [
     { key: 'bodyShadow', src: bodyShadow, loader: 'texture' },
     { key: 'carShadow', src: carShadow, loader: 'texture' },
     { key: 'skybox', src: [pX2, nX2, pY2, nY2, pZ2, nZ2], loader: 'cubeTexture' },
+    { key: 'carCollide', src: carCollide, loader: 'glb' },
 ] 

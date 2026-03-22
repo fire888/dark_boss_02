@@ -19,9 +19,10 @@ export class Labyrinth {
             new THREE.BoxGeometry(1500, 0.1, 1500),
             new THREE.MeshBasicMaterial({ color: 0xff0000 })
         )
+        groundC.name = 'collisionGround'
         groundC.position.y = 0
-        groundC.position.z = 500
-        groundC.position.x = 500
+        groundC.position.z = 0
+        groundC.position.x = 0
         root.phisics.addMeshToCollision(groundC)
 
         // const { floors } = createTown2(root)

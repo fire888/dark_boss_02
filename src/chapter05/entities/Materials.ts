@@ -132,7 +132,7 @@ export class Materials {
     bodyWhite: THREE.MeshPhongMaterial
     bodyShadow: THREE.MeshBasicMaterial
     testGreen1: THREE.MeshBasicMaterial
-    carNorm: THREE.MeshStandardMaterial
+    carNorm: THREE.MeshBasicMaterial
     carShadow: THREE.MeshBasicMaterial
     testBlack: THREE.MeshBasicMaterial
     carBattery: THREE.MeshBasicMaterial
@@ -142,7 +142,7 @@ export class Materials {
             color: 0x009900,
         })
 
-        this.carNorm = new THREE.MeshStandardMaterial({
+        this.carNorm = new THREE.MeshBasicMaterial({
             color: 0xaa00aa,
         })
 

@@ -7,10 +7,10 @@ import {
 } from 'three'
 import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader'
 import { Core } from './types'
-// import { GLTFLoader } from  'three/examples/jsm/loaders/GLTFLoader'
+import { GLTFLoader } from  'three/examples/jsm/loaders/GLTFLoader'
 
 export type LoadConf = { 
-    loader: 'audio' | 'texture' | 'obj' | 'cubeTexture', 
+    loader: 'audio' | 'texture' | 'obj' | 'cubeTexture' | 'glb', 
     src: string | string[],
     key: string,
 }[]
@@ -21,6 +21,7 @@ export class LoaderAssets {
     _textureLoader: TextureLoader = new TextureLoader()
     _cubeTextureLoader: CubeTextureLoader = new CubeTextureLoader()
     _objLoader: OBJLoader
+    _glbLoader: GLTFLoader 
     _root: Core
 
     init (root: Core) {
@@ -64,6 +65,15 @@ export class LoaderAssets {
                 })
             }
 
+            const loadGlb = (key: string, src: string) => {
+                return new Promise<ResultLoad>(res => {
+                    if (!this._glbLoader) this._glbLoader = new GLTFLoader()
+                    this._glbLoader.load(src, obj => {
+                        res({ key, texture: obj })
+                    })
+                })
+            }
+
             const promises: Promise<ResultLoad>[] = []
             for (let i = 0; i < loadConf.length; ++i) {
                 const item = loadConf[i]
@@ -77,6 +87,9 @@ export class LoaderAssets {
                     case 'obj':
                         typeof item.src === 'string' && promises.push(loadObj(item.key, item.src))
                         break
+                    case 'glb':
+                        typeof item.src === 'string' && promises.push(loadGlb(item.key, item.src))
+                        break    
                     case 'cubeTexture':
                         Array.isArray(item.src) && promises.push(loadCubeTexture(item.key, item.src))
                         break

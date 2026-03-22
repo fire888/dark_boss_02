@@ -5,8 +5,9 @@ export class Body {
     init(root: Root) {
         const m = root.assets.levelObj.children.filter((item: THREE.Mesh) => item.name === 'body')[0]
         m.material = root.materials.body
-        m.scale.set(.1, .1, .1)
-        m.position.set(5, -.9, 0)
+        m.scale.set(.03, .03, .03)
+        m.position.set(3, 0.1, 2)
+        m.rotation.y = Math.PI / 2
         root.studio.add(m)
 
         const shadow = new THREE.Mesh(new THREE.PlaneGeometry(30, 30), root.materials.bodyShadow)

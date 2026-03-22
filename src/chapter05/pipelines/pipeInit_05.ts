@@ -16,8 +16,6 @@ export const pipeInit_05 = async (root: Root) => {
     loader.init(root)
     await loader.loadAssets(LOAD_ASSETS)
 
-    console.log('root, ', root)
-
     ticker.start()
 
     ticker.on((t: number) => {
@@ -28,7 +26,7 @@ export const pipeInit_05 = async (root: Root) => {
 
     studio.init(root)
     ticker.on(studio.render.bind(studio))
-    studio.addAxisHelper()
+    //studio.addAxisHelper()
     //studio.fog.far = 5
     //studio.fog.near = .2 
 
@@ -39,7 +37,7 @@ export const pipeInit_05 = async (root: Root) => {
     phisics.setPlayerPosition(camera.position.x, camera.position.y, camera.position.z)
 
     floor.init(root)
-    floor.mesh.position.set(0, -1, 0)
+    floor.mesh.position.set(0, 0, 0)
     studio.add(floor.mesh)
     
     await lab.init(root)
@@ -55,7 +53,7 @@ export const pipeInit_05 = async (root: Root) => {
 
     body.init(root)
     
-    ui.init()
+    ui.init(root)
     ui.hideBackgroundStartScreen()
 
     // const flyCameraToLevel = () => {
@@ -88,7 +86,7 @@ export const pipeInit_05 = async (root: Root) => {
     }
 
     controls.init(root, IS_DEV_START_ORBIT)
-    controls.setRotation(0, Math.PI, 0)
+    controls.setRotation(0, Math.PI * .25, 0)
     ticker.on(controls.update.bind(controls))
 
     audio.init(root)
