@@ -49,6 +49,7 @@ export const pipeInit_05 = async (root: Root) => {
     car.init(root)
     root.studio.add(car.getModel())
     phisics.addMeshToCollision(car.getCollision())
+    phisics.addMeshToCollision(car.getCheckerPlayerDrive(), false)
 
 
     body.init(root)

@@ -11,6 +11,7 @@ export class Car {
     _battery: THREE.Mesh
     _camera: THREE.PerspectiveCamera
     _collision: THREE.Mesh
+    _checkerPlayerDrive: THREE.Mesh 
     _frontObj: THREE.Object3D
     _backObj: THREE.Object3D
     _compass: any
@@ -217,6 +218,10 @@ export class Car {
         return this._collision
     }
 
+    getCheckerPlayerDrive () {
+        return this._checkerPlayerDrive
+    }
+
     getCamera () {
         return this._camera
     }
@@ -266,28 +271,55 @@ export class Car {
     }
 
     _createCarCollision () {
-        const v: number[] = []
-
-        const x0 = -1
-        const x1 = 1
-        const z0 = 1.9
-        const z1 = -1.9
-
-        const h = .4
         {
-            const _v = _M.createPolygon(
-                [x0, h, z0],
-                [x1, h, z0],
-                [x1, h, z1],
-                [x0, h, z1]
-            )
-            v.push(..._v)
+            const v: number[] = []
+
+            const x0 = -1
+            const x1 = 1
+            const z0 = 1.9
+            const z1 = -1.9
+
+            const h = .4
+            {
+                const _v = _M.createPolygon(
+                    [x0, h, z0],
+                    [x1, h, z0],
+                    [x1, h, z1],
+                    [x0, h, z1]
+                )
+                v.push(..._v)
+            }
+
+            const m = _M.createMesh({ v })
+            m.name = 'collisionCar'
+            //this._root.studio.add(m)
+            this._collision = m
         }
 
-        const m = _M.createMesh({ v })
-        m.name = 'collisionCar'
+        {
+            const v: number[] = []
 
-        //this._root.studio.add(m)
-        this._collision = m
+            const x0 = -.5
+            const x1 = .5
+            const z0 = 1.2
+            const z1 = -1.2
+
+            const h = 1.3
+            {
+                const _v = _M.createPolygon(
+                    [x0, h, z0],
+                    [x1, h, z0],
+                    [x1, h, z1],
+                    [x0, h, z1]
+                )
+                v.push(..._v)
+            }
+
+            const m = _M.createMesh({ v })
+            m.name = 'collisionCheckerPlayerDrive'
+            //this._root.studio.add(m)
+            this._checkerPlayerDrive = m
+        }
     }
+    
 }

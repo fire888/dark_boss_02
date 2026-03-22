@@ -32,6 +32,9 @@ const createTrimesh = (geometry: THREE.BufferGeometry) => {
 
 export class Phisics {
     _cbsOnCollision: (() => void)[] = []
+    _cbsOnBeginEndContacts: { 
+        [key: string]: { begin?: () => void, end?: () => void } 
+    } = {}
     _bodies: BodyN[] = []
     _bodiesToRemove: BodyN[] = []
     isUpdate = true
@@ -97,16 +100,18 @@ export class Phisics {
             if (bodyA.id === 0 && bodyB.id !== 0) {
                 this.isGround = true 
             }
+            this._checkPlayerContacts('beginContact', event)
         })
         this.world.addEventListener('endContact', (event: any) => {
             const { bodyA, bodyB } = event;
             if (bodyA && bodyB && bodyA.id === 0 && bodyB.id !== 0) {
                 this.isGround = false
             }
+            this._checkPlayerContacts('endContact', event)
         })
     }
     
-    addMeshToCollision (mesh: THREE.Mesh) {
+    addMeshToCollision (mesh: THREE.Mesh, stopIfCollide: boolean = true) {
         const cannonShape = createTrimesh(mesh.geometry)
         const body = new BodyN({ 
             mass: 0, 
@@ -124,9 +129,25 @@ export class Phisics {
         body.quaternion.y = mesh.quaternion.y
         body.quaternion.z = mesh.quaternion.z
         body.quaternion.w = mesh.quaternion.w
+
+        if (!stopIfCollide) { 
+            body.collisionResponse = false 
+        }
  
         this.world.addBody(body)
         this._bodies.push(body)
+    }
+
+    addListenPlayer(nameBody: string, nameEvent: string, f: () => void) {
+        if (nameEvent === 'beginContact') {
+            if (!this._cbsOnBeginEndContacts[nameBody]) this._cbsOnBeginEndContacts[nameBody] = {}
+            this._cbsOnBeginEndContacts[nameBody].begin = f
+        }
+
+        if (nameEvent === 'endContact') {
+            if (!this._cbsOnBeginEndContacts[nameBody]) this._cbsOnBeginEndContacts[nameBody] = {}
+            this._cbsOnBeginEndContacts[nameBody].end = f
+        }
     }
 
     onCollision (meshNameIncludeStr: string, f: (name: string) => void) {
@@ -201,4 +222,28 @@ export class Phisics {
             }
         }
     }
+
+    _checkPlayerContacts(keyEvent: string, event: any) {
+        const { bodyA, bodyB } = event
+        
+        let playerBody 
+        let anotherBody
+        if (bodyA.myName === 'playerBody') { 
+            playerBody = bodyA
+            anotherBody = bodyB
+        }
+        if (bodyB.myName === 'playerBody') { 
+            playerBody = bodyB
+            anotherBody = bodyA 
+        }
+        if (playerBody && anotherBody) {
+            for (const key in this._cbsOnBeginEndContacts) {
+                if (key === anotherBody.myName) { 
+                    if (keyEvent === 'beginContact') this._cbsOnBeginEndContacts[key]?.begin() 
+                    if (keyEvent === 'endContact') this._cbsOnBeginEndContacts[key]?.end() 
+                }
+            }
+        }
+    }
+    
 }

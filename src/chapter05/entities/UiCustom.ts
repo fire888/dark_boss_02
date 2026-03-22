@@ -2,12 +2,25 @@ import { Tween, Interpolation } from '@tweenjs/tween.js'
 import {elementClickOnce } from '../helpers/htmlHelpers'
 import { Ui } from '_CORE/Ui'
 import { Root } from '../index'
+import '../stylesheets/style.css'
 
 export class UiCustom extends Ui {
     _currentEnergyMinWidth = 0
+    _buttonDriveCar: HTMLElement = null
 
     init (root: Root) {
         super.init(root)
+
+        this._buttonDriveCar = document.createElement('div')//document.body.getElementsByClassName('drive-car')[0]
+        this._buttonDriveCar.classList.add('drive-car')
+        this._buttonDriveCar.style.display = 'none'
+        if (root.deviceData.device === 'phone') {
+            this._buttonDriveCar.innerText = 'press to drive'
+        } else {
+            this._buttonDriveCar.innerText = 'press E to drive'
+        }
+
+        document.body.appendChild(this._buttonDriveCar)
     }
 
     hideBackgroundStartScreen() {
@@ -47,6 +60,13 @@ export class UiCustom extends Ui {
 
     setColorDark (color: string) {
         this.finalDark.style.backgroundColor = '#' + color
+    }
+
+    showDriveButton () {
+        this._buttonDriveCar.style.display = 'block'
+    }
+    hideDriveButton () {
+        this._buttonDriveCar.style.display = 'none'
     }
 
 }

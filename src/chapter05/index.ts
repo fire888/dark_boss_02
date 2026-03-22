@@ -10,9 +10,8 @@ import { CONSTANTS, STUDIO_CONF, CONTROLS_CONF, LOAD_ASSETS } from "./constants/
 
 import { Floor } from "./entities/Floor"
 import { Particles } from './entities/Particles'
-//import { LoaderAssets } from "./entities/Loader";
 
-import { UiCustom } from "./entities/Ui"
+import { UiCustom } from "./entities/UiCustom"
 
 //import { Labyrinth } from './entityLabyrinth/Labyrinth'
 import { Labyrinth } from './EntityLab02/Lab02'

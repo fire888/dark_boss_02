@@ -10,10 +10,12 @@ export const pipePlay_05 = async (root: Root, currentIndexLevel = 0) => {
     // await environmentIterator(root)
     // console.log('[MESSAGE:] COMPLETE SCENARIO')
 
-    const { phisics } = root
-    phisics.onCollision('collisionCar', () => {
-        console.log('[MESSAGE:] COLLISION CAR')
-    }) 
+    const { phisics, ui } = root
 
-
+    phisics.addListenPlayer('collisionCheckerPlayerDrive', 'beginContact', () => {
+        ui.showDriveButton()
+    })
+    phisics.addListenPlayer('collisionCheckerPlayerDrive', 'endContact', () => {
+        ui.hideDriveButton()
+    })
 }
