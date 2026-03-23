@@ -17,7 +17,7 @@ import * as THREE from 'three'
 import { Core } from './types'
 
 class BodyN extends Body {
-    myName: string
+    myName: string = 'none'
 }
 
 const createTrimesh = (geometry: THREE.BufferGeometry) => {
@@ -228,11 +228,11 @@ export class Phisics {
         
         let playerBody 
         let anotherBody
-        if (bodyA.myName === 'playerBody') { 
+        if (bodyA && bodyA.myName === 'playerBody') { 
             playerBody = bodyA
             anotherBody = bodyB
         }
-        if (bodyB.myName === 'playerBody') { 
+        if (bodyB && bodyB.myName === 'playerBody') { 
             playerBody = bodyB
             anotherBody = bodyA 
         }

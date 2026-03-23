@@ -1,5 +1,5 @@
 import { Tween, Interpolation } from '@tweenjs/tween.js'
-import { pause, elementClickOnce } from './_helpers'
+import { elementClickOnce } from './_helpers'
 import { Ui } from '_CORE/Ui'
 
 const ENERGY_MAX_WIDTH = 30
@@ -11,6 +11,7 @@ export class UiCustom extends Ui {
 
         this._countEnergy = document.createElement('div')
         this._countEnergy.classList.add('count-energy')
+        this._countEnergy.style.display = 'none'
         document.body.appendChild(this._countEnergy)
 
         this._countEnergyInner = document.createElement('div')
@@ -20,46 +21,33 @@ export class UiCustom extends Ui {
         this._countEnergy.appendChild(this._countEnergyInner)
     }
 
-    async hideStartScreen () {
-        const finalDark = document.createElement('div')
-        finalDark.classList.add('final-dark')
-        finalDark.style.opacity = 1
-        document.body.appendChild(finalDark)
+    hideBackground () {
+        const startScreen = document.querySelector('.start-screen')
+        startScreen.style.background = 'rgba(0, 0, 0, 0)'
+    }
 
+    async hideStartScreen () {
         const loaderCont = document.body.getElementsByClassName('loader')[0]
 
-        opacityByTransition(loaderCont, 0, 300)
-        await pause(300)
+        opacityByTransition(loaderCont, 0, 5)
         loaderCont.style.display = 'none'
         
         const startButton = document.body.getElementsByClassName('start-but')[0]
         startButton.style.display = 'block'
-        opacityByTransition(startButton, 1, 300)      
+        opacityByTransition(startButton, 1, 5)      
     
         await elementClickOnce(startButton)
 
-        const controlsM = document.body.getElementsByClassName('controls-mess')[0]
-        await opacityByTransition(controlsM, 0, 300)
-        await pause(100)  
-
-        await opacityByTransition(startButton, 0, 300)
-        await pause(100)
-
-        const img = document.body.getElementsByTagName('svg')[0]
-        await opacityByTransition(img, 0, 300)
-        await pause(100)
+        await opacityByTransition(startButton, 0, 5)
 
         const startScreen = document.body.getElementsByClassName('start-screen')[0]
-        await opacityByTransition(startScreen, 0, 300)
-        await pause(100)
 
         setTimeout(async () => {
-            await opacityByTransition(finalDark, 0, 300)
-            await pause(300)
-            await opacityByTransition(this._countEnergyInner, 1, 300)
+            await opacityByTransition(this._countEnergyInner, 1, 5)
             document.body.removeChild(startScreen)
-            document.body.removeChild(finalDark)
-        }, 300)
+
+            this._countEnergy.style.display = 'block'
+        }, 5)
     }
 
     toggleVisibleLock (visible) {

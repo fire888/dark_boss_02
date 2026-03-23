@@ -59,6 +59,7 @@ export const pipelineInit = async (root: Root) => {
     audio.init(root)
     ticker.on(audio.update.bind(audio))
 
+    ui.hideBackground()
     await ui.hideStartScreen()
 
     audio.playAmbient()

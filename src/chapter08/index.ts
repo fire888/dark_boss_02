@@ -10,7 +10,7 @@ import { UiCustom } from "./entities/Ui"
 import { Keyboard } from "_CORE/Keyboard"
 import { ControlsSystem } from "_CORE/controls/ControlsSystem"
 
-import { CONSTANTS, STUDIO_CONF } from "./constants/CONSTANTS"
+import { CONSTANTS, STUDIO_CONF, CONTROLS_CONF } from "./constants/CONSTANTS"
 
 import { Ticker } from "./entities/Ticker"
 import { Floor } from "./entities/Floor"
@@ -57,6 +57,7 @@ window.addEventListener("DOMContentLoaded", async () => {
         ticker: new Ticker(),
         studio: new StudioCustom(),
         keyboard: new Keyboard(),
+        controlsConf: CONTROLS_CONF,
         controls: new ControlsSystem(),
         ui: new UiCustom(),
         floor: new Floor(),

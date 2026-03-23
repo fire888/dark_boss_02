@@ -44,9 +44,6 @@ export const IS_DEV_START_ORBIT = false
 export const IS_DEBUG_SHOW_BUILD_HOUSES_EXAMPLES: boolean = false
 //export const IS_DEBUG_SHOW_BUILD_HOUSES_EXAMPLES: boolean = true
 
-export const IS_OLD_GAMES_INFO = true
-//export const IS_OLD_GAMES_INFO = false
-
 // ************************************************/ 
 
 //export const PLAYER_POS_START = [0, 1, -10]
