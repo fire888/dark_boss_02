@@ -252,7 +252,7 @@ export class Car {
 
         if (key === 'green') {
             this._compass.changeColor('green')
-            this._model.material = materials.testGreen1
+            this._model.material = materials.carGreen
         }
         if (key === 'red') {
             this._compass.changeColor('normal')

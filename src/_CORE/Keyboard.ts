@@ -1,5 +1,5 @@
 import {
-    FORWARD, BACKWARD, LEFT, RIGHT, JUMP,
+    FORWARD, BACKWARD, LEFT, RIGHT, JUMP, E,
     T_Keys, T_Callbacks
 } from './types'
 
@@ -20,6 +20,9 @@ export class Keyboard {
     on (key: T_Keys, callback: (is: boolean) => void) {
         if (!this._callbacks[key]) this._callbacks[key] = []
         this._callbacks[key].push(callback)
+        return () => {
+            this._callbacks[key] = this._callbacks[key].filter(f => f !== callback)
+        }
     }
 
     _onKeyDown (event: KeyboardEvent) {
@@ -51,7 +54,10 @@ export class Keyboard {
             case 'Space':
                 this.isJump = true
                 this._execCallbacks(JUMP, true)
-                break    
+                break
+
+            case 'KeyE': 
+                this._execCallbacks(E, true)    
         }
     }
 
@@ -84,7 +90,11 @@ export class Keyboard {
             case 'Space':
                 this.isJump = false
                 this._execCallbacks(JUMP, false)
-                break    
+                break
+                        
+            case 'KeyE': 
+                this._execCallbacks(E, false)
+                break
         }
     }
 

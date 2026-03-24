@@ -25,6 +25,9 @@ import nY2 from "../assets/skybox/ny.jpg"
 import pZ2 from "../assets/skybox/pz.jpg"
 import nZ2 from "../assets/skybox/nz.jpg"
 
+import greenStars from '../assets/green_stars.jpg'
+import groundPointsMap from '../assets/map02.jpg'
+
 import mapTop from '../assets/floor_outer_map.jpg'
 import shadowStatue from '../assets/mapShadowBody.jpg'
 
@@ -104,6 +107,7 @@ export const LOAD_ASSETS: LoadConf = [
     { key: 'ironAO', src: ironAO, loader: 'texture' },
     { key: 'ironAlbedo', src: ironAlbedo, loader: 'texture' },
     { key: 'mapGround', src: mapTop, loader: 'texture' },
+    { key: 'groundPointsMap', src: groundPointsMap, loader: 'texture' },
     { key: 'shadowStatue', src: shadowStatue, loader: 'texture' },
     { key: 'matIronBox', src: [pX, nX, pY, nY, pZ, nZ], loader: 'cubeTexture' },
     { key: 'levelObj', src: levelObj, loader: 'obj' },
@@ -111,5 +115,6 @@ export const LOAD_ASSETS: LoadConf = [
     { key: 'bodyShadow', src: bodyShadow, loader: 'texture' },
     { key: 'carShadow', src: carShadow, loader: 'texture' },
     { key: 'skybox', src: [pX2, nX2, pY2, nY2, pZ2, nZ2], loader: 'cubeTexture' },
+    { key: 'skyboxGreenStars', src: [greenStars, greenStars, greenStars, greenStars, greenStars, greenStars], loader: 'cubeTexture' },
     { key: 'carCollide', src: carCollide, loader: 'glb' },
 ] 

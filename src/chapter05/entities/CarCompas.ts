@@ -53,7 +53,7 @@ export const createCarCompas = (root: Root) => {
                 arrow.material = root.materials.carNorm
             }
             if (key === 'green') {
-                arrow.material = root.materials.testGreen1
+                arrow.material = root.materials.carGreen
             }
         },
     }

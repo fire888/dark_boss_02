@@ -4,9 +4,11 @@ import { _M } from '_CORE/';
 
 export class Floor {
     mesh: Mesh
-    constructor() {}
+    _root: Root 
+
 
     init (root: Root) {
+        this._root = root
 
         const v: number[] = []
         const c: number[] = []
@@ -34,4 +36,8 @@ export class Floor {
 
         this.mesh = _M.createMesh({ v, c, uv, material: root.materials.floorMat1 })
     }
+
+    toGreen() {
+        this.mesh.material = this._root.materials.floorMatGreen
+    } 
 }

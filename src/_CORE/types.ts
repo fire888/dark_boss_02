@@ -13,8 +13,10 @@ export const BACKWARD = 'BACKWARD'
 export const LEFT = 'LEFT'
 export const RIGHT = 'RIGHT'
 export const JUMP = 'JUMP'
+export const E = 'E'
 
-export type T_Keys = typeof FORWARD | typeof BACKWARD | typeof LEFT | typeof RIGHT | typeof JUMP
+//export type T_Keys = typeof FORWARD | typeof BACKWARD | typeof LEFT | typeof RIGHT | typeof JUMP
+export type T_Keys = typeof FORWARD | typeof BACKWARD | typeof LEFT | typeof RIGHT | typeof JUMP | typeof E
 
 export type T_Callbacks = {
     [key: string]: ((is: boolean) => void)[]

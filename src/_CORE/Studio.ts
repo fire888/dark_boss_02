@@ -344,6 +344,10 @@ export class Studio {
         this.scene.background = new THREE.Color().fromArray(color)
     }
 
+    setSceneBackgroundCube(cube: THREE.CubeTexture) {
+        this.scene.background = cube
+    }
+
     setSaturation(sat: number) { 
         if (this.saturatePass) {
             this.saturatePass.uniforms['effect'].value = sat

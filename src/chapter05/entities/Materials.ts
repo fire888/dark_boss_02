@@ -128,18 +128,20 @@ export class Materials {
 
     iron: THREE.MeshPhongMaterial
     floorMat1: THREE.MeshPhongMaterial
+    //floorMatGreen: THREE.MeshPhongMaterial
+    floorMatGreen: THREE.MeshBasicMaterial
     body: THREE.MeshPhongMaterial
     bodyWhite: THREE.MeshPhongMaterial
     bodyShadow: THREE.MeshBasicMaterial
-    testGreen1: THREE.MeshBasicMaterial
+    carGreen: THREE.MeshBasicMaterial
     carNorm: THREE.MeshBasicMaterial
     carShadow: THREE.MeshBasicMaterial
     testBlack: THREE.MeshBasicMaterial
     carBattery: THREE.MeshBasicMaterial
     
     init (root: Root) {
-        this.testGreen1 = new THREE.MeshBasicMaterial({
-            color: 0x009900,
+        this.carGreen = new THREE.MeshBasicMaterial({
+            color: 0x00ff00,
         })
 
         this.carNorm = new THREE.MeshBasicMaterial({
@@ -199,6 +201,22 @@ export class Materials {
             shininess: .01,
             specular: 0xffffff,
         }) 
+
+        const mapGroundPoints = root.assets.groundPointsMap
+        mapGroundPoints.wrapS = THREE.RepeatWrapping
+        mapGroundPoints.wrapT = THREE.RepeatWrapping
+        mapGroundPoints.repeat.set(60, 60)
+
+        this.floorMatGreen = new THREE.MeshBasicMaterial({
+            color: 0x00ff00,
+            map: mapGroundPoints,
+            //bumpMap: mapGroundPoints,
+            //bumpScale: 30,
+            //envMap: root.assets.matIronBox,
+            //reflectivity: .01,
+            //shininess: .01,
+            //specular: 0xffffff,
+        })
 
         this.bodyShadow = new THREE.MeshBasicMaterial({
             alphaMap: root.assets.bodyShadow,
