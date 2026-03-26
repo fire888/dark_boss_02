@@ -14,7 +14,7 @@ import { Particles } from './entities/Particles'
 import { UiCustom } from "./entities/UiCustom"
 
 //import { Labyrinth } from './entityLabyrinth/Labyrinth'
-import { Labyrinth } from './EntityLab02/Lab02'
+import { Labyrinth } from './entities/Lab03/Lab03'
 import { AudioManagerCustom } from "./entities/AudioManagerCustom"
 import { Materials } from "./entities/Materials"
 import { pipeInit_05 } from "./pipelines/pipeInit_05"

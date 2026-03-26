@@ -70,19 +70,19 @@ export const _M = {
     },
     translateVertices(v: number[], x: number, y: number, z: number) {
         const m4 = new Matrix4().makeTranslation(x, y, z)
-        this.applyMatrixToArray(m4, v)
+        _M.applyMatrixToArray(m4, v)
     },
     rotateVerticesX(v: number[], angle: number) {
         const m4 = new Matrix4().makeRotationX(angle)
-        this.applyMatrixToArray(m4, v)
+        _M.applyMatrixToArray(m4, v)
     },
     rotateVerticesY(v: number[], angle: number) {
         const m4 = new Matrix4().makeRotationY(angle)
-        this.applyMatrixToArray(m4, v)
+        _M.applyMatrixToArray(m4, v)
     },
     rotateVerticesZ(v: number[], angle: number) {
         const m4 = new Matrix4().makeRotationZ(angle)
-        this.applyMatrixToArray(m4, v)
+        _M.applyMatrixToArray(m4, v)
     },
     angleFromCoords (x: number, y: number) {
         let rad = Math.atan(y / x)
