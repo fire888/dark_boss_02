@@ -128,7 +128,6 @@ export class Materials {
 
     iron: THREE.MeshPhongMaterial
     floorMat1: THREE.MeshPhongMaterial
-    //floorMatGreen: THREE.MeshPhongMaterial
     floorMatGreen: THREE.MeshBasicMaterial
     body: THREE.MeshPhongMaterial
     bodyWhite: THREE.MeshPhongMaterial
@@ -138,7 +137,23 @@ export class Materials {
     carShadow: THREE.MeshBasicMaterial
     testBlack: THREE.MeshBasicMaterial
     carBattery: THREE.MeshBasicMaterial
+
+    unit: THREE.MeshPhongMaterial
+    unitCenter: THREE.MeshBasicMaterial
+    wallsGreen: THREE.MeshBasicMaterial
     
+    //     'wallVirtualColor': {
+//         mat: 'MeshBasicMaterial',
+//         props: {
+//             color: 0xffffff,
+//             emissive: 0x001111,
+//             map: 'mapParams',
+//             bumpMap: 'mapParams',
+//             bumpScale: .1,
+//             specular: 0x0000ff,
+//             vertexColors: true,
+//         },
+//     },
     init (root: Root) {
         this.carGreen = new THREE.MeshBasicMaterial({
             color: 0x00ff00,
@@ -232,6 +247,28 @@ export class Materials {
             opacity: .5,
         })
 
+        this.wallsGreen = new THREE.MeshBasicMaterial({
+            color: 0xffffff,
+            //emissive: 0x001111,
+            map: root.assets.wallTexture,
+            //bumpMap: root.assets.wallTexture,
+            //bumpScale: .1,
+            //specular: 0x0000ff,
+            vertexColors: true,
+        })
+
+        this.unit = new THREE.MeshPhongMaterial({
+            color: 0xffffff,
+            emissive: 0x000000,
+            reflectivity: 5,
+            shininess: 5,
+            vertexColors: true,
+            flatShading: false,
+            side: THREE.DoubleSide,
+        })
+        this.unitCenter = new THREE.MeshBasicMaterial({
+            color: 0xffff55,
+        })
 
         this.collision = new THREE.MeshBasicMaterial({ color: 0x00ff00 })
     }

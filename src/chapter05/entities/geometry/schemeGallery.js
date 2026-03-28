@@ -13,7 +13,6 @@ export const createScheme = () => {
         const d = Math.random() * 120 + 30
         const isAddNext = Math.random() > .5
 
-
         arr.push({
             id: Math.floor(Math.random() * 1000),
             x: Math.sin(angle) * (offsetStart + d),
@@ -38,7 +37,6 @@ export const createScheme = () => {
         }
     }
 
-
     const num = Math.floor(Math.random() * 20) + 3
     const h0 = 0
     const h2 = Math.random() * 150 + 30
@@ -58,8 +56,6 @@ export const createScheme = () => {
         isColumn: true,
     })
 
-
-
     for (let i = 0; i < num; ++i) {
         if (Math.random() > 0.3) {
             iterate({
@@ -73,8 +69,7 @@ export const createScheme = () => {
         }
     }
 
-
-    let savedL = arr.length
+    const savedL = arr.length
     for (let i = 0; i < 3; ++i) {
         const _h0 = arr[arr.length - 1].h2
         const _h2 = _h0 + Math.random() * 150 + 30
@@ -91,7 +86,6 @@ export const createScheme = () => {
             }
         }
     }
-
 
     return arr
 }

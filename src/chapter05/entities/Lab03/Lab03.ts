@@ -1,4 +1,5 @@
 import { createMeshSuper } from './meshStairs'
+import { createMeshBigElem } from './meshBigElem'
 import { Root } from '../../index'
 import * as THREE from 'three'
 
@@ -13,7 +14,7 @@ export class Labyrinth {
 
     constructor() {}
     async init (root: Root) {
-        // this._root = root
+        this._root = root
 
         const groundC = new THREE.Mesh(
             new THREE.BoxGeometry(1500, 0.1, 1500),
@@ -25,8 +26,22 @@ export class Labyrinth {
         groundC.position.x = 0
         root.phisics.addMeshToCollision(groundC)
 
-        const { mesh, meshCollision, meshCollisionCar, meshFinish, lastXYZ } = createMeshSuper(root)
-        root.studio.add(mesh)
+        {
+            const { mesh, meshCollision, meshCollisionCar, meshFinish, lastXYZ } = createMeshSuper(root)
+            root.studio.add(mesh)
+            meshCollision.name = 'staitsCollision'
+            root.phisics.addMeshToCollision(meshCollision)
+        }
+        {
+            const { mesh, meshCollision } = createMeshBigElem(root)
+            root.studio.add(mesh)
+            meshCollision.name = 'staitsCollision'
+            root.phisics.addMeshToCollision(meshCollision)
+        }
+        // const { mesh, meshCollision, meshCollisionCar, meshFinish, lastXYZ } = createMeshSuper(root)
+        // root.studio.add(mesh)
+        // meshCollision.name = 'staitsCollision'
+        // root.phisics.addMeshToCollision(meshCollision)
 
         // const { floors } = createTown2(root)
         // this.floors = floors

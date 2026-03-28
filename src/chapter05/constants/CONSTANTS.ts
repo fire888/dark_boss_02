@@ -38,6 +38,7 @@ import mapBody from '../assets/botMap.png'
 import bodyShadow from '../assets/body_sh_map.jpg'
 
 import carCollide from '../assets/car_coll.glb'
+import wallTexture from '../assets/txt1.jpg'
 
 
 // DEBUG FLAGS ************************************* / 
@@ -117,4 +118,5 @@ export const LOAD_ASSETS: LoadConf = [
     { key: 'skybox', src: [pX2, nX2, pY2, nY2, pZ2, nZ2], loader: 'cubeTexture' },
     { key: 'skyboxGreenStars', src: [greenStars, greenStars, greenStars, greenStars, greenStars, greenStars], loader: 'cubeTexture' },
     { key: 'carCollide', src: carCollide, loader: 'glb' },
+    { key: 'wallTexture', src: wallTexture, loader: 'texture' },
 ] 

@@ -58,11 +58,19 @@ export const createMeshSuper = (root) => {
     if (uv) geometry.setAttribute('uv', new THREE.BufferAttribute( uv, 2 ))
     geometry.computeVertexNormals()
 
-    const mat = root.materials.wallVirtualColor
-    const mesh = new THREE.Mesh(geometry, mat)
+    const MOVE = [0, 1.5, 0]
+    const SCALE = 0.08
+
+    geometry.scale(SCALE, SCALE, SCALE)
+    geometry.translate(...MOVE)
+
+    const mesh = new THREE.Mesh(geometry, root.materials.wallsGreen)
 
     const collGeom = new THREE.BufferGeometry() 
     collGeom.setAttribute('position', new THREE.BufferAttribute(collision, 3))
+    collGeom.scale(SCALE, SCALE, SCALE)
+    collGeom.translate(...MOVE)
+    
     const collMat = new THREE.MeshBasicMaterial({ color: 0xFF0000 })
     const meshCollision = new THREE.Mesh(collGeom, collMat)
 

@@ -5,7 +5,6 @@ import {
 } from './helpers'
 
 
-
 export const createDataSideArc = ({
     h1,
     h2,
@@ -21,8 +20,6 @@ export const createDataSideArc = ({
 
     const lCapital = Math.min((h2 - h1) * 0.1, 2)
     const hC = h2 - lCapital
-
-
 
     let _h1 = h1
     let _h2 = hC
@@ -67,9 +64,6 @@ export const createDataSideArc = ({
         ),
     ]
 
-
-
-
     /** arc ******************/
     const arc = []
     const cA = []
@@ -80,7 +74,6 @@ export const createDataSideArc = ({
     const step = lBridge / resolution
     const diff = _h2 - _h1
     const offsetArcTop = diff * 0.15
-
 
     for (let i = 0; i < resolution; ++i) {
         const hI1 = (1 - Math.sin((i + 1) / resolution * Math.PI)) * (diff - offsetArcTop) + offsetArcTop
@@ -130,7 +123,6 @@ export const createDataSideArc = ({
         ))
         cA.push(...colorFill1)
         uvA.push(...createUv([0, 0], [0, 0], [0, 0], [0, 0]))
-
     }
 
     arc.push(
@@ -164,8 +156,6 @@ export const createDataSideArc = ({
         .25, .3,
         .25, .2,
     )
-
-
 
     _h1 = _h2
     _h2 = h2
@@ -235,8 +225,6 @@ export const createDataSideArc = ({
         ),
 
     ]
-
-
 
     const v = [
         ...columnF,

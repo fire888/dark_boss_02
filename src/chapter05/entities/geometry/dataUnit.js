@@ -1,26 +1,10 @@
 import {
     createFace,
-    createUv,
-    fillColorFace,
     rotateArrY, translateArr,
 } from './helpers'
 
-
-
 const { PI, sin, cos } = Math
 const PI2 = PI * 2
-
-// const count = 5
-// const hh = 15
-// const h = 7
-// const hD = -7
-// const hhD = -15
-// const r = 15
-// const cone = 10
-// const w = 2
-// const wt = 3
-// const wtr = 2
-// const rInner = -5
 
 const createG = ({
     count = 5,
@@ -36,15 +20,12 @@ const createG = ({
     htr = 5,
     rInner = -5,  
 }) => {
-
-
     const data = {
         tt: [],
         top: [],
         bot: [],
         bb: [],
     }
-
 
     for (let i = 0; i < count; ++i) {
         const ph1 = i / count * PI2
@@ -142,53 +123,23 @@ const createG = ({
     return data
 }
 
-
-
-
-
-
-
 export const createDataUnit = (params) => {
 
     const hhh = params.hhh || 12
 
     const v = []
     const c = []
-    const r = 5
-    const r2 = 15
-
 
     const n = createG(params)
-
-
-    const c1WW = [1, 1, 1]
-    const c3WW = [...c1WW, ...c1WW, ...c1WW]
-    const c6WW = [...c3WW, ...c3WW]
-
 
     const c1W = [.5, 1, .5]
     const c3W = [...c1W, ...c1W, ...c1W]
     const c6W = [...c3W, ...c3W]
 
-    const c1R = [0, 0, 0]
-    const c3R = [...c1R, ...c1R, ...c1R]
-    const c6R = [...c3R, ...c3R]
-
     const c1B = [0, 0, 0]
     const c3B = [...c1B, ...c1B, ...c1B]
     const c6B = [...c3B, ...c3B]
 
-    const c1B2 = [0, 0, 0]
-    const c3B2 = [...c1B2, ...c1B2, ...c1B2]
-    const c6B2 = [...c3B2, ...c3B2]
-
-    const c1B3 = [0, 0, 0]
-    const c3B3 = [...c1B3, ...c1B3, ...c1B3]
-    const c6B3 = [...c3B3, ...c3B3]
-
-
-    
-    
     const f = (i, j) => {
         const b = n.bot[i]
         const bN = n.bot[j]
@@ -210,7 +161,6 @@ export const createDataUnit = (params) => {
         )
         c.push(...c3W)
 
-
         /** to high cone */
         v.push(...createFace(
             [t[9], t[10], t[11]],
@@ -230,7 +180,6 @@ export const createDataUnit = (params) => {
         //c.push(...c6W)
         c.push(...c6B)
 
-
         /** top connect */
         v.push(...createFace(
             [t[3], t[4], t[5]],
@@ -248,7 +197,6 @@ export const createDataUnit = (params) => {
             [b[12], b[13], b[14]],
         ))
         c.push(...c6B)
-
 
         /** t -> b */
         v.push(...createFace(
@@ -269,8 +217,6 @@ export const createDataUnit = (params) => {
         ))
         //c.push(...c6W)
         c.push(...c6B)
-
-
 
         /** cones */
         for (let k = 0; k < 15; k += 3) {    
@@ -373,9 +319,6 @@ export const createDataUnit = (params) => {
         ))
         c.push(...c6W)
         
-
-
-
         /** inner tr 2 */
         // v.push(
         //     b[18], b[19], b[20],
@@ -456,13 +399,8 @@ export const createDataUnit = (params) => {
     12 13 14   3 4 5             
         *      *                   
           0 1 2
-            *
-
-
-          
+            *     
 */
-
-
 
     for (let i = 0; i < n.top.length; ++i) {
         if (n.top[i + 1] ) {
@@ -471,7 +409,6 @@ export const createDataUnit = (params) => {
             f(i, 0)
         }
     }
-
 
     return { v, c }
 }

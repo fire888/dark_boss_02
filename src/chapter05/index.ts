@@ -24,6 +24,7 @@ import { Core } from '_CORE/types'
 
 import { Car } from "./entities/Car"
 import { Body } from "./entities/Body"
+import { Pers } from './entities/Pers'
 
 export interface Root extends Core {
     CONSTANTS: typeof CONSTANTS,
@@ -43,7 +44,7 @@ export interface Root extends Core {
     },
     car: Car,
     body: Body
-
+    pers: Pers
 }
 
 
@@ -81,6 +82,7 @@ window.addEventListener("DOMContentLoaded", async () => {
         materials: new Materials(),
         car: new Car(),
         body: new Body(),
+        pers: new Pers(),
     }
 
     await pipeInit_05(root)

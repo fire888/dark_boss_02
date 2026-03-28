@@ -3,8 +3,6 @@ import { createDataSideArc } from "./dataArc";
 import { createTopElem } from "./dataTopElem";
 import { createSimpleColumn } from './dataColumnSimple'
 
-
-
 const color1 = [0, 0, 0]
 const color2 = [0, .7, 0]
 
@@ -31,7 +29,6 @@ export const createSegmentGallery = ({
         u.push(...arcData.u)
     }
 
-
     /** column */
     const rCapital = 6
     const rBase = 5
@@ -53,7 +50,6 @@ export const createSegmentGallery = ({
         collisionCar.push(...columnData.collisionCar)
     }
 
-
     /** top elem */
     const {
         vertTopElem,
@@ -73,7 +69,6 @@ export const createSegmentGallery = ({
     v.push(...vertColumn)
     c.push(...colorsColumn)
     u.push(...uvColumn)
-
 
     return { v, c, u, collision, collisionCar }
 }

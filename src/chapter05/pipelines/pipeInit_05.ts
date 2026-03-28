@@ -1,8 +1,6 @@
 import { Root } from '../index'
 import { update } from '@tweenjs/tween.js'
 import { IS_DEV_START_ORBIT } from '../constants/CONSTANTS'
-import { Tween, Easing } from '@tweenjs/tween.js'
-import { PLAYER_POS_START } from '../constants/CONSTANTS'
 
 export const pipeInit_05 = async (root: Root) => {
     const {
@@ -10,7 +8,7 @@ export const pipeInit_05 = async (root: Root) => {
         studio, controls, ui, ticker,
         floor,
         loader, phisics, lab,
-        audio, materials, particles, car, body
+        audio, materials, particles, car, body, pers
     } = root
 
     loader.init(root)
@@ -51,8 +49,10 @@ export const pipeInit_05 = async (root: Root) => {
     phisics.addMeshToCollision(car.getCollision())
     phisics.addMeshToCollision(car.getCheckerPlayerDrive(), false)
 
-
     body.init(root)
+
+    pers.init(root)
+    ticker.on(pers.update.bind(pers))
     
     ui.init(root)
     ui.hideBackgroundStartScreen()
