@@ -3,14 +3,14 @@ import { createMeshBigElem } from './meshBigElem'
 import { Root } from '../../index'
 import * as THREE from 'three'
 
+export const SIZE_QUADRANT = 500
+
 export class Labyrinth {
     _root: Root
-    floors: {
-        p0: number[]
-        p1: number[]
-        p2: number[]
-        p3: number[]
-    }[]  = []
+    locations: any[] = []
+    bigElems: any[] = []
+    floors: any[] = []
+    _arrTrash: any[] = []
 
     constructor() {}
     async init (root: Root) {
@@ -26,137 +26,218 @@ export class Labyrinth {
         groundC.position.x = 0
         root.phisics.addMeshToCollision(groundC)
 
-        {
-            const { mesh, meshCollision, meshCollisionCar, meshFinish, lastXYZ } = createMeshSuper(root)
-            root.studio.add(mesh)
-            meshCollision.name = 'staitsCollision'
-            root.phisics.addMeshToCollision(meshCollision)
+        for (let i = 0; i < 3; ++i) {
+            const { mesh, meshCollision, meshFinish, lastXYZ } = createMeshSuper(root)
+            meshCollision.name = 'collisionStairs_' + i
+            this.locations.push({ mesh, meshCollision, meshFinish, lastXYZ })
         }
-        {
-            const { mesh, meshCollision } = createMeshBigElem(root)
-            root.studio.add(mesh)
-            meshCollision.name = 'staitsCollision'
-            root.phisics.addMeshToCollision(meshCollision)
-        }
-        // const { mesh, meshCollision, meshCollisionCar, meshFinish, lastXYZ } = createMeshSuper(root)
-        // root.studio.add(mesh)
-        // meshCollision.name = 'staitsCollision'
-        // root.phisics.addMeshToCollision(meshCollision)
 
-        // const { floors } = createTown2(root)
-        // this.floors = floors
+        for (let i = 0; i < 30; ++i) {
+            const data = createMeshBigElem(root)
+            const id = i
+            this.bigElems.push({...data, id, inScene: false })
+        }
     }
 
-    checkArea(indPrev: number, x: number, z: number) {
-        // if (this.floors[indPrev]) {
-        //     const p0 = this.floors[indPrev].p0
-        //     const p1 = this.floors[indPrev].p1
-        //     const p2 = this.floors[indPrev].p2
-        //     const p3 = this.floors[indPrev].p3
-        //     if (x >= p0[0] && x <= p1[0] && z <= p0[1] && z >= p3[1]) {
-        //         return indPrev
-        //     }
-        // }
+    addLocationToScene(index: number, x: number, z: number) {
+        const { mesh, meshCollision, meshFinish, lastXYZ } = this.locations[index]
 
-        // for (let i = 0; i < this.floors.length; ++i) {
-        //     const p0 = this.floors[i].p0
-        //     const p1 = this.floors[i].p1
-        //     const p2 = this.floors[i].p2
-        //     const p3 = this.floors[i].p3
-        //     if (x >= p0[0] && x <= p1[0] && z <= p0[1] && z >= p3[1]) {
-        //         return i
-        //     }
-        // }
-        return -1
+        const y = 0
+        mesh.position.set(x, y, z)
+        this._root.studio.add(mesh)
+
+        meshCollision.position.set(x, y, z)
+        this._root.phisics.addMeshToCollision(meshCollision)
+        //this._root.studio.add(meshCollision)
+        
+        //car.setCollisionForDraw(meshCollisionCar)
+        //meshCollisionCar.visible = false
+        //meshCollisionCar.position.set(x, y, z)
+        //studio.addToScene(meshCollisionCar)
+
+        meshFinish.position.set(x, y, z)
+        meshFinish.position.x += lastXYZ[0]
+        meshFinish.position.y += lastXYZ[1]
+        meshFinish.position.z += lastXYZ[2]
+        //studio.addToScene(root.unit.mesh)
+        //root.unit.mesh.position.copy(meshFinish.position)
+        //root.unit.mesh.position.y += 20
+        //system_PlayerNearLevelItems.setItemToCheck(meshFinish, 'nearPerson_' + keyLocation, 80)
+        return lastXYZ
     }
 
-    getRandomPosInRoom(indRoom: number) {
-    //     const p0 = this.floors[indRoom].p0
-    //     const p1 = this.floors[indRoom].p1
-    //     const p2 = this.floors[indRoom].p2
-    //     const p3 = this.floors[indRoom].p3
+    removeLocationFromScene(index: number) {
+        const { mesh, meshCollision, meshCollisionCar, meshFinish } = this.locations[index]
 
-    //     return { x: Math.random() * (p1[0] - p0[0] - 2) + p0[0] + 1, z: Math.random() * (p0[1] - p3[1] - 2) + p3[1] + 1 }
+        this._root.studio.remove(mesh)
+
+        this._root.phisics.removeMeshFromCollision(meshCollision.name)
+    }
+
+    addBigElems(arr: string[]) {
+        for (let i = 0; i < arr.length; ++i) {
+            /** add floor */
+            const p = arr[i].split('_')
+            const x = +p[0] * SIZE_QUADRANT
+            const z = +p[1] * SIZE_QUADRANT
+            //const floor = new THREE.Mesh(floorGeom, materials.floorMat)
+            //floor.rotation.x = -Math.PI / 2
+            //floor.position.set(x, y, z)
+            //studio.addToScene(floor)
+            //arrTrash.push({
+            //    mesh: floor,
+            //    keyLocation: arr[i],
+            //    type: 'floor',
+            //})
+            //system_PlayerMoveOnLevel.addItemToPlayerCollision(floor)
+
+
+
+            /** add build ******************/
+            const rCount = Math.floor(Math.random() * 8)
+            for (let j = 0; j < rCount; ++j) {                
+                
+                
+                const buildingData = this._getRandomItemNotInScene()
+                if (!buildingData) {
+                    continue;
+                }
+
+                const { mesh, meshCollision, id } = buildingData
+                mesh.position.set(x + Math.random() * SIZE_QUADRANT, 0, z + Math.random() * SIZE_QUADRANT)
+                this._root.studio.add(mesh)
+
+                //meshCollision.visible = false
+                meshCollision.position.copy(mesh.position)
+                //studio.addToScene(meshCollision)
+                //system_PlayerMoveOnLevel.addItemToPlayerCollision(meshCollision)
+                this._root.phisics.addMeshToCollision(meshCollision)
+
+                //meshCollisionCar.visible = false
+                //meshCollisionCar.position.copy(mesh.position)
+                //studio.addToScene(meshCollisionCar)
+                //car.setCollisionForDraw(meshCollisionCar)
+
+                this._arrTrash.push({ mesh, meshCollision, keyLocation: arr[i], type: 'build', id })
+            }
+        }
+    }
+
+    removeBigElems(arr: string[]) {
+        const arrToRemove = []
+        for (let i = 0; i < arr.length; ++i) {
+            for (let j = 0; j < this._arrTrash.length; ++j) {
+                if (arr[i] === this._arrTrash[j].keyLocation) {
+                    arrToRemove.push(this._arrTrash[j])
+                }
+            }
+        }
+
+        this._arrTrash = this._arrTrash.filter(item => {
+            for (let i = 0; i < arr.length; ++i) {
+                if (item.keyLocation === arr[i]) {
+                    return false;
+                }
+            }
+            return true;
+        })
+
+        for (let i = 0; i < arrToRemove.length; ++i) {
+            const { mesh, meshCollision, meshCollisionCar, type, id } = arrToRemove[i]
+            this._root.studio.remove(mesh)
+            //system_PlayerMoveOnLevel.removeItemFromPlayerCollision(mesh)
+            this._root.phisics.removeMeshFromCollision(meshCollision.name)
+
+            this._setItemIsNotInScene(id)
+            //if (type === 'build') {
+                //system_PlayerMoveOnLevel.removeItemFromPlayerCollision(meshCollision)
+                //studio.removeFromScene(meshCollision)
+
+                //car.removeCollisionForDraw(meshCollisionCar)
+                //studio.removeFromScene(meshCollisionCar)
+
+                //managerBuilds.setFlagAsFree(id)
+
+            //    this.bigElems[id].inScene = false
+            //}
+
+            // if (type === 'floor') {
+            //     arrToRemove[i].mesh.geometry.dispose()
+            //     delete arrToRemove[i].mesh
+            // }
+        }
+    }
+
+    updateBigElems (removeArr: string[], addArr: string[]) {
+            this.removeBigElems(removeArr)
+            this.addBigElems(addArr)
+    }
+
+    removeAll () {
+        const { studio, car, phisics } = this._root
+        for (let i = 0; i < this._arrTrash.length; ++i) {
+            const { mesh, meshCollision } = this._arrTrash[i]
+
+            studio.remove(mesh)
+                //system_PlayerMoveOnLevel.removeItemFromPlayerCollision(mesh)
+            phisics.removeMeshFromCollision(meshCollision.name)
+            this._arrTrash[i].mesh.geometry.dispose()
+            delete this._arrTrash[i].mesh
+        }
+    }
+
+    _getRandomItemNotInScene() {
+        for (let i = 0; i < this.bigElems.length; ++i) {
+            if (this.bigElems[i].inScene) {
+                continue;
+            }
+            this.bigElems[i].inScene = true
+            return this.bigElems[i]
+        }
+
+        return null
+    }
+
+    _setItemIsNotInScene (id: number) {
+        for (let i = 0; i < this.bigElems.length; ++i) {
+            if (this.bigElems[i].id === id) {
+                this.bigElems[i].inScene = false
+                break;
+            }
+        }
     }
 }
 
-// export const createChangerGalleries = root => {
-//     const {
-//         studio,
-//         car,
-//         system_Level,
-//         system_PlayerMoveOnLevel,
-//         system_PlayerNearLevelItems,
-//     } = root
 
-//     // /** super */
-//     const createSuper = () => {
-//         const superP = createMeshSuper(root)    
-//         superP.meshCollision.visible = false    
-//         superP.meshCollisionCar.visible = false    
-//         superP.meshFinish.position.copy(superP.mesh.position)
-//         return superP
+
+// const createManagerBuilds = (root) => {
+//     const arr = []
+//     for (let i = 0; i < 30; ++i) {
+//         const data = createMeshGallery(root)
+//         const id = 'build_' + i
+//         arr.push({...data, id, inScene: false })
 //     }
-
-//     const s = {
-//         'location01': createSuper(),
-//         'location02': createSuper(),
-//         'location03': createSuper(),
-//     }
-
-
-//     /** add/remove locations by key */
-//     const addLocationToScene = (keyLocation, x, z) => {
-//         const { mesh, meshCollision, meshCollisionCar, meshFinish, lastXYZ } = s[keyLocation]
-
-//         const y = -42
-//         mesh.position.set(x, y, z)
-//         studio.addToScene(mesh)
-
-//         system_PlayerMoveOnLevel.addItemToPlayerCollision(meshCollision)
-//         //meshCollision.visible = false
-//         meshCollision.position.set(x, y, z)
-//         studio.addToScene(meshCollision)
-        
-//         car.setCollisionForDraw(meshCollisionCar)
-//         meshCollisionCar.visible = false
-//         meshCollisionCar.position.set(x, y, z)
-//         studio.addToScene(meshCollisionCar)
-
-//         meshFinish.position.set(x, y, z)
-//         meshFinish.position.x += lastXYZ[0]
-//         meshFinish.position.y += lastXYZ[1]
-//         meshFinish.position.z += lastXYZ[2]
-//         studio.addToScene(root.unit.mesh)
-//         root.unit.mesh.position.copy(meshFinish.position)
-//         root.unit.mesh.position.y += 20
-//         system_PlayerNearLevelItems.setItemToCheck(meshFinish, 'nearPerson_' + keyLocation, 80)
-//     }
-
-
-//     const removeLocationFromScene = keyLocation => {
-//         const { mesh, meshCollision, meshCollisionCar, meshFinish } = s[keyLocation]
-
-//         studio.removeFromScene(mesh)
-
-//         system_PlayerMoveOnLevel.removeItemFromPlayerCollision(meshCollision)
-//         studio.removeFromScene(meshCollision)
-
-//         studio.removeFromScene(meshCollisionCar)
-//         car.removeCollisionForDraw(meshCollisionCar)
-
-//         studio.removeFromScene(meshFinish)
-//         system_PlayerNearLevelItems.removeItemFromCheck(meshFinish)
-//     }
-
 
 //     return {
-//         removeLocationFromScene,
-//         addLocationToScene,
-//         removeAll: () => {
-//             for (let k in s) {
-//                 removeLocationFromScene(k)
+//         getItem: () => {
+//             for (let i = 0; i < arr.length; ++i) {
+//                 if (!arr[i].inScene) {
+//                     arr[i].inScene = true
+//                     return arr[i]
+//                 }
 //             }
+
+//             return null
+//         },
+//         setFlagAsFree: id => {
+//             for (let i = 0; i < arr.length; ++i) {
+//                 if (arr[i].id === id) {
+//                     arr[i].inScene = false
+//                     break;
+//                 }
+//             }
+
 //         }
 //     }
 // }
+
