@@ -28,7 +28,7 @@ export const pipePlay_05 = async (root: Root, currentIndexLevel = 0) => {
 
     console.log('[MESSAGE:] START PLAY LEVEL: ', currentIndexLevel)
 
-    const { phisics, ui, keyboard, lab, ticker, studio } = root
+    const { phisics, ui, keyboard, lab, ticker, studio, controls, car } = root
 
     let isVisibleDriveCar = false
     phisics.addListenPlayer('collisionCheckerPlayerDrive', 'beginContact', () => {
@@ -40,20 +40,39 @@ export const pipePlay_05 = async (root: Root, currentIndexLevel = 0) => {
         isVisibleDriveCar = false
     })
 
+    let isInCar = false
     let isAllInGreen = false
-    const onEnterCar = async (is: boolean) => {
+    const onEnterCar = async (isPress: boolean) => {
+        if (isPress) { 
+            return 
+        }
         if (!isVisibleDriveCar) { 
             return
         }
         if (!isAllInGreen) {
+            isAllInGreen = true
             await toGreenTheme(root)
         }
+
+        if (!isInCar) {
+            //controls.disable()
+            isInCar = true
+            controls.disable()
+            phisics.playerBody.position.x = 1000
+            phisics.carBody.position.y = 5
+            phisics.sleepPlayerBody()
+            studio.toggleToCarCamera()
+            car.isFreeze = false
+        }
+
+        //console.log('enter car', is)
     }
     const unsubscr = keyboard.on('E', onEnterCar)
 
+    const carMesh = car.getModel()
     const checkerChangeLocation = createCheckerChangeLocationKey(SIZE_QUADRANT, 0, 0)
     ticker.on((t: number) => {
-        const l = checkerChangeLocation.checkChanged(studio.camera.position.x, studio.camera.position.z)
+        const l = checkerChangeLocation.checkChanged(carMesh.position.x, carMesh.position.z)
         if (!l) { return;  }
         lab.updateBigElems(l.removedQs, l.addedQs)
     })

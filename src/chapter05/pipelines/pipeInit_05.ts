@@ -31,6 +31,7 @@ export const pipeInit_05 = async (root: Root) => {
     phisics.init(root)
     ticker.on(phisics.update.bind(phisics))
     phisics.createPlayer()
+    phisics.createCar()
     const camera = studio.camera
     phisics.setPlayerPosition(camera.position.x, camera.position.y, camera.position.z)
 
@@ -46,13 +47,14 @@ export const pipeInit_05 = async (root: Root) => {
 
     car.init(root)
     root.studio.add(car.getModel())
+    car.add(studio.carCamera)
     phisics.addMeshToCollision(car.getCollision())
     phisics.addMeshToCollision(car.getCheckerPlayerDrive(), false)
 
     body.init(root)
 
-    pers.init(root)
-    ticker.on(pers.update.bind(pers))
+    //pers.init(root)
+    //ticker.on(pers.update.bind(pers))
     
     ui.init(root)
     ui.hideBackgroundStartScreen()

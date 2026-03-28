@@ -6,7 +6,8 @@ import { _M } from '_CORE/_M/_m'
 
 export class Car {
     _root: Root
-    _model: THREE.Mesh
+    _model: THREE.Object3D
+    _modelM: THREE.Mesh
     _phase: number
     _battery: THREE.Mesh
     _camera: THREE.PerspectiveCamera
@@ -34,54 +35,54 @@ export class Car {
     init (root: Root) {
         const {
             assets,
-            //emitter,
             materials,
         } = root
         this._root = root
 
-        this._model = assets['levelObj'].children.filter((item: THREE.Mesh) => item.name === 'CAR_102G')[0]
-        this._model.material = materials.carNorm
-        this._model.scale.set(.05, .05, .05)
-        this._model.position.set(0, .5, 0)
+        this._model = new THREE.Object3D()
+        
+        this._modelM = assets['levelObj'].children.filter((item: THREE.Mesh) => item.name === 'CAR_102G')[0]
+        this._modelM.material = materials.carNorm
+        this._modelM.scale.set(.05, .05, .05)
+        this._modelM.position.set(0, .5, 0)
+        this._model.add(this._modelM)
 
         const shadow = new THREE.Mesh(new THREE.PlaneGeometry(45, 70), root.materials.carShadow)
         shadow.rotation.x = -Math.PI / 2
         shadow.position.x = -1
         shadow.position.y = -9.5
         shadow.position.z = 2
-        this._model.add(shadow)
+        this._modelM.add(shadow)
 
         const part = assets['levelObj'].children.filter((item: THREE.Mesh) => item.name === 'CAR_102')[0]
         part.material = materials.testBlack
-        this._model.add(part)
+        this._modelM.add(part)
 
         this._phase = 0
         this._battery = assets['levelObj'].children.filter((item: THREE.Mesh) => item.name === 'battary')[0]
-
         this._battery.material = materials.carBattery
         this._battery.material.opacity = 0
-        this._model.add(this._battery)
+        this._modelM.add(this._battery)
 
-        this._camera = new THREE.PerspectiveCamera(80, window.innerWidth/window.innerHeight, .5, 100000)
-        this._camera.position.y = 15
-        this._model.add(this._camera)
-
+        //this._camera = new THREE.PerspectiveCamera(80, window.innerWidth/window.innerHeight, .5, 100000)
+        //this._camera.position.y = 15
+        //this._model.add(this._camera)
 
         this._createCarCollision()
 
-        this._frontObj = new THREE.Object3D()
-        this._frontObj.position.set(0, 0, -.5)
-        this._model.add(this._frontObj)
+        //this._frontObj = new THREE.Object3D()
+        //this._frontObj.position.set(0, 0, -.5)
+        //this._model.add(this._frontObj)
 
-        this._backObj = new THREE.Object3D()
-        this._backObj.position.set(0, 0, .5)
-        this._model.add(this._backObj)
+        //this._backObj = new THREE.Object3D()
+        //this._backObj.position.set(0, 0, .5)
+        //this._model.add(this._backObj)
 
 
         this._compass = null
         setTimeout(() => {
             this._compass = createCarCompas(root)
-            this._compass.addToParent(this._model)
+            this._compass.addToParent(this._modelM)
             this._compass.setArrowPosition(0, 4.3, -26)
             this.setTargetPosition = (val: THREE.Vector3) => {
                 this._compass.setTargetPosition(val)
@@ -97,30 +98,42 @@ export class Car {
 
         this.isFreeze = true
 
-        let keys: { [key: string]: boolean } = {}
+        // let keys: { [key: string]: boolean } = {}
 
         this._onChangeStateIsStay = () => {}
 
 
+        // this._spd = 0
+        // this._acc = 0.1
+        // this._deceleration = 0.02
+        // this._maxSpdFront = -10
+        // this._maxSpdBack = 10
+        // this._spdRot = 0.03
+
+
         this._spd = 0
-        this._acc = 0.1
-        this._deceleration = 0.02
-        this._maxSpdFront = -10
-        //this._maxSpdBack = 1
-        this._maxSpdBack = 10
+        this._acc = 0.02
+        this._deceleration = 0.0001
+        this._maxSpdFront = -100
+        this._maxSpdBack = 100
         this._spdRot = 0.03
 
         this._isCarStay = true
 
-        this.update = (data: any) => {
+        const dir = new THREE.Vector3(0, 0, -1)
+        const up = new THREE.Vector3(0, 1, 0)
+
+        this.update = (d: number) => {
             if (this.isFreeze) {
                 return;
             }
 
+            // console.log('@@#@')
+
             /** move car *************/
             if (this._spd < 0) {
                 //if (!checkCollision(this._frontObj, 30)) {
-                    this._model.translateZ(this._spd * data.count)
+                    //this._model.translateZ(this._spd * d)
                     this._compass.update()
                 //} else {
                 //    this._spd = 0
@@ -128,7 +141,7 @@ export class Car {
             }
             if (this._spd > 0) {
                 //if (!checkCollision(this._backObj, 30)) {
-                    this._model.translateZ(this._spd * data.count)
+                    // this._model.translateZ(this._spd * d)
                     this._compass.update()
                 //} else {
                 //    this._spd = 0
@@ -137,16 +150,19 @@ export class Car {
 
 
             /** acceleration update speed *********/
-            if (keys['up']) {
+            if (root.keyboard.isForward) {
+                // console.log('WEWE FORVWARD spd', this._spd)
                 this._spd -= this._acc
             }
-            if (keys['down']) {
+            if (root.keyboard.isBackward) {
                 this._spd += this._acc
             }
 
 
             /** slowdown update speed *********/
-            if (Math.abs(this._spd) > 0.001) {
+            if (Math.abs(this._spd) < 0.00001) { 
+                //this._spd = 0
+            } else {
                 if (this._spd > 0) {
                     this._spd -= this._deceleration
                     if (this._spd < 0) {
@@ -163,41 +179,57 @@ export class Car {
 
                 /** update car rotation ***********/
                 const rotBySpeed = Math.min(1, Math.max(0, Math.abs(this._spd)))
-                if (keys['left']) {
+                if (root.keyboard.isLeft) {
                     if (this._spd < 0) {
+                        dir.applyAxisAngle(up, this._spdRot * rotBySpeed)
                         this._model.rotation.y += (this._spdRot * rotBySpeed)
                     }
                     if (this._spd > 0) {
+                        dir.applyAxisAngle(up, -this._spdRot * rotBySpeed)
                         this._model.rotation.y -= (this._spdRot * rotBySpeed)
                     }
 
                 }
-                if (keys['right']) {
+                if (root.keyboard.isRight) {
                     if (this._spd < 0) {
+                        dir.applyAxisAngle(up, -this._spdRot * rotBySpeed)
                         this._model.rotation.y -= (this._spdRot * rotBySpeed)
                     }
                     if (this._spd > 0) {
+                        dir.applyAxisAngle(up, this._spdRot * rotBySpeed)
                         this._model.rotation.y += (this._spdRot * rotBySpeed)
                     }
                 }
-            } else {
-                this._spd = 0
             }
+
+            const { carBody } = this._root.phisics
+            if (carBody) {
+                console.log('update by carBody spd', this._spd)
+                carBody.velocity.x = Math.sin(this._model.rotation.y) * this._spd
+                carBody.velocity.z = Math.cos(this._model.rotation.y) * this._spd
+                //carBody.position.y = .5
+
+                this._model.position.x = carBody.position.x
+                this._model.position.z = carBody.position.z 
+                this._model.position.y = carBody.position.y
+            }
+
 
             /** callback change state stay or move *****/
-            if (this._isCarStay && this._spd !== 0) {
-                this._isCarStay = false
-                //root.system_Sound.startCar()
-                this._onChangeStateIsStay('carStart')
-            }
-            if (!this._isCarStay && this._spd === 0) {
-                console.log('stop')
-                this._isCarStay = true
-                //root.system_Sound.stopCar()
-                this._onChangeStateIsStay('carStop')
-            }
+            // if (this._isCarStay && this._spd !== 0) {
+            //     this._isCarStay = false
+            //     //root.system_Sound.startCar()
+            //     this._onChangeStateIsStay('carStart')
+            // }
+            // if (!this._isCarStay && this._spd === 0) {
+            //     console.log('stop')
+            //     this._isCarStay = true
+            //     //root.system_Sound.stopCar()
+            //     this._onChangeStateIsStay('carStop')
+            // }
         }
         
+        root.ticker.on(this.update.bind(this))
         //emitter.subscribe('keyEvent')(data => keys = data)
         //emitter.subscribe('frameUpdate')(update)
     }
@@ -252,13 +284,17 @@ export class Car {
 
         if (key === 'green') {
             this._compass.changeColor('green')
-            this._model.material = materials.carGreen
+            this._modelM.material = materials.carGreen
         }
         if (key === 'red') {
             this._compass.changeColor('normal')
-            this._model.material = materials.carNorm
+            this._modelM.material = materials.carNorm
         }
 
+    }
+
+    add(m: THREE.Object3D) {
+        this._model.add(m)
     }
 
     updateBattary () {

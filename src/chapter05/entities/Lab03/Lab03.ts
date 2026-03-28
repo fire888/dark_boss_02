@@ -3,7 +3,12 @@ import { createMeshBigElem } from './meshBigElem'
 import { Root } from '../../index'
 import * as THREE from 'three'
 
-export const SIZE_QUADRANT = 500
+//export const SIZE_QUADRANT = 500
+export const SIZE_QUADRANT = 50
+const N_ELEMS = 30
+//const N_ELEMS = 1
+//const N_STAIRS = 3
+const N_STAIRS = 1
 
 export class Labyrinth {
     _root: Root
@@ -17,22 +22,22 @@ export class Labyrinth {
         this._root = root
 
         const groundC = new THREE.Mesh(
-            new THREE.BoxGeometry(1500, 0.1, 1500),
+            new THREE.BoxGeometry(1500, 1, 1500),
             new THREE.MeshBasicMaterial({ color: 0xff0000 })
         )
         groundC.name = 'collisionGround'
-        groundC.position.y = 0
+        groundC.position.y = -.5 
         groundC.position.z = 0
         groundC.position.x = 0
         root.phisics.addMeshToCollision(groundC)
 
-        for (let i = 0; i < 3; ++i) {
+        for (let i = 0; i < N_STAIRS; ++i) {
             const { mesh, meshCollision, meshFinish, lastXYZ } = createMeshSuper(root)
             meshCollision.name = 'collisionStairs_' + i
             this.locations.push({ mesh, meshCollision, meshFinish, lastXYZ })
         }
 
-        for (let i = 0; i < 30; ++i) {
+        for (let i = 0; i < N_ELEMS; ++i) {
             const data = createMeshBigElem(root)
             const id = i
             this.bigElems.push({...data, id, inScene: false })
@@ -48,7 +53,7 @@ export class Labyrinth {
 
         meshCollision.position.set(x, y, z)
         this._root.phisics.addMeshToCollision(meshCollision)
-        //this._root.studio.add(meshCollision)
+        this._root.studio.add(meshCollision)
         
         //car.setCollisionForDraw(meshCollisionCar)
         //meshCollisionCar.visible = false
@@ -91,13 +96,9 @@ export class Labyrinth {
             //})
             //system_PlayerMoveOnLevel.addItemToPlayerCollision(floor)
 
-
-
             /** add build ******************/
             const rCount = Math.floor(Math.random() * 8)
             for (let j = 0; j < rCount; ++j) {                
-                
-                
                 const buildingData = this._getRandomItemNotInScene()
                 if (!buildingData) {
                     continue;
@@ -108,10 +109,12 @@ export class Labyrinth {
                 this._root.studio.add(mesh)
 
                 //meshCollision.visible = false
+                meshCollision.name = 'collisionBuild_' + Math.floor(Math.random() * 1000)
                 meshCollision.position.copy(mesh.position)
                 //studio.addToScene(meshCollision)
                 //system_PlayerMoveOnLevel.addItemToPlayerCollision(meshCollision)
                 this._root.phisics.addMeshToCollision(meshCollision)
+                this._root.studio.add(meshCollision)
 
                 //meshCollisionCar.visible = false
                 //meshCollisionCar.position.copy(mesh.position)

@@ -43,6 +43,7 @@ export class Phisics {
     physicsMaterial: Material
     ground: BodyN
     playerBody: BodyN
+    carBody: BodyN
     cannonDebugger: any
 
     init (root: Core) {
@@ -81,7 +82,7 @@ export class Phisics {
 
         // DEBUGGER PHISICS
         // @ts-ignore
-        // this.cannonDebugger = new CannonDebugger(root.studio.scene, this.world, {})
+        this.cannonDebugger = new CannonDebugger(root.studio.scene, this.world, {})
     }
 
     createPlayer () {
@@ -109,6 +110,19 @@ export class Phisics {
             }
             this._checkPlayerContacts('endContact', event)
         })
+        console.log('this.playerBody', this.playerBody)
+    }
+
+    createCar () {
+        const sphere = new Sphere(2)
+        this.carBody = new BodyN({ 
+            mass: .1,
+            linearDamping: .99,
+        })
+        this.carBody.myName = 'carBody'
+        this.carBody.addShape(sphere)
+
+        this.world.addBody(this.carBody)
     }
     
     addMeshToCollision (mesh: THREE.Mesh, stopIfCollide: boolean = true) {
@@ -197,6 +211,10 @@ export class Phisics {
     stopPlayerBody () {
         this.playerBody.velocity.x = 0
         this.playerBody.velocity.z = 0
+    }
+
+    sleepPlayerBody () {
+        this.playerBody.sleep()
     }
 
     setIsUpdate(is: boolean) {

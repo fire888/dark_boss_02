@@ -38,6 +38,7 @@ export const pipelineInit = async (root: Root) => {
     ticker.on(phisics.update.bind(phisics))
     phisics.createPlayer()
     phisics.setPlayerPosition(CONSTANTS.PLAYER_START_POS[0], CONSTANTS.PLAYER_START_POS[1], CONSTANTS.PLAYER_START_POS[2])
+    phisics.createCar()
 
     floor.init(root)
     studio.add(floor.mesh)

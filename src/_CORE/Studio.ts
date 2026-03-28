@@ -37,6 +37,7 @@ export class Studio {
     amb: THREE.AmbientLight
     ssaoPass: SSAOPass
     saturatePass: ShaderPass
+    renderPass: RenderPass
     composer: EffectComposer | null
     
     init (root: Core) {
@@ -113,8 +114,8 @@ export class Studio {
 
         if (studioConf.SSAO || studioConf.SSMA || studioConf.bokehPass || studioConf.saturatePass) {
             this.composer = new EffectComposer(this.renderer)
-            const renderPass = new RenderPass(this.scene, this.camera)
-            this.composer.addPass(renderPass)
+            this.renderPass = new RenderPass(this.scene, this.camera)
+            this.composer.addPass(this.renderPass)
         }
 
         if (studioConf.SSMA) {

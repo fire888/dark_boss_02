@@ -3,7 +3,7 @@ import { Keyboard } from "_CORE/Keyboard"
 import { Phisics } from "_CORE/Phisics"
 import { ControlsSystem } from "_CORE/controls/ControlsSystem"
 import { DeviceData } from "_CORE/DeviceData"
-import { Studio } from "_CORE/Studio"
+//import { Studio } from "_CORE/Studio"
 import { LoaderAssets } from "_CORE/Loader"
 
 import { CONSTANTS, STUDIO_CONF, CONTROLS_CONF, LOAD_ASSETS } from "./constants/CONSTANTS"
@@ -25,8 +25,10 @@ import { Core } from '_CORE/types'
 import { Car } from "./entities/Car"
 import { Body } from "./entities/Body"
 import { Pers } from './entities/Pers'
+import { StudioCustom } from "./entities/StudioCustom"
 
 export interface Root extends Core {
+    studio: StudioCustom
     CONSTANTS: typeof CONSTANTS,
     ui: UiCustom,
     controls: ControlsSystem,
@@ -57,7 +59,7 @@ window.addEventListener("DOMContentLoaded", async () => {
         assets: {},
         ticker: new Ticker(),
         studioConf: STUDIO_CONF, 
-        studio: new Studio(),
+        studio: new StudioCustom(),
         keyboard: new Keyboard(),
 
         controlsConf: CONTROLS_CONF,
