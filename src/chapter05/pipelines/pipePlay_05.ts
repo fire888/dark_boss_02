@@ -42,6 +42,17 @@ export const pipePlay_05 = async (root: Root, currentIndexLevel = 0) => {
         lab.updateBigElems(l.removedQs, l.addedQs)
     })
 
+
+    const addNextStairs = () => {
+        const locData = LOCATIONS_QUADRANTS[currentLocIndex]
+        const p = locData.loc.split('_')
+        const x = +p[0] * SIZE_QUADRANT
+        const z = +p[1] * SIZE_QUADRANT
+        lab.addStairToScene(currentLocIndex, x, z)
+        car.setCompasTarget(new THREE.Vector3(x, 0, z))
+        pers.mesh.position.copy(lab.meshFinish.position)
+    }
+
     const toGreenWorld = async () => {
         car.toggleMat('green')
         studio.setSceneBackgroundCube(root.assets['skyboxGreenStars'])
@@ -50,14 +61,7 @@ export const pipePlay_05 = async (root: Root, currentIndexLevel = 0) => {
         body.hide()
         lab.removeNormalFloor()
         lab.addBigElems(checkerChangeLocation.getCurrent().currentEnv)
-        
-        const locData = LOCATIONS_QUADRANTS[currentLocIndex]
-        const p = locData.loc.split('_')
-        const x = +p[0] * SIZE_QUADRANT
-        const z = +p[1] * SIZE_QUADRANT
-        lab.addStairToScene(currentLocIndex, x, z)
-        car.setCompasTarget(new THREE.Vector3(x, 0, z))
-        pers.mesh.position.copy(lab.meshFinish.position)
+        addNextStairs()
     }
 
 
@@ -103,7 +107,33 @@ export const pipePlay_05 = async (root: Root, currentIndexLevel = 0) => {
     const unsubscr = keyboard.on('E', onEnterCar)
 
 
+    const waitNearPers = () => {
+        return new Promise((resolve) => {
+            const pos = pers.mesh.position
+            const camPos = studio.camera.position
+            const uns = ticker.on(() => {
+                if (pos.distanceTo(camPos) < 5) {
+                    uns()
+                    resolve(true)
+                }
+            })
+        })        
+    }
 
+    await waitNearPers()
+    console.log('[MESSAGE:] NEXT PERS 2')
+
+    ++currentLocIndex
+    addNextStairs()
+    await waitNearPers()
+
+    console.log('[MESSAGE:] NEXT PERS 3')
+
+    ++currentLocIndex
+    addNextStairs()
+    await waitNearPers()
+
+    console.log('[MESSAGE:] NEXT PERS 4')
 
 
 

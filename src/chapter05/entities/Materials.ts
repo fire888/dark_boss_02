@@ -253,9 +253,9 @@ export class Materials {
 
         this.unit = new THREE.MeshPhongMaterial({
             color: 0xffffff,
-            emissive: 0x666666,
-            reflectivity: 5,
-            shininess: 5,
+            emissive: 0x666600,
+            //reflectivity: 5,
+            //shininess: 5,
             vertexColors: true,
             flatShading: false,
             side: THREE.DoubleSide,

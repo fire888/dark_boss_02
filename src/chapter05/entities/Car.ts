@@ -70,7 +70,6 @@ export class Car {
         setTimeout(() => {
             this._compass = createCarCompas(root)
             this._compass.addToParent(this._model)
-            //this._compass.setArrowPosition(0, 4.3, -26)
             this._compass.setArrowPosition(0, .71, -1.3)
             this.setTargetPosition = (val: THREE.Vector3) => {
                 this._compass.setTargetPosition(val)

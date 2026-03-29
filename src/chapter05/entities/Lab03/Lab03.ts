@@ -8,9 +8,6 @@ export const SIZE_QUADRANT = 500
 const N_ELEMS = 30
 const N_STAIRS = 3
 
-
-
-
 type M = {
     mesh: THREE.Mesh
     meshCollision: THREE.Mesh
