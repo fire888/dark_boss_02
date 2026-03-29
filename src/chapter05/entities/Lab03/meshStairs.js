@@ -102,9 +102,11 @@ export const createMeshSuper = (root) => {
         }
     }
     const meshFinish = new THREE.Mesh(
-        new THREE.BoxGeometry(30, 30, 30),
+        new THREE.BoxGeometry(1, 1, 1),
         new THREE.MeshBasicMaterial({ color: 0xFF00FF })
     )
+
+    lastXYZ.forEach((v, i) => lastXYZ[i] = v * SCALE)
     meshFinish.position.set(
         lastXYZ[0],
         lastXYZ[1],

@@ -6,7 +6,8 @@ import { createCheckerChangeLocationKey } from './checkerLocationKey'
 import { SIZE_QUADRANT } from 'chapter05/entities/Lab03/Lab03'
 
 const LOCATIONS_QUADRANTS = [
-    { loc: '3_-3' },
+    //{ loc: '3_-3' },
+    { loc: '0_-1' },
     { loc: '-3_-3' },
     { loc: '3_3' },
     { loc: '100_1000' },
@@ -34,11 +35,10 @@ export const pipePlay_05 = async (root: Root, currentIndexLevel = 0) => {
     const carMesh = car.getModel()
     const checkerChangeLocation = createCheckerChangeLocationKey(SIZE_QUADRANT, 0, 0)
     ticker.on((t: number) => {
-        //const l = checkerChangeLocation.checkChanged(carMesh.position.x, carMesh.position.z)
         const pos = isInCar ? phisics.carBody.position : phisics.playerBody.position
         const l = checkerChangeLocation.checkChanged(pos.x, pos.z)
         if (!l) { return; }
-        //console.log('newKey', l.newKey)
+        // console.log('newKey', l.newKey)
         lab.updateBigElems(l.removedQs, l.addedQs)
     })
 
@@ -55,8 +55,9 @@ export const pipePlay_05 = async (root: Root, currentIndexLevel = 0) => {
         const p = locData.loc.split('_')
         const x = +p[0] * SIZE_QUADRANT
         const z = +p[1] * SIZE_QUADRANT
-        const lastXYZ = lab.addStairToScene(currentLocIndex, x, z)
-        pers.mesh.position.set(lastXYZ.x, lastXYZ.y, lastXYZ.z)
+        lab.addStairToScene(currentLocIndex, x, z)
+        car.setCompasTarget(new THREE.Vector3(x, 0, z))
+        pers.mesh.position.copy(lab.meshFinish.position)
     }
 
 

@@ -253,7 +253,7 @@ export class Materials {
 
         this.unit = new THREE.MeshPhongMaterial({
             color: 0xffffff,
-            emissive: 0x000000,
+            emissive: 0x666666,
             reflectivity: 5,
             shininess: 5,
             vertexColors: true,

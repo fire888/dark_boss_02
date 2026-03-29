@@ -9,13 +9,10 @@ export const createCarCompas = (root: Root) => {
 
     //const arrow = root.system_Assets.items.arrow
     const arrow = root.assets['levelObj'].children.filter((item: THREE.Mesh) => item.name === 'arrow')[0]
+    arrow.scale.set(.06, .06, .06)
     arrow.material = root.materials.carNorm
 
     const target = new THREE.Object3D()
-    // const target = new THREE.Mesh(
-    //     new THREE.BoxGeometry(10, 10, 10),
-    //     new THREE.MeshBasicMaterial({ color: 0xff0000 })
-    // )
     target.position.set(-500, -30, -500)
     studio.add(target)
 

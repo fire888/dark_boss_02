@@ -27,6 +27,7 @@ export class Labyrinth {
     floors: M[] = []
     normalFloor: any
     _arrTrash: any[] = []
+    meshFinish: THREE.Mesh
 
     constructor() {}
     async init (root: Root) {
@@ -66,9 +67,9 @@ export class Labyrinth {
         
         meshFinish.position.set(x, y, z)
         meshFinish.position.x += lastXYZ[0]
-        meshFinish.position.y += lastXYZ[1]
+        meshFinish.position.y += lastXYZ[1] + 3
         meshFinish.position.z += lastXYZ[2]
-        return lastXYZ
+        this.meshFinish = meshFinish
     }
 
     removeStairFromScene(index: number) {

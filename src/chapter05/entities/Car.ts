@@ -69,8 +69,9 @@ export class Car {
         this._compass = null
         setTimeout(() => {
             this._compass = createCarCompas(root)
-            this._compass.addToParent(this._modelM)
-            this._compass.setArrowPosition(0, 4.3, -26)
+            this._compass.addToParent(this._model)
+            //this._compass.setArrowPosition(0, 4.3, -26)
+            this._compass.setArrowPosition(0, .71, -1.3)
             this.setTargetPosition = (val: THREE.Vector3) => {
                 this._compass.setTargetPosition(val)
                 this._compass.update()
@@ -95,7 +96,6 @@ export class Car {
 
         root.phisics.carBody.position.y = 1000
         root.phisics.addListen('collisionBuild_', 'beginContact', () => {
-            console.log('on collisionBuild_', name)
             this._spd = 0
         })
 
@@ -204,6 +204,10 @@ export class Car {
         }
         
         root.ticker.on(this.update.bind(this))
+    }
+
+    setCompasTarget (v: THREE.Vector3) {
+        this._compass.setTargetPosition(v)
     }
 
     getModel () {
