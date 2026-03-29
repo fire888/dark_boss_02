@@ -5,42 +5,61 @@ import { Tween, Easing, Interpolation } from '@tweenjs/tween.js'
 import { createCheckerChangeLocationKey } from './checkerLocationKey'
 import { SIZE_QUADRANT } from 'chapter05/entities/Lab03/Lab03'
 
-export const LOCATIONS_QUADRANTS = {
-    //'-4_-1': 'location01',
-    '3_-3': 'location01',
-    '-3_-3': 'location02',
-    '3_3': 'location03',
-    '100_1000': 'locationToFinish',
-}
-
-
-const toGreenTheme = async (root: Root) => {
-    const { car, body, studio, floor } = root
-    car.toggleMat('green')
-    studio.setSceneBackgroundCube(root.assets['skyboxGreenStars'])
-    studio.setFogColor([0, .8, 0])
-    body.hide()
-    floor.toGreen()
-}
-
+const LOCATIONS_QUADRANTS = [
+    { loc: '3_-3' },
+    { loc: '-3_-3' },
+    { loc: '3_3' },
+    { loc: '100_1000' },
+]
 
 export const pipePlay_05 = async (root: Root, currentIndexLevel = 0) => {
 
     console.log('[MESSAGE:] START PLAY LEVEL: ', currentIndexLevel)
 
-    const { phisics, ui, keyboard, lab, ticker, studio, controls, car } = root
+    const { phisics, ui, keyboard, lab, ticker, studio, controls, car, body, pers } = root
 
     let isVisibleDriveCar = false
-    phisics.addListenPlayer('collisionCheckerPlayerDrive', 'beginContact', () => {
+    phisics.addListen('collisionCheckerPlayerDrive', 'beginContact', () => {
         ui.showDriveButton()
         isVisibleDriveCar = true
     })
-    phisics.addListenPlayer('collisionCheckerPlayerDrive', 'endContact', () => {
+    phisics.addListen('collisionCheckerPlayerDrive', 'endContact', () => {
         ui.hideDriveButton()
         isVisibleDriveCar = false
     })
 
     let isInCar = false
+    let currentLocIndex = 0
+
+    const carMesh = car.getModel()
+    const checkerChangeLocation = createCheckerChangeLocationKey(SIZE_QUADRANT, 0, 0)
+    ticker.on((t: number) => {
+        //const l = checkerChangeLocation.checkChanged(carMesh.position.x, carMesh.position.z)
+        const pos = isInCar ? phisics.carBody.position : phisics.playerBody.position
+        const l = checkerChangeLocation.checkChanged(pos.x, pos.z)
+        if (!l) { return; }
+        //console.log('newKey', l.newKey)
+        lab.updateBigElems(l.removedQs, l.addedQs)
+    })
+
+    const toGreenWorld = async () => {
+        car.toggleMat('green')
+        studio.setSceneBackgroundCube(root.assets['skyboxGreenStars'])
+        studio.setFogColor([0, 0, 0])
+        studio.setFogNearFar(400, 800)
+        body.hide()
+        lab.removeNormalFloor()
+        lab.addBigElems(checkerChangeLocation.getCurrent().currentEnv)
+        
+        const locData = LOCATIONS_QUADRANTS[currentLocIndex]
+        const p = locData.loc.split('_')
+        const x = +p[0] * SIZE_QUADRANT
+        const z = +p[1] * SIZE_QUADRANT
+        const lastXYZ = lab.addStairToScene(currentLocIndex, x, z)
+        pers.mesh.position.set(lastXYZ.x, lastXYZ.y, lastXYZ.z)
+    }
+
+
     let isAllInGreen = false
     const onEnterCar = async (isPress: boolean) => {
         if (isPress) { 
@@ -51,7 +70,7 @@ export const pipePlay_05 = async (root: Root, currentIndexLevel = 0) => {
         }
         if (!isAllInGreen) {
             isAllInGreen = true
-            await toGreenTheme(root)
+            await toGreenWorld()
         }
 
         if (!isInCar) {
@@ -59,23 +78,28 @@ export const pipePlay_05 = async (root: Root, currentIndexLevel = 0) => {
             isInCar = true
             controls.disable()
             phisics.playerBody.position.x = 1000
-            phisics.carBody.position.y = 5
-            phisics.sleepPlayerBody()
+            phisics.carBody.position.y = 1.2
+            //phisics.sleepPlayerBody()
             studio.toggleToCarCamera()
             car.isFreeze = false
+        } else {
+            isInCar = false
+            phisics.carBody.position.y = 1000
+
+            controls.enable()
+
+            const { x, y, z } = car.getModel().position
+            phisics.playerBody.position.x = x
+            phisics.playerBody.position.y = y + 1
+            phisics.playerBody.position.z = z
+            car.isFreeze = true
+            controls.enable()
+            studio.toggleToPlayerCamera()
         }
 
-        //console.log('enter car', is)
+
     }
     const unsubscr = keyboard.on('E', onEnterCar)
-
-    const carMesh = car.getModel()
-    const checkerChangeLocation = createCheckerChangeLocationKey(SIZE_QUADRANT, 0, 0)
-    ticker.on((t: number) => {
-        const l = checkerChangeLocation.checkChanged(carMesh.position.x, carMesh.position.z)
-        if (!l) { return;  }
-        lab.updateBigElems(l.removedQs, l.addedQs)
-    })
 
 
 
@@ -123,10 +147,6 @@ export const pipePlay_05 = async (root: Root, currentIndexLevel = 0) => {
 
         //     }
         // }
-
-
-
-
 
     //setTimeout(unsubscr, 10000)
 }

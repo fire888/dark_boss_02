@@ -13,9 +13,15 @@ export class StudioCustom extends Studio {
     }
 
     toggleToCarCamera() {
-        console.log('ERERERE')
         this.normCamera = this.camera
         this.camera = this.carCamera
+        if (this.renderPass) {
+            this.renderPass.camera = this.camera
+        }
+    }
+
+    toggleToPlayerCamera() {
+        this.camera = this.normCamera
         if (this.renderPass) {
             this.renderPass.camera = this.camera
         }

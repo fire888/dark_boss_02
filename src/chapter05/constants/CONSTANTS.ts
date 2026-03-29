@@ -89,7 +89,7 @@ export const STUDIO_CONF: StudioConf = {
 }
 
 export const CONTROLS_CONF: ControlsConf = {
-    playerSpeedForward: 10,
+    playerSpeedForward: 8,
     amplitudeLeftRightWalk: 0.0002,
     jumpSpeed: 8,
     isCanJump: true

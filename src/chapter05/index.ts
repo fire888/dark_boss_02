@@ -3,12 +3,10 @@ import { Keyboard } from "_CORE/Keyboard"
 import { Phisics } from "_CORE/Phisics"
 import { ControlsSystem } from "_CORE/controls/ControlsSystem"
 import { DeviceData } from "_CORE/DeviceData"
-//import { Studio } from "_CORE/Studio"
 import { LoaderAssets } from "_CORE/Loader"
 
 import { CONSTANTS, STUDIO_CONF, CONTROLS_CONF, LOAD_ASSETS } from "./constants/CONSTANTS"
 
-import { Floor } from "./entities/Floor"
 import { Particles } from './entities/Particles'
 
 import { UiCustom } from "./entities/UiCustom"
@@ -32,7 +30,6 @@ export interface Root extends Core {
     CONSTANTS: typeof CONSTANTS,
     ui: UiCustom,
     controls: ControlsSystem,
-    floor: Floor,
     particles: Particles,
 
     LOAD_ASSETS: typeof LOAD_ASSETS,
@@ -66,7 +63,6 @@ window.addEventListener("DOMContentLoaded", async () => {
         controls: new ControlsSystem(),
         
         ui: new UiCustom(),
-        floor: new Floor(),
         particles: new Particles(),
 
         LOAD_ASSETS,

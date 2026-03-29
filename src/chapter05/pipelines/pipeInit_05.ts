@@ -4,9 +4,8 @@ import { IS_DEV_START_ORBIT } from '../constants/CONSTANTS'
 
 export const pipeInit_05 = async (root: Root) => {
     const {
-        CONSTANTS, LOAD_ASSETS,
+        LOAD_ASSETS,
         studio, controls, ui, ticker,
-        floor,
         loader, phisics, lab,
         audio, materials, particles, car, body, pers
     } = root
@@ -25,8 +24,6 @@ export const pipeInit_05 = async (root: Root) => {
     studio.init(root)
     ticker.on(studio.render.bind(studio))
     //studio.addAxisHelper()
-    //studio.fog.far = 5
-    //studio.fog.near = .2 
 
     phisics.init(root)
     ticker.on(phisics.update.bind(phisics))
@@ -34,10 +31,6 @@ export const pipeInit_05 = async (root: Root) => {
     phisics.createCar()
     const camera = studio.camera
     phisics.setPlayerPosition(camera.position.x, camera.position.y, camera.position.z)
-
-    floor.init(root)
-    floor.mesh.position.set(0, 0, 0)
-    studio.add(floor.mesh)
     
     await lab.init(root)
 
@@ -53,8 +46,9 @@ export const pipeInit_05 = async (root: Root) => {
 
     body.init(root)
 
-    //pers.init(root)
-    //ticker.on(pers.update.bind(pers))
+    pers.init(root)
+    pers.mesh.position.set(10000, 0, 0)
+    ticker.on(pers.update.bind(pers))
     
     ui.init(root)
     ui.hideBackgroundStartScreen()

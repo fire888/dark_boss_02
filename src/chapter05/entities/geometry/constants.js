@@ -1,14 +1,5 @@
 import { MATERIALS_CONF } from "./constants_materials";
 
-export const SIZE_QUADRANT = 5000
-export const LOCATIONS_QUADRANTS = {
-    //'-4_-1': 'location01',
-    '3_-3': 'location01',
-    '-3_-3': 'location02',
-    '3_3': 'location03',
-    '100_1000': 'locationToFinish',
-}
-
 export const MATERIALS_CONFIG = MATERIALS_CONF
 
 export const CONFIG_FOR_INIT = {

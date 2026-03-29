@@ -32,7 +32,6 @@ export const createCheckerChangeLocationKey = (SIZE = 100, x = 0, z = 0) => {
 
 
     let currentEnv = generateEnvByQ(keyX, keyZ)
-
     return {
         checkChanged: (x, z) => {
             const keyX = Math.floor(x / SIZE)

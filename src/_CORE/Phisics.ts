@@ -31,7 +31,6 @@ const createTrimesh = (geometry: THREE.BufferGeometry) => {
 }
 
 export class Phisics {
-    _cbsOnCollision: (() => void)[] = []
     _cbsOnBeginEndContacts: { 
         [key: string]: { begin?: () => void, end?: () => void } 
     } = {}
@@ -82,7 +81,7 @@ export class Phisics {
 
         // DEBUGGER PHISICS
         // @ts-ignore
-        this.cannonDebugger = new CannonDebugger(root.studio.scene, this.world, {})
+        // this.cannonDebugger = new CannonDebugger(root.studio.scene, this.world, {})
     }
 
     createPlayer () {
@@ -101,28 +100,34 @@ export class Phisics {
             if (bodyA.id === 0 && bodyB.id !== 0) {
                 this.isGround = true 
             }
-            this._checkPlayerContacts('beginContact', event)
+            this._checkCbsContacts('playerBody', 'beginContact', event)
         })
         this.world.addEventListener('endContact', (event: any) => {
             const { bodyA, bodyB } = event;
             if (bodyA && bodyB && bodyA.id === 0 && bodyB.id !== 0) {
                 this.isGround = false
             }
-            this._checkPlayerContacts('endContact', event)
+            this._checkCbsContacts('playerBody', 'endContact', event)
         })
-        console.log('this.playerBody', this.playerBody)
     }
 
     createCar () {
         const sphere = new Sphere(2)
         this.carBody = new BodyN({ 
-            mass: .1,
+            mass: 100,
             linearDamping: .99,
         })
         this.carBody.myName = 'carBody'
         this.carBody.addShape(sphere)
 
         this.world.addBody(this.carBody)
+
+        this.world.addEventListener('beginContact', (event: any) => {
+            this._checkCbsContacts('carBody', 'beginContact', event)
+        })
+        this.world.addEventListener('endContact', (event: any) => {
+            this._checkCbsContacts('carBody', 'endContact', event)
+        })
     }
     
     addMeshToCollision (mesh: THREE.Mesh, stopIfCollide: boolean = true) {
@@ -152,7 +157,7 @@ export class Phisics {
         this._bodies.push(body)
     }
 
-    addListenPlayer(nameBody: string, nameEvent: string, f: () => void) {
+    addListen(nameBody: string, nameEvent: string, f: () => void) {
         if (nameEvent === 'beginContact') {
             if (!this._cbsOnBeginEndContacts[nameBody]) this._cbsOnBeginEndContacts[nameBody] = {}
             this._cbsOnBeginEndContacts[nameBody].begin = f
@@ -241,24 +246,28 @@ export class Phisics {
         }
     }
 
-    _checkPlayerContacts(keyEvent: string, event: any) {
+    _checkCbsContacts(name1: string, keyEvent: string, event: any) {
         const { bodyA, bodyB } = event
         
         let playerBody 
         let anotherBody
-        if (bodyA && bodyA.myName === 'playerBody') { 
+        if (bodyA && bodyA.myName === name1) { 
             playerBody = bodyA
             anotherBody = bodyB
         }
-        if (bodyB && bodyB.myName === 'playerBody') { 
+        if (bodyB && bodyB.myName === name1) { 
             playerBody = bodyB
             anotherBody = bodyA 
         }
         if (playerBody && anotherBody) {
             for (const key in this._cbsOnBeginEndContacts) {
-                if (key === anotherBody.myName) { 
-                    if (keyEvent === 'beginContact') this._cbsOnBeginEndContacts[key]?.begin() 
-                    if (keyEvent === 'endContact') this._cbsOnBeginEndContacts[key]?.end() 
+                if (anotherBody.myName.includes(key)) {
+                    if (keyEvent === 'beginContact') { 
+                        this._cbsOnBeginEndContacts[key]?.begin && this._cbsOnBeginEndContacts[key]?.begin()  
+                    }
+                    if (keyEvent === 'endContact') { 
+                        this._cbsOnBeginEndContacts[key]?.end && this._cbsOnBeginEndContacts[key]?.end() 
+                    } 
                 }
             }
         }

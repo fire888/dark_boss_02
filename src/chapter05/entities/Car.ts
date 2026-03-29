@@ -64,20 +64,7 @@ export class Car {
         this._battery.material.opacity = 0
         this._modelM.add(this._battery)
 
-        //this._camera = new THREE.PerspectiveCamera(80, window.innerWidth/window.innerHeight, .5, 100000)
-        //this._camera.position.y = 15
-        //this._model.add(this._camera)
-
         this._createCarCollision()
-
-        //this._frontObj = new THREE.Object3D()
-        //this._frontObj.position.set(0, 0, -.5)
-        //this._model.add(this._frontObj)
-
-        //this._backObj = new THREE.Object3D()
-        //this._backObj.position.set(0, 0, .5)
-        //this._model.add(this._backObj)
-
 
         this._compass = null
         setTimeout(() => {
@@ -90,29 +77,12 @@ export class Car {
             }
         }) 
 
-        //this._collisionsWalls = new helper_CollisionsItems_v02()
-        //const checkCollision = (obj, d) => {
-        //    const [is] = this._collisionsWalls.checkCollisions(this._model, obj, d)
-        //    return is;
-        //}
-
         this.isFreeze = true
-
-        // let keys: { [key: string]: boolean } = {}
 
         this._onChangeStateIsStay = () => {}
 
-
-        // this._spd = 0
-        // this._acc = 0.1
-        // this._deceleration = 0.02
-        // this._maxSpdFront = -10
-        // this._maxSpdBack = 10
-        // this._spdRot = 0.03
-
-
         this._spd = 0
-        this._acc = 0.02
+        this._acc = 0.5
         this._deceleration = 0.0001
         this._maxSpdFront = -100
         this._maxSpdBack = 100
@@ -123,35 +93,29 @@ export class Car {
         const dir = new THREE.Vector3(0, 0, -1)
         const up = new THREE.Vector3(0, 1, 0)
 
+        root.phisics.carBody.position.y = 1000
+        root.phisics.addListen('collisionBuild_', 'beginContact', () => {
+            console.log('on collisionBuild_', name)
+            this._spd = 0
+        })
+
+
         this.update = (d: number) => {
             if (this.isFreeze) {
                 return;
             }
 
-            // console.log('@@#@')
-
             /** move car *************/
             if (this._spd < 0) {
-                //if (!checkCollision(this._frontObj, 30)) {
-                    //this._model.translateZ(this._spd * d)
-                    this._compass.update()
-                //} else {
-                //    this._spd = 0
-                //}
+                this._compass.update()
             }
             if (this._spd > 0) {
-                //if (!checkCollision(this._backObj, 30)) {
-                    // this._model.translateZ(this._spd * d)
-                    this._compass.update()
-                //} else {
-                //    this._spd = 0
-                //}
+                this._compass.update()
             }
 
 
             /** acceleration update speed *********/
             if (root.keyboard.isForward) {
-                // console.log('WEWE FORVWARD spd', this._spd)
                 this._spd -= this._acc
             }
             if (root.keyboard.isBackward) {
@@ -185,8 +149,8 @@ export class Car {
                         this._model.rotation.y += (this._spdRot * rotBySpeed)
                     }
                     if (this._spd > 0) {
-                        dir.applyAxisAngle(up, -this._spdRot * rotBySpeed)
-                        this._model.rotation.y -= (this._spdRot * rotBySpeed)
+                        dir.applyAxisAngle(up, this._spdRot * rotBySpeed)
+                        this._model.rotation.y += (this._spdRot * rotBySpeed)
                     }
 
                 }
@@ -196,22 +160,32 @@ export class Car {
                         this._model.rotation.y -= (this._spdRot * rotBySpeed)
                     }
                     if (this._spd > 0) {
-                        dir.applyAxisAngle(up, this._spdRot * rotBySpeed)
-                        this._model.rotation.y += (this._spdRot * rotBySpeed)
+                        dir.applyAxisAngle(up, -this._spdRot * rotBySpeed)
+                        this._model.rotation.y -= (this._spdRot * rotBySpeed)
                     }
                 }
             }
 
             const { carBody } = this._root.phisics
             if (carBody) {
-                console.log('update by carBody spd', this._spd)
                 carBody.velocity.x = Math.sin(this._model.rotation.y) * this._spd
                 carBody.velocity.z = Math.cos(this._model.rotation.y) * this._spd
                 //carBody.position.y = .5
 
                 this._model.position.x = carBody.position.x
                 this._model.position.z = carBody.position.z 
-                this._model.position.y = carBody.position.y
+                //this._model.position.y = carBody.position.y
+            }
+
+            if (Math.abs(this._spd) < 0.1) {
+                root.phisics.setPositionByKey(
+                    'collisionCheckerPlayerDrive',
+                    this._model.position.x, 0, this._model.position.z
+                )
+                root.phisics.setPositionByKey(
+                    'collisionCar',
+                    this._model.position.x, 0, this._model.position.z
+                )
             }
 
 
@@ -230,16 +204,6 @@ export class Car {
         }
         
         root.ticker.on(this.update.bind(this))
-        //emitter.subscribe('keyEvent')(data => keys = data)
-        //emitter.subscribe('frameUpdate')(update)
-    }
-
-    setCollisionForDraw (mesh: THREE.Mesh) {
-        //this._collisionsWalls.setItemToCollision(mesh)
-    }
-
-    removeCollisionForDraw (mesh: THREE.Mesh) {
-        //this._collisionsWalls.removeItemFromCollision(mesh)
     }
 
     getModel () {
@@ -314,46 +278,35 @@ export class Car {
             const x1 = 1
             const z0 = 1.9
             const z1 = -1.9
-
             const h = .4
-            {
-                const _v = _M.createPolygon(
-                    [x0, h, z0],
-                    [x1, h, z0],
-                    [x1, h, z1],
-                    [x0, h, z1]
-                )
-                v.push(..._v)
-            }
-
+            const _v = _M.createPolygon(
+                [x0, h, z0],
+                [x1, h, z0],
+                [x1, h, z1],
+                [x0, h, z1]
+            )
+            v.push(..._v)
             const m = _M.createMesh({ v })
             m.name = 'collisionCar'
-            //this._root.studio.add(m)
             this._collision = m
         }
 
         {
             const v: number[] = []
-
-            const x0 = -.5
-            const x1 = .5
-            const z0 = 1.2
-            const z1 = -1.2
-
-            const h = 1.3
-            {
-                const _v = _M.createPolygon(
-                    [x0, h, z0],
-                    [x1, h, z0],
-                    [x1, h, z1],
-                    [x0, h, z1]
-                )
-                v.push(..._v)
-            }
-
+            const x0 = -1.5
+            const x1 = 1.5
+            const z0 = 1.5
+            const z1 = -1.5
+            const h = 1
+            const _v = _M.createPolygon(
+                [x0, h, z0],
+                [x1, h, z0],
+                [x1, h, z1],
+                [x0, h, z1]
+            )
+            v.push(..._v)
             const m = _M.createMesh({ v })
             m.name = 'collisionCheckerPlayerDrive'
-            //this._root.studio.add(m)
             this._checkerPlayerDrive = m
         }
     }

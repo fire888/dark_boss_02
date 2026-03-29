@@ -204,7 +204,7 @@ export class Materials {
         const mapGround = root.assets.mapGround
         mapGround.wrapS = THREE.RepeatWrapping
         mapGround.wrapT = THREE.RepeatWrapping
-        mapGround.repeat.set(30, 30)
+        mapGround.repeat.set(10, 10)
 
         this.floorMat1 = new THREE.MeshPhongMaterial({
             color: 0xff77ff,
@@ -220,17 +220,11 @@ export class Materials {
         const mapGroundPoints = root.assets.groundPointsMap
         mapGroundPoints.wrapS = THREE.RepeatWrapping
         mapGroundPoints.wrapT = THREE.RepeatWrapping
-        mapGroundPoints.repeat.set(60, 60)
+        mapGroundPoints.repeat.set(5, 5)
 
         this.floorMatGreen = new THREE.MeshBasicMaterial({
             color: 0x00ff00,
             map: mapGroundPoints,
-            //bumpMap: mapGroundPoints,
-            //bumpScale: 30,
-            //envMap: root.assets.matIronBox,
-            //reflectivity: .01,
-            //shininess: .01,
-            //specular: 0xffffff,
         })
 
         this.bodyShadow = new THREE.MeshBasicMaterial({
