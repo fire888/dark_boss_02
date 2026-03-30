@@ -38,8 +38,7 @@ export const pipePlay_05 = async (root: Root, currentIndexLevel = 0) => {
         const pos = isInCar ? phisics.carBody.position : phisics.playerBody.position
         const l = checkerChangeLocation.checkChanged(pos.x, pos.z)
         if (!l) { return; }
-        // console.log('newKey', l.newKey)
-        lab.updateBigElems(l.removedQs, l.addedQs)
+        lab.updateElemsByLoc(l.removedQs, l.addedQs)
     })
 
 
@@ -60,7 +59,7 @@ export const pipePlay_05 = async (root: Root, currentIndexLevel = 0) => {
         studio.setFogNearFar(400, 800)
         body.hide()
         lab.removeNormalFloor()
-        lab.addBigElems(checkerChangeLocation.getCurrent().currentEnv)
+        lab.addElemsToLoc(checkerChangeLocation.getCurrent().currentEnv)
         addNextStairs()
     }
 
