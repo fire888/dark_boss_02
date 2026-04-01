@@ -25,4 +25,8 @@ export class Body {
     hide() {
         this._root.studio.remove(this.m)
     }
+
+    show () {
+        this._root.studio.add(this.m)
+    }
 }

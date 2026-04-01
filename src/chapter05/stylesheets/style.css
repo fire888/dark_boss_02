@@ -18,3 +18,17 @@
     text-align: center;
     font-weight: bold;
 }
+
+.circle_done {
+    position: absolute;
+    z-index: 100;
+    top: 40px;
+    transform: translate(-50%, -50%);
+    bottom: 40vh;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background-color: #3bc300;
+    border: 3px solid #000000;
+    transition: 0.2s;
+}

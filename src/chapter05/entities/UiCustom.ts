@@ -6,7 +6,8 @@ import '../stylesheets/style.css'
 
 export class UiCustom extends Ui {
     _currentEnergyMinWidth = 0
-    _buttonDriveCar: HTMLElement = null
+    _buttonDriveCar: HTMLDivElement = null
+    _arrDoneCircles: HTMLDivElement[] = [] 
 
     init (root: Root) {
         super.init(root)
@@ -19,14 +20,29 @@ export class UiCustom extends Ui {
         } else {
             this._buttonDriveCar.innerText = 'press E to drive'
         }
-
         document.body.appendChild(this._buttonDriveCar)
+
+        for (let i = 0; i < 5; ++i) {
+            const circle = document.createElement('div')
+            circle.classList.add('circle_done')
+            circle.style.right = 100 + 35 * i + 'px'
+            circle.style.display = 'none' 
+            document.body.appendChild(circle)
+            this._arrDoneCircles.push(circle)
+        }
     }
 
     hideBackgroundStartScreen() {
         const startScreen = document.body.getElementsByClassName('start-screen')[0]
         // @ts-ignore
         startScreen.style.background = 'rgba(0, 0, 0, 0)'
+    }
+
+    showCircleDone (index: number) {
+        if (index < 0 || index >= this._arrDoneCircles.length) return
+        const circle = this._arrDoneCircles[index]
+        circle.style.display = 'block'
+        opacityByTransition(circle, 1, 500)
     }
 
     async hideStartScreen () {
@@ -71,7 +87,7 @@ export class UiCustom extends Ui {
 
 }
 
-const opacityByTransition = (elem: HTMLBaseElement, to: number, time: number) => {
+const opacityByTransition = (elem: HTMLDivElement, to: number, time: number) => {
     return new Promise<void>(res => {
         const obj = { v: to === 1 ? 0 : 1 }
         new Tween(obj)

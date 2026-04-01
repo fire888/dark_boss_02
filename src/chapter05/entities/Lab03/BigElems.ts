@@ -48,6 +48,14 @@ export class BigElems {
         }
     }
 
+    removeAll() {
+        this._arr.forEach((elem) => {
+            if (elem.inScene) {
+                this._removeFromScene(elem)
+            }
+        })
+    }
+
     private _addToScene (elem: any, x: number = 0, z: number = 0) {
         elem.inScene = true
         elem.mesh.position.set(x, 0, z)

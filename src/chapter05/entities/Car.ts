@@ -61,6 +61,7 @@ export class Car {
         this._phase = 0
         this._battery = assets['levelObj'].children.filter((item: THREE.Mesh) => item.name === 'battary')[0]
         this._battery.material = materials.carBattery
+        this._battery.position.add(new THREE.Vector3(0, .5, -2.5))
         this._battery.material.opacity = 0
         this._modelM.add(this._battery)
 
@@ -266,7 +267,8 @@ export class Car {
 
     updateBattary () {
         this._phase += 0.05
-        //this._battery.material.opacity = Math.sin(this._phase) + 1
+        // @ts-ignore
+        this._battery.material.opacity = Math.sin(this._phase) + 1
     }
 
     batteryLight () {

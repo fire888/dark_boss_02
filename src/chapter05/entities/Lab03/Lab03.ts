@@ -32,6 +32,12 @@ export class Labyrinth {
         }
     }
 
+    removeBigElemsFromLoc(locations: string[]): void {
+        for (let i = 0; i < locations.length; i++) {
+            this.bigElems.removeForLocation(locations[i])
+        }
+    }
+
     removeElemsFromLoc(locations: string[]): void {
         for (let i = 0; i < locations.length; i++) {
             this.floors.removeFloorForLocation(locations[i])
@@ -43,9 +49,19 @@ export class Labyrinth {
         this.floors.removeBaseFloor()
     }
 
+    addNormalFloor(): void {
+        this.floors.addBaseFloor()
+    }
+
     updateElemsByLoc(removeArr: string[], addArr: string[]): void {
         this.removeElemsFromLoc(removeArr)
         this.addElemsToLoc(addArr)
+    }
+
+    removeAllGreens () {
+        this.stairs.removeAll()
+        this.bigElems.removeAll()
+        this.floors.removeAll()
     }
 
     private _parseLocation(location: string): { x: number; z: number } {

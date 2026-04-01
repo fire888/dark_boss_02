@@ -58,6 +58,18 @@ export class Floors {
         this._removeFromScene(this.baseFloor)
     }
 
+    addBaseFloor(): void {
+        this._addToScene(this.baseFloor)
+    }
+
+    removeAll() {
+        this._arr.forEach((elem) => {
+            if (elem.inScene) {
+                this._removeFromScene(elem)
+            }
+        })
+    }
+
     private _createFloor(): { mesh: THREE.Mesh; meshCollision: THREE.Mesh } {
         const halfSize = SIZE_QUADRANT * 0.5
 
