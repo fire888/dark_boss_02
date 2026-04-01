@@ -178,14 +178,7 @@ export class Car {
             }
 
             if (Math.abs(this._spd) < 0.1) {
-                root.phisics.setPositionByKey(
-                    'collisionCheckerPlayerDrive',
-                    this._model.position.x, 0, this._model.position.z
-                )
-                root.phisics.setPositionByKey(
-                    'collisionCar',
-                    this._model.position.x, 0, this._model.position.z
-                )
+                this.setCollisionsPos(this._model.position.x, 0, this._model.position.z, this._model.rotation.y)
             }
 
 
@@ -204,6 +197,11 @@ export class Car {
         }
         
         root.ticker.on(this.update.bind(this))
+    }
+
+    setCollisionsPos(x: number, y: number, z: number, rotY = 0) { 
+        this._root.phisics.setPositionByKey('collisionCheckerPlayerDrive', x, y, z, rotY)
+        this._root.phisics.setPositionByKey('collisionCar', x, y, z, rotY)
     }
 
     setCompasTarget (v: THREE.Vector3) {
@@ -227,7 +225,6 @@ export class Car {
     }
 
     toggleFreeze (val: boolean) {
-        console.log('freeze')
         this.isFreeze = val
     }
 
@@ -271,8 +268,10 @@ export class Car {
         this._battery.material.opacity = Math.sin(this._phase) + 1
     }
 
-    batteryLight () {
-        //this._battery.material.opacity = 0
+    hideBattery () {
+        // @ts-ignore 
+        this._battery.material.opacity = 0
+        this._modelM.remove(this._battery)
     }
 
     _createCarCollision () {

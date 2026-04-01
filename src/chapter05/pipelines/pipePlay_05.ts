@@ -4,11 +4,12 @@ import { pause } from '_CORE/helpers/htmlHelpers'
 import { Tween, Easing, Interpolation, add } from '@tweenjs/tween.js'
 import { createCheckerChangeLocationKey } from './checkerLocationKey'
 import { SIZE_QUADRANT } from 'chapter05/entities/Lab03/Lab03'
+import { CONSTANTS, STUDIO_CONF } from '../constants/CONSTANTS'
 
 const LOCATIONS_QUADRANTS = [
-    //{ loc: '3_-3' },
-    // { loc: '-3_-3' },
-    // { loc: '3_3' },
+    { loc: '3_-3' },
+    { loc: '-3_-3' },
+    { loc: '3_3' },
     { loc: '100_1000' },
 ]
 
@@ -19,11 +20,14 @@ export const pipePlay_05 = async (root: Root, currentIndexLevel = 0) => {
     const { phisics, ui, keyboard, lab, ticker, studio, controls, car, body, pers } = root
 
     let isVisibleButtonDriveCar = false
+    let isCanEnterCar = true 
     phisics.addListen('collisionCheckerPlayerDrive', 'beginContact', () => {
+        if (!isCanEnterCar) { return }
         ui.showDriveButton()
         isVisibleButtonDriveCar = true
     })
     phisics.addListen('collisionCheckerPlayerDrive', 'endContact', () => {
+        if (!isCanEnterCar) { return }
         ui.hideDriveButton()
         isVisibleButtonDriveCar = false
     })
@@ -106,11 +110,11 @@ export const pipePlay_05 = async (root: Root, currentIndexLevel = 0) => {
     const waitNearPers = () => {
         return new Promise((resolve) => {
             const uns = ticker.on(() => {
-                console.log('distance to pers', studio.camera.position.distanceTo(pers.mesh.position))
-                if (studio.camera.position.distanceTo(pers.mesh.position) < 5) {
-                    uns()
-                    resolve(true)
+                if (studio.camera.position.distanceTo(pers.mesh.position) > 5) {
+                    return;
                 }
+                uns()
+                resolve(true)
             })
         })        
     }
@@ -128,30 +132,30 @@ export const pipePlay_05 = async (root: Root, currentIndexLevel = 0) => {
 
     let currentLocIndex = -1
     
-    // ++currentLocIndex
-    // addNextStairs(currentLocIndex)
-    // await waitNearPers()
-    // ui.showCircleDone(currentLocIndex)
-    // pers.hide(1000)
-    // await pause(1500)
+    ++currentLocIndex
+    addNextStairs(currentLocIndex)
+    await waitNearPers()
+    ui.showCircleDone(currentLocIndex)
+    pers.hide(1000)
+    await pause(1500)
     
-    // console.log('[MESSAGE:] NEXT PERS 2')
+    console.log('[MESSAGE:] NEXT PERS 2')
 
-    // ++currentLocIndex
-    // addNextStairs(currentLocIndex)
-    // await waitNearPers()
-    // ui.showCircleDone(currentLocIndex)
-    // pers.hide(1000)
-    // await pause(1500)
+    ++currentLocIndex
+    addNextStairs(currentLocIndex)
+    await waitNearPers()
+    ui.showCircleDone(currentLocIndex)
+    pers.hide(1000)
+    await pause(1500)
 
-    // console.log('[MESSAGE:] NEXT PERS 3')
+    console.log('[MESSAGE:] NEXT PERS 3')
 
-    // ++currentLocIndex
-    // addNextStairs(currentLocIndex)
-    // await waitNearPers()
-    // ui.showCircleDone(currentLocIndex)
-    // pers.hide(1000)
-    // await pause(1500)
+    ++currentLocIndex
+    addNextStairs(currentLocIndex)
+    await waitNearPers()
+    ui.showCircleDone(currentLocIndex)
+    pers.hide(1000)
+    await pause(1500)
 
     console.log('[MESSAGE:] NEXT PERS 4')
 
@@ -185,28 +189,28 @@ export const pipePlay_05 = async (root: Root, currentIndexLevel = 0) => {
 
     await waitEnterCar()
 
-    //await pause(60000)
-    await pause(1000)
+    await pause(60000)
+    //await pause(1000)
 
     if (!isInCar) {
         waitEnterCar()
     }
 
-    ticker.on(() => {
+    const stopUpdateBattery = ticker.on(() => {
         car.updateBattary()
     })
 
-    //await pause(7000)
-    await pause(1000)
+    await pause(10000)
+    //await pause(1000)
 
-    disableTryEnterCar()
     unsubscribeUpdateLoc()
 
     lab.removeAllGreens()
     lab.addNormalFloor()
 
-    studio.setFogColor([0, 0, 0])
-    studio.setFogNearFar(1000, 2000)
+    studio.setFogColor(STUDIO_CONF.fogParams.color.toArray())
+    studio.setFogNearFar(5, 80)
+    studio.setSceneBackgroundCube(root.assets['skybox'])
     
     car.toggleMat('red')
 
@@ -214,8 +218,19 @@ export const pipePlay_05 = async (root: Root, currentIndexLevel = 0) => {
 
     await pause(300)
 
-    car.getModel().position.x = 0
-    car.getModel().position.z = 0
+    const carModel = car.getModel()
+    carModel.position.x = 0
+    carModel.position.z = 0
+    carModel.rotation.y = 0
+    phisics.carBody.position.x = 1000
+    car.setCollisionsPos(0, 0, 0, 0)
+    isCanEnterCar = false
+    stopUpdateBattery()
+    car.hideBattery()
 
     fromCar()
+
+    await pause(30000)
+
+    ui.showFinalPage()
 }

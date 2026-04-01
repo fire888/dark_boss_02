@@ -2,7 +2,7 @@ import { Root } from '../../index'
 import { _M } from '_CORE/_M/_m'
 import { createMeshSuper } from './meshStairs'
 
-const BIG_ELEMS_N = 3
+const BIG_ELEMS_N = 4
 
 export class Stairs {
     _arr: any[] = []  
