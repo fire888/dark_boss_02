@@ -8,7 +8,11 @@ V ch05 - start fog
 V ch05 - colorsHtml
 V ch05 - camera align while exit car
 V ch05 - phone controls 
-ch05 - clear assets
+V ch05 - clear assets
+ch05 - car camera vibration while drive
+ch05 - car sound while drive 
+
+ch05 move all geometries in global storage
 
 
 
