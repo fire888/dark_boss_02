@@ -45,6 +45,12 @@ export class UiCustom extends Ui {
         opacityByTransition(circle, 1, 500)
     }
 
+    hideAllCirclesDone () {
+        this._arrDoneCircles.forEach(circle => {
+            circle.style.display = 'none'
+        })
+    }
+
     async hideStartScreen () {
         const loaderCont = document.body.getElementsByClassName('loader')[0]
         // @ts-ignore

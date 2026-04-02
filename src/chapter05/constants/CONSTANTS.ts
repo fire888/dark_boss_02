@@ -2,9 +2,9 @@ import * as THREE from 'three'
 import { StudioConf, ControlsConf } from "_CORE/types"
 import { LoadConf } from '_CORE/Loader'
 
-import audioAmbient from '../assets/audio/ambient_loop.mp3'
+import audioAmbient from '../assets/audio/ambient.mp3'
 import steps from '../assets/audio/steps.mp3'
-import symbol from '../assets/audio/symbol.mp3'
+import soundCar from '../assets/audio/car.mp3'
 import sprite from '../assets/sprite.webp'
 
 import ironNormal from '../assets/concrete/broken_down_concrete2_Normal-dx.jpg'
@@ -102,7 +102,7 @@ export const CONSTANTS = {}
 export const LOAD_ASSETS: LoadConf = [
     { key: 'soundAmbient', src: audioAmbient, loader: 'audio' },
     { key: 'soundStepsMetal', src: steps, loader: 'audio' },
-    { key: 'soundSymbol', src: symbol, loader: 'audio' },
+    { key: 'soundCar', src: soundCar, loader: 'audio' },
     { key: 'sprite', src: sprite, loader: 'texture' },
     { key: 'ironNormal', src: ironNormal, loader: 'texture' },
     { key: 'ironAO', src: ironAO, loader: 'texture' },

@@ -17,7 +17,7 @@ export const pipePlay_05 = async (root: Root, currentIndexLevel = 0) => {
 
     console.log('[MESSAGE:] START PLAY LEVEL: ', currentIndexLevel)
 
-    const { phisics, ui, keyboard, lab, ticker, studio, controls, car, body, pers } = root
+    const { phisics, ui, keyboard, lab, ticker, studio, controls, car, body, pers, audio } = root
 
     let isVisibleButtonDriveCar = false
     let isCanEnterCar = true 
@@ -47,7 +47,7 @@ export const pipePlay_05 = async (root: Root, currentIndexLevel = 0) => {
         phisics.playerBody.position.x = 1000
         phisics.carBody.position.y = 1.2
         studio.toggleToCarCamera()
-        car.isFreeze = false
+        car.freeze(false)
     }
 
     const fromCar = () => {
@@ -56,7 +56,8 @@ export const pipePlay_05 = async (root: Root, currentIndexLevel = 0) => {
         phisics.playerBody.position.x = x
         phisics.playerBody.position.y = y + 1
         phisics.playerBody.position.z = z
-        car.isFreeze = true
+        car.freeze(true)
+        audio.stopCar()
         controls.enable()
         studio.toggleToPlayerCamera()
     }
@@ -169,7 +170,7 @@ export const pipePlay_05 = async (root: Root, currentIndexLevel = 0) => {
     car.setCompasTarget(new THREE.Vector3(x, 0, z))
 
     
-    // SCENARIO BATTERY //////////////////////////////////
+    // // SCENARIO BATTERY //////////////////////////////////
 
     console.log('[MESSAGE:] START BATTERY SCENARIO')
 
@@ -189,8 +190,8 @@ export const pipePlay_05 = async (root: Root, currentIndexLevel = 0) => {
 
     await waitEnterCar()
 
-    await pause(60000)
-    //await pause(1000)
+    //await pause(60000)
+    await pause(1000)
 
     if (!isInCar) {
         waitEnterCar()
@@ -218,17 +219,20 @@ export const pipePlay_05 = async (root: Root, currentIndexLevel = 0) => {
 
     await pause(300)
 
+    ui.hideAllCirclesDone()
+
     const carModel = car.getModel()
     carModel.position.x = 0
     carModel.position.z = 0
     carModel.rotation.y = 0
     phisics.carBody.position.x = 1000
     car.setCollisionsPos(0, 0, 0, 0)
-    isCanEnterCar = false
+
     stopUpdateBattery()
     car.hideBattery()
-
     fromCar()
+
+    isCanEnterCar = false
 
     await pause(30000)
 

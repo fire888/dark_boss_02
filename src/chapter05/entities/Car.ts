@@ -18,7 +18,8 @@ export class Car {
     _compass: any
 
     setTargetPosition: any
-    isFreeze: boolean
+    _isFreeze: boolean = false
+    _isMove: boolean = false
 
     _spd: number
     _acc: number
@@ -78,12 +79,12 @@ export class Car {
             }
         }) 
 
-        this.isFreeze = true
+        this._isFreeze = true
 
         this._onChangeStateIsStay = () => {}
 
         this._spd = 0
-        this._acc = 0.5
+        this._acc = 0.8
         this._deceleration = 0.0001
         this._maxSpdFront = -100
         this._maxSpdBack = 100
@@ -99,9 +100,10 @@ export class Car {
             this._spd = 0
         })
 
+        this._isMove = false 
 
         this.update = (d: number) => {
-            if (this.isFreeze) {
+            if (this._isFreeze) {
                 return;
             }
 
@@ -124,9 +126,11 @@ export class Car {
 
 
             /** slowdown update speed *********/
-            if (Math.abs(this._spd) < 0.00001) { 
-                //this._spd = 0
+            if (Math.abs(this._spd) < 0.001) { 
+                this._spd = 0
             } else {
+                this._spd += Math.sign(this._spd) * (-1) * 0.1
+
                 if (this._spd > 0) {
                     this._spd -= this._deceleration
                     if (this._spd < 0) {
@@ -177,26 +181,30 @@ export class Car {
                 //this._model.position.y = carBody.position.y
             }
 
-            if (Math.abs(this._spd) < 0.1) {
+            if (Math.abs(this._spd) < 0.05) {
+                this._spd = 0
                 this.setCollisionsPos(this._model.position.x, 0, this._model.position.z, this._model.rotation.y)
             }
 
-
-            /** callback change state stay or move *****/
-            // if (this._isCarStay && this._spd !== 0) {
-            //     this._isCarStay = false
-            //     //root.system_Sound.startCar()
-            //     this._onChangeStateIsStay('carStart')
-            // }
-            // if (!this._isCarStay && this._spd === 0) {
-            //     console.log('stop')
-            //     this._isCarStay = true
-            //     //root.system_Sound.stopCar()
-            //     this._onChangeStateIsStay('carStop')
-            // }
+            if (this._isMove && Math.abs(this._spd) === 0) {
+                this._isMove = false
+                root.audio.stopCar()
+            }
+            if (!this._isMove && Math.abs(this._spd) > 0) {
+                this._isMove = true
+                root.audio.playCar()
+            }
         }
         
         root.ticker.on(this.update.bind(this))
+    }
+
+    freeze(is: boolean) {
+        this._isFreeze = is
+        if (this._isMove) {
+            this._root.audio.stopCar()
+            this._isMove = false
+        }
     }
 
     setCollisionsPos(x: number, y: number, z: number, rotY = 0) { 
@@ -225,7 +233,7 @@ export class Car {
     }
 
     toggleFreeze (val: boolean) {
-        this.isFreeze = val
+        this._isFreeze = val
     }
 
     onChangeCarStateMove (fn: Function) {

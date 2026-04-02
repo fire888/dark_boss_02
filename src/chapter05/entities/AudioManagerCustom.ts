@@ -3,7 +3,7 @@ import { AudioListener, Audio } from 'three'
 import { AudioManager } from '_CORE/AudioManager'
 
 export class AudioManagerCustom extends AudioManager {
-    private _symbol: Audio
+    private _car: Audio
 
     constructor () {
         super()
@@ -13,15 +13,19 @@ export class AudioManagerCustom extends AudioManager {
         super.init(root)
         const listener = new AudioListener()
 
-        this._symbol = new Audio(listener)
-        this._symbol.setBuffer(root.assets.soundSymbol)
-        this._symbol.setLoop(false)
-        this._symbol.playbackRate = 1
-        this._symbol.setVolume(.5)
+        this._car = new Audio(listener)
+        this._car.setBuffer(root.assets.soundCar)
+        this._car.setLoop(true)
+        this._car.playbackRate = 1
+        this._car.setVolume(.02)
     }
 
-    playSymbol () {
-        this._symbol.play()
+    playCar() {
+        this._car.play()
+    }
+
+    stopCar() {
+        this._car.stop()
     }
 
 }
