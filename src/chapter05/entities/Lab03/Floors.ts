@@ -15,7 +15,7 @@ export class Floors {
         this._root = root
 
         this.baseFloor = this._createFloor()
-        this.baseFloor.mesh.material = root.materials.floorMat1
+        this.baseFloor.mesh.material = root.materials.floorMatNorm
         this._addToScene(this.baseFloor)
 
 
