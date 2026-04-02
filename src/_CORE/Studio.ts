@@ -23,6 +23,16 @@ import { Saturate3 } from './shaders/saturate';
 import { Core } from "./types"
 import { Tween, Easing } from '@tweenjs/tween.js'
 
+export type T_ChangeFogOptions = {
+    startFogNear?: number,
+    startFogFar?: number,
+    endFogNear?: number,
+    endFogFar?: number, 
+    startColor?: THREE.Color,
+    endColor?: THREE.Color, 
+    time?: number 
+}
+
 export class Studio {
     containerDom: HTMLElement
     camera: PerspectiveCamera
@@ -271,6 +281,34 @@ export class Studio {
                 .easing(Easing.Exponential.InOut)
                 .to({ v: 1 }, time)
                 .onUpdate(() => {
+                    this.fog.far = startFogFar + (endFogFar - startFogFar) * obj.v
+                    this.fog.color.lerpColors(startColor, endColor, obj.v)
+                })
+                .onComplete(() => {
+                    res(true)
+                })
+                .start()
+        })
+    } 
+
+    animateFog(options: T_ChangeFogOptions) {
+        const { 
+            startFogNear = this.fog.near,
+            startFogFar = this.fog.far,
+            endFogNear = 50,
+            endFogFar = 100, 
+            startColor = new THREE.Color().copy(this.fog.color),
+            endColor = new THREE.Color().copy(this.fog.color),
+            time = 3000 
+        } = options
+        
+        return new Promise(res => {        
+            const obj = { v: 0 }
+            new Tween(obj)
+                .easing(Easing.Exponential.InOut)
+                .to({ v: 1 }, time)
+                .onUpdate(() => {
+                    this.fog.near = startFogNear + (endFogNear - startFogNear) * obj.v
                     this.fog.far = startFogFar + (endFogFar - startFogFar) * obj.v
                     this.fog.color.lerpColors(startColor, endColor, obj.v)
                 })

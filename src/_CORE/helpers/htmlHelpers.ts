@@ -26,6 +26,10 @@ export const pause = (t: number): Promise<void> => new Promise(res => setTimeout
 
 export const opacityByTransition = (elem: HTMLElement, to: number, time: number) => {
     return new Promise<void>(res => {
+        if (!elem) { 
+            return res() 
+        }
+
         const obj = { v: to === 1 ? 0 : 1 }
         new Tween(obj)
             .interpolation(Interpolation.Linear)
@@ -39,3 +43,4 @@ export const opacityByTransition = (elem: HTMLElement, to: number, time: number)
             .start()
     })
 } 
+

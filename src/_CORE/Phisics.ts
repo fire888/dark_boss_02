@@ -16,6 +16,9 @@ import CannonDebugger from 'cannon-es-debugger'
 import * as THREE from 'three'
 import { Core } from './types'
 
+const Q_ZERO = new THREE.Quaternion()
+const V3_TOP = new THREE.Vector3(0, 1, 0)
+
 class BodyN extends Body {
     myName: string = 'none'
 }
@@ -238,9 +241,14 @@ export class Phisics {
     }
 
     setPositionByKey(key: string, x: number, y: number, z: number, rotY = 0) {
+        const q = Q_ZERO.clone().setFromAxisAngle(V3_TOP, rotY)
         for (let i = 0; i < this._bodies.length; ++i) {
             if (this._bodies[i].myName === key) {
                 this._bodies[i].position.set(x, y, z)
+                this._bodies[i].quaternion.x = q.x
+                this._bodies[i].quaternion.y = q.y
+                this._bodies[i].quaternion.z = q.z
+                this._bodies[i].quaternion.w = q.w
                 this._bodies[i].updateAABB()
             }
         }

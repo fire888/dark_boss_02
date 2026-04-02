@@ -1,6 +1,6 @@
 import './stylesheets/controls.css'
 import { Tween, Interpolation } from '@tweenjs/tween.js'
-import { elementClickOnce, pause } from './helpers/htmlHelpers'
+import { elementClickOnce, pause, opacityByTransition } from './helpers/htmlHelpers'
 import { Core } from './types'
 
 const IS_SHOW_INFO = true
@@ -253,24 +253,6 @@ export class Ui {
         document.body.appendChild(wrapper)      
     }
 }
-
-const opacityByTransition = (elem: HTMLElement, to: number, time: number) => {
-    if (!elem) return;
-
-    return new Promise<void>(res => {
-        const obj = { v: to === 1 ? 0 : 1 }
-        new Tween(obj)
-            .interpolation(Interpolation.Linear)
-            .to({ v: to }, time)
-            .onUpdate(() => {
-                elem.style.opacity = obj.v + ''
-            })
-            .onComplete(() => {
-                res()
-            })
-            .start()
-    })
-} 
 
 const createOffset = (n: number) => {
     if (n !== 20 && n !== 60) {

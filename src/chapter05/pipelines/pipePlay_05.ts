@@ -52,7 +52,8 @@ export const pipePlay_05 = async (root: Root, currentIndexLevel = 0) => {
 
     const fromCar = () => {
         phisics.carBody.position.y = 1000
-        const { x, y, z } = car.getModel().position
+        const carModel = car.getModel()
+        const { x, y, z } = carModel.position
         phisics.playerBody.position.x = x
         phisics.playerBody.position.y = y + 1
         phisics.playerBody.position.z = z
@@ -60,6 +61,7 @@ export const pipePlay_05 = async (root: Root, currentIndexLevel = 0) => {
         audio.stopCar()
         controls.enable()
         studio.toggleToPlayerCamera()
+        controls.setRotation(0, carModel.rotation.y, 0)
     }
 
     const onEnterCar = async (isPress: boolean) => {
@@ -74,14 +76,15 @@ export const pipePlay_05 = async (root: Root, currentIndexLevel = 0) => {
         }
     }
 
-    const disableTryEnterCar = keyboard.on('E', onEnterCar)
+    keyboard.on('E', onEnterCar)
+    ui.onClickDriveButton(() => onEnterCar(false))
 
 
     // HIDE REAL WORLD //////////////////////////////////////
 
     const waitFirstEnterCar = async () => {
         return new Promise((res) => {
-            const unsubscr = keyboard.on('E', (isPress) => {
+            const action = (isPress: boolean) => {
                 if (isPress) { 
                     return 
                 }
@@ -89,8 +92,12 @@ export const pipePlay_05 = async (root: Root, currentIndexLevel = 0) => {
                     return
                 }
                 unsubscr()
+                unsubscr2()
                 res(true)
-            })
+            } 
+
+            const unsubscr = keyboard.on('E', action)
+            const unsubscr2 = ui.onClickDriveButton(() => action(false))
         })
     }
 

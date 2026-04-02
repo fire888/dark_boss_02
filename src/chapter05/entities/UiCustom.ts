@@ -1,5 +1,5 @@
 import { Tween, Interpolation } from '@tweenjs/tween.js'
-import {elementClickOnce } from '../helpers/htmlHelpers'
+import { elementClickOnce, opacityByTransition } from '_CORE/helpers/htmlHelpers'
 import { Ui } from '_CORE/Ui'
 import { Root } from '../index'
 import '../stylesheets/style.css'
@@ -33,9 +33,9 @@ export class UiCustom extends Ui {
     }
 
     hideBackgroundStartScreen() {
-        const startScreen = document.body.getElementsByClassName('start-screen')[0]
+        const startScreenBack = document.body.getElementsByClassName('start-screen-background')[0]
         // @ts-ignore
-        startScreen.style.background = 'rgba(0, 0, 0, 0)'
+        opacityByTransition(startScreenBack, 0, 300)
     }
 
     showCircleDone (index: number) {
@@ -91,21 +91,9 @@ export class UiCustom extends Ui {
         this._buttonDriveCar.style.display = 'none'
     }
 
+    onClickDriveButton (cb: () => void) {
+        this._buttonDriveCar.addEventListener('pointerdown', cb)
+        return this._buttonDriveCar.removeEventListener.bind(this._buttonDriveCar, 'pointerdown', cb)   
+    }
+
 }
-
-const opacityByTransition = (elem: HTMLDivElement, to: number, time: number) => {
-    return new Promise<void>(res => {
-        const obj = { v: to === 1 ? 0 : 1 }
-        new Tween(obj)
-            .interpolation(Interpolation.Linear)
-            .to({ v: to }, time)
-            .onUpdate(() => {
-                elem.style.opacity = obj.v + ''
-            })
-            .onComplete(() => {
-                res()
-            })
-            .start()
-    })
-} 
-

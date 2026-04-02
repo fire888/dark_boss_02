@@ -25,12 +25,10 @@ export class Car {
     _acc: number
     _deceleration: number
     _maxSpdFront: number
-    //this._maxSpdBack = 1
     _maxSpdBack: number
     _spdRot: number
 
     _isCarStay: boolean
-    _onChangeStateIsStay: any
     update: any
 
     init (root: Root) {
@@ -81,8 +79,6 @@ export class Car {
 
         this._isFreeze = true
 
-        this._onChangeStateIsStay = () => {}
-
         this._spd = 0
         this._acc = 0.8
         this._deceleration = 0.0001
@@ -100,7 +96,46 @@ export class Car {
             this._spd = 0
         })
 
-        this._isMove = false 
+        this._isMove = false
+
+
+        let isForward = false
+        let isBackward = false
+        let isLeft = false
+        let isRight = false
+
+        const { ui } = root
+
+        if (!root.deviceData.isMobileDevice) {
+            root.ticker.on(() => {
+                if (root.keyboard.isForward !== isForward) {
+                    isForward = root.keyboard.isForward
+                }
+                if (root.keyboard.isBackward !== isBackward) {
+                    isBackward = root.keyboard.isBackward
+                }
+                if (root.keyboard.isLeft !== isLeft) {
+                    isLeft = root.keyboard.isLeft
+                }
+                if (root.keyboard.isRight !== isRight) {
+                    isRight = root.keyboard.isRight
+                }
+            })
+        } else {
+            ui.moveForwardDiv.addEventListener('pointerdown', () => { 
+                console.log('forward')
+                isForward = true 
+            })
+            ui.moveForwardDiv.addEventListener('pointerup', () => isForward = false)
+            ui.moveBackDiv.addEventListener('pointerdown', () => isBackward = true)
+            ui.moveBackDiv.addEventListener('pointerup', () => isBackward = false)  
+            ui.moveLeftDiv.addEventListener('pointerdown', () => isLeft = true)
+            ui.moveLeftDiv.addEventListener('pointerup', () => isLeft = false)  
+            ui.moveRightDiv.addEventListener('pointerdown', () => isRight = true)
+            ui.moveRightDiv.addEventListener('pointerup', () => isRight = false)
+        }
+
+
 
         this.update = (d: number) => {
             if (this._isFreeze) {
@@ -117,10 +152,10 @@ export class Car {
 
 
             /** acceleration update speed *********/
-            if (root.keyboard.isForward) {
+            if (isForward) {
                 this._spd -= this._acc
             }
-            if (root.keyboard.isBackward) {
+            if (isBackward) {
                 this._spd += this._acc
             }
 
@@ -147,7 +182,7 @@ export class Car {
 
                 /** update car rotation ***********/
                 const rotBySpeed = Math.min(1, Math.max(0, Math.abs(this._spd)))
-                if (root.keyboard.isLeft) {
+                if (isLeft) {
                     if (this._spd < 0) {
                         dir.applyAxisAngle(up, this._spdRot * rotBySpeed)
                         this._model.rotation.y += (this._spdRot * rotBySpeed)
@@ -158,7 +193,7 @@ export class Car {
                     }
 
                 }
-                if (root.keyboard.isRight) {
+                if (isRight) {
                     if (this._spd < 0) {
                         dir.applyAxisAngle(up, -this._spdRot * rotBySpeed)
                         this._model.rotation.y -= (this._spdRot * rotBySpeed)
@@ -202,8 +237,23 @@ export class Car {
     freeze(is: boolean) {
         this._isFreeze = is
         if (this._isMove) {
+            this.setCollisionsPos(this._model.position.x, 0, this._model.position.z, this._model.rotation.y)
             this._root.audio.stopCar()
             this._isMove = false
+        }
+
+        const { ui } = this._root
+        if (is) {
+            console.log('[MESSAGE:] FREEZE CAR')
+            ui.moveBackDiv.style.display = 'none'
+            ui.moveForwardDiv.style.display = 'none'
+            ui.moveLeftDiv.style.display = 'none'
+            ui.moveRightDiv.style.display = 'none'
+        } else {
+            ui.moveForwardDiv.style.display = 'block'
+            ui.moveBackDiv.style.display = 'block'
+            ui.moveLeftDiv.style.display = 'block'
+            ui.moveRightDiv.style.display = 'block'
         }
     }
 
@@ -234,10 +284,6 @@ export class Car {
 
     toggleFreeze (val: boolean) {
         this._isFreeze = val
-    }
-
-    onChangeCarStateMove (fn: Function) {
-        this._onChangeStateIsStay = fn
     }
 
     getPosition () {

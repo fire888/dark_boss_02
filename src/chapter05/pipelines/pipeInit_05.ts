@@ -23,6 +23,8 @@ export const pipeInit_05 = async (root: Root) => {
 
     studio.init(root)
     ticker.on(studio.render.bind(studio))
+
+    studio.setFogNearFar(0, .1)
     //studio.addAxisHelper()
 
     phisics.init(root)
@@ -38,12 +40,6 @@ export const pipeInit_05 = async (root: Root) => {
     ticker.on(particles.update.bind(particles))
     studio.add(particles.m)
 
-    car.init(root)
-    root.studio.add(car.getModel())
-    car.add(studio.carCamera)
-    phisics.addMeshToCollision(car.getCollision())
-    phisics.addMeshToCollision(car.getCheckerPlayerDrive(), false)
-
     body.init(root)
 
     pers.init(root)
@@ -51,30 +47,18 @@ export const pipeInit_05 = async (root: Root) => {
     ticker.on(pers.update.bind(pers))
     
     ui.init(root)
+
+    car.init(root)
+    root.studio.add(car.getModel())
+    car.add(studio.carCamera)
+    phisics.addMeshToCollision(car.getCollision())
+    phisics.addMeshToCollision(car.getCheckerPlayerDrive(), false)
+
     ui.hideBackgroundStartScreen()
 
-    // const flyCameraToLevel = () => {
-    //     const nearStart = 0
-    //     const nearEnd = 5
-    //     const farStart = .1
-    //     const farEnd = 50
-    //     return new Promise(res => {        
-    //         const obj = { v: 0 }
-    //         new Tween(obj)
-    //             .easing(Easing.Exponential.InOut)
-    //             .to({ v: 1 }, 3000)
-    //             .onUpdate(() => {
-    //                 studio.camera.position.z = PLAYER_POS_START[2] - (1 - obj.v) * 15
-    //                 studio.camera.rotation.x = -Math.PI + (1 - obj.v) * .8
-    //                 studio.setFogNearFar(nearStart + (nearEnd - nearStart) * obj.v, farStart + (farEnd - farStart) * obj.v)
-    //             })
-    //             .onComplete(() => {
-    //                 res(true)
-    //             })
-    //             .start()
-    //     })
-    // }
-    // await flyCameraToLevel()
+    const fogNear = 5
+    const fogFar = 80
+    studio.animateFog({ endFogNear: fogNear, endFogFar: fogFar, time: 3000 })
 
     if (IS_DEV_START_ORBIT) {
         await ui.hideStartScreenForce()
