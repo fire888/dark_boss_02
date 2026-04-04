@@ -20,6 +20,7 @@ import { pipeInit_04 } from "./pipelines/pipeInit_04"
 import { pipePlay_04 } from "./pipelines/pipePlay_04"
 import { pipeEnd_04 } from "./pipelines/pipeEnd_04"
 import { Core } from '_CORE/types'
+import { PlayerWallDirection } from "./entities/PlayerWallDirection"
 
 export interface Root extends Core {
     CONSTANTS: typeof CONSTANTS,
@@ -35,7 +36,8 @@ export interface Root extends Core {
     materials: Materials,
     assets: {
         [key: string]: any
-    }
+    },
+    playerWallDirection: PlayerWallDirection
 }
 
 
@@ -70,6 +72,8 @@ window.addEventListener("DOMContentLoaded", async () => {
         audio: new AudioManagerCustom(),
         
         materials: new Materials(),
+
+        playerWallDirection: new PlayerWallDirection()
     }
 
     await pipeInit_04(root)

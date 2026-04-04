@@ -4,12 +4,7 @@ import { Phisics } from '_CORE'
 
 export class Lab03 {
     _root: Root
-    floors: {
-        p0: number[]
-        p1: number[]
-        p2: number[]
-        p3: number[]
-    }[]  = []
+    currentLevelMeshes: THREE.Mesh[] = []
 
     constructor() {
         this._root = null as any
@@ -47,20 +42,18 @@ export class Lab03 {
                 child.name === 'roadwall_001_000'
             ) {
                 console.log('ADD', child.name)
-
-
                 const mat = child.name.includes('level') ? root.materials.wall : root.materials.wall2
-
-                const pos = child.position
                 const mesh = new THREE.Mesh(child.geometry.clone(), mat)
-                mesh.geometry.translate(pos.x, pos.y, pos.z)
-                mesh.position.set(0, 0, 0)
+                mesh.name = child.name
                 mesh.geometry.scale(scale, scale, scale)
-                root.studio.add(mesh)
-                root.phisics.addMeshToCollision(mesh)
+                this._addMesh(mesh)
             }
-
         }
+    }
 
+    _addMesh(mesh: THREE.Mesh) {
+        this._root.studio.add(mesh)
+        this._root.phisics.addMeshToCollision(mesh)
+        this.currentLevelMeshes.push(mesh)
     }
 }
