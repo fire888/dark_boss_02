@@ -3,7 +3,7 @@ import { Tween, Easing, Interpolation } from '@tweenjs/tween.js'
 import * as THREE from 'three'
 import { pause } from "_CORE/helpers/htmlHelpers"
 
-export const pipeEnd_06 = async (root: Root) => {
+export const pipeEnd_04 = async (root: Root) => {
     const {
         CONSTANTS,
         studio,

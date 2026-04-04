@@ -8,34 +8,29 @@ import { LoaderAssets } from "_CORE/Loader"
 
 import { CONSTANTS, STUDIO_CONF, CONTROLS_CONF, LOAD_ASSETS } from "./constants/CONSTANTS"
 
-import { Floor } from "./entities/Floor"
 import { Particles } from './entities/Particles'
 //import { LoaderAssets } from "./entities/Loader";
 
 import { UiCustom } from "./entities/Ui"
 
-//import { Labyrinth } from './entityLabyrinth/Labyrinth'
-import { Labyrinth } from './EntityLab02/Lab02'
-import { Statue } from "./entities/Statue"
+import { Lab03 } from './EntLab03/Lab03'
 import { AudioManagerCustom } from "./entities/AudioManagerCustom"
 import { Materials } from "./entities/Materials"
-import { pipeInit_06 } from "./pipelines/pipeInit_06"
-import { pipePlay_06 } from "./pipelines/pipePlay_06"
-import { pipeEnd_06 } from "./pipelines/pipeEnd_06"
+import { pipeInit_04 } from "./pipelines/pipeInit_04"
+import { pipePlay_04 } from "./pipelines/pipePlay_04"
+import { pipeEnd_04 } from "./pipelines/pipeEnd_04"
 import { Core } from '_CORE/types'
 
 export interface Root extends Core {
     CONSTANTS: typeof CONSTANTS,
     ui: UiCustom,
     controls: ControlsSystem,
-    floor: Floor,
     particles: Particles,
 
     LOAD_ASSETS: typeof LOAD_ASSETS,
     loader: LoaderAssets,
 
-    lab: Labyrinth,
-    statue: Statue,
+    lab: Lab03,
     audio: AudioManagerCustom,
     materials: Materials,
     assets: {
@@ -60,7 +55,6 @@ window.addEventListener("DOMContentLoaded", async () => {
         controls: new ControlsSystem(),
         
         ui: new UiCustom(),
-        floor: new Floor(),
         particles: new Particles(),
 
         LOAD_ASSETS,
@@ -68,9 +62,7 @@ window.addEventListener("DOMContentLoaded", async () => {
         
         deviceData: new DeviceData(),
         phisics: new Phisics(),
-        lab: new Labyrinth(),
-
-        statue: new Statue(),
+        lab: new Lab03(),
 
         audioConf: { 
             stepsSpeed: 1 
@@ -80,7 +72,7 @@ window.addEventListener("DOMContentLoaded", async () => {
         materials: new Materials(),
     }
 
-    await pipeInit_06(root)
-    await pipePlay_06(root)
-    await pipeEnd_06(root)
+    await pipeInit_04(root)
+    await pipePlay_04(root)
+    await pipeEnd_04(root)
 })
