@@ -20,9 +20,9 @@ type ResultLoad = { key: string, texture: Texture | any }
 export class LoaderAssets {
     _textureLoader: TextureLoader = new TextureLoader()
     _cubeTextureLoader: CubeTextureLoader = new CubeTextureLoader()
-    _objLoader: OBJLoader
-    _glbLoader: GLTFLoader 
-    _root: Core
+    _objLoader: OBJLoader | null = null
+    _glbLoader: GLTFLoader | null = null
+    _root: Core | null = null
 
     init (root: Core) {
         this._root = root
@@ -98,7 +98,9 @@ export class LoaderAssets {
 
             Promise.all(promises).then(result => {
                 for (let i = 0; i < result.length; ++i) {
-                    this._root.assets[result[i].key as string] = result[i].texture
+                    if (this._root) {
+                        this._root.assets[result[i].key as string] = result[i].texture
+                    }
                 }
                 res()
             })
