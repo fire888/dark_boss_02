@@ -3,6 +3,7 @@ import { update } from '@tweenjs/tween.js'
 import { IS_DEV_START_ORBIT } from '../constants/CONSTANTS'
 import { Tween, Easing } from '@tweenjs/tween.js'
 import { PLAYER_POS_START } from '../constants/CONSTANTS'
+import * as THREE from 'three'
 
 export const pipeInit_04 = async (root: Root) => {
     const {
@@ -87,4 +88,6 @@ export const pipeInit_04 = async (root: Root) => {
     audio.init(root)
     ticker.on(audio.update.bind(audio))
     audio.playAmbient()
+
+    controls.setFrontDirTopDir(new THREE.Vector3(0, 1, 0), new THREE.Vector3(0, 0, 1))
 }

@@ -7,9 +7,8 @@ import {
 import * as THREE from 'three'; 
 
 const _euler = new THREE.Euler( 0, 0, 0, 'YXZ' );
-const _vector = new THREE.Vector3();
-const _objecProxi = new THREE.Object3D() 
-// const transformMatrix = new THREE.Matrix4();
+//const _vector = new THREE.Vector3();
+const _objectMouseMove = new THREE.Object3D() 
 
 const _changeEvent = { type: 'change' };
 const _lockEvent = { type: 'lock' };
@@ -22,7 +21,7 @@ const _PI_2 = Math.PI / 2;
 // z matrix
 //const m4 = new THREE.Matrix4().lookAt(new THREE.Vector3(0, 0, 0), new THREE.Vector3(0, 1, 0), new THREE.Vector3(0, 0, 1))
 // custom
-const m4 = new THREE.Matrix4().lookAt(new THREE.Vector3(0, 0, 0), new THREE.Vector3(0, 1, 0), new THREE.Vector3(.5, .5, 0))
+const m4 = new THREE.Matrix4().lookAt(new THREE.Vector3(0, 0, 0), new THREE.Vector3(0, 0, -1), new THREE.Vector3(0, 1, 0))
 
 class PointerLockControls extends Controls {
 
@@ -89,23 +88,23 @@ class PointerLockControls extends Controls {
 
 	}
 
-	moveForward( distance ) {
+	moveForward( /*distance*/ ) {
 
-		if ( this.enabled === false ) return;
+		// if ( this.enabled === false ) return;
 
-		// move forward parallel to the xz-plane
-		// assumes camera.up is y-up
+		// // move forward parallel to the xz-plane
+		// // assumes camera.up is y-up
 
-		const camera = this.object;
+		// const camera = this.object;
 
-		_vector.setFromMatrixColumn( _objecProxi.matrix, 0 );
+		// _vector.setFromMatrixColumn( _objectMouseMove.matrix, 0 );
 
-		_vector.crossVectors( _objecProxi.up, _vector );
+		// _vector.crossVectors( _objectMouseMove.up, _vector );
 
-		_objecProxi.position.addScaledVector( _vector, - distance )
-		camera.matrix.copy(_objecProxi.matrix)
+		// _objectMouseMove.position.addScaledVector( _vector, - distance )
+		// camera.matrix.copy(_objectMouseMove.matrix)
 
-		//camera.position.addScaledVector( _vector, distance );
+		// //camera.position.addScaledVector( _vector, distance );
 
 	}
 
@@ -122,28 +121,27 @@ class PointerLockControls extends Controls {
 
 	}
 
-	setTopAndFrontVector(vt, vf) {
-		m4.lookAt(new THREE.Vector3(), vf, vt)
+	setDirMatrix(m4dir) {
+		console.log('%^%^%^ ---', m4dir)
+		m4.copy(m4dir)
 	}
 
 	_onMouseMove( event ) {
 
 		if ( this.enabled === false || this.isLocked === false ) return;
 
-		const camera = this.object;
-		
-		
-		_euler.setFromQuaternion( _objecProxi.quaternion );
+		_euler.setFromQuaternion( _objectMouseMove.quaternion );
 
 		_euler.y -= event.movementX * 0.002 * this.pointerSpeed;
 		_euler.x -= event.movementY * 0.002 * this.pointerSpeed;
 
 		_euler.x = Math.max( _PI_2 - this.maxPolarAngle, Math.min( _PI_2 - this.minPolarAngle, _euler.x ) );
 
-		_objecProxi.quaternion.setFromEuler( _euler );
+		_objectMouseMove.quaternion.setFromEuler( _euler );
 		
+		const camera = this.object;
 		m4.decompose(new THREE.Vector3(), camera.quaternion, new THREE.Vector3())
-		camera.quaternion.multiply(_objecProxi.quaternion)
+		camera.quaternion.multiply(_objectMouseMove.quaternion)
 		
 		this.dispatchEvent( _changeEvent );
 

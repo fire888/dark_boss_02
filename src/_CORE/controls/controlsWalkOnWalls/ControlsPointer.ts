@@ -50,9 +50,8 @@ export class ControlsPointer {
         //this._controls.getObject().rotation.set(x, y, z)
     }
 
-    setTopAndFrontVector(vt: THREE.Vector3, vf: THREE.Vector3) {
-        this._controls.setTopAndFrontVector(vt, vf)
-        //if (this._controls.setTopAndFrontVector) 
+    setDirMatrix(m4: THREE.Matrix4) {
+        this._controls.setDirMatrix(m4)
     }
 
     enable() {

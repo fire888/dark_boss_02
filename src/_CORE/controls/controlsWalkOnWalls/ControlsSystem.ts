@@ -29,6 +29,9 @@ export class ControlsSystem {
     _timeRot = 0 
     _eulerRot = new THREE.Euler(0, 0, 0, 'YXZ')
     _strengthIdle = 1
+
+    _objectPos = new THREE.Object3D()
+    _objectDir = new THREE.Object3D()
     
     init (root: Core, isStartOrbit: boolean) {
         this._root = root
@@ -164,52 +167,38 @@ export class ControlsSystem {
             return
         }
 
-        this._phone.update()
-
-        const camera = this._root.studio.camera
 
         if (!this._root.phisics.isUpdate) { 
             return
         }
-        const v3Result = new THREE.Vector3()
 
-        // двигаем достаем плучившиеся направления из камеры и применяем движения клавиш
-        //const dirForward = new THREE.Vector3()
-        //camera.getWorldDirection(dirForward)
-        //dirForward.setY(0).normalize()
-        //const dirLeft = dirForward.clone().applyAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI * .5)
+        //this._phone.update()
 
-        //dirForward.x *= this._currentSpeedForward
-        //dirForward.z *= this._currentSpeedForward
-        //v3Result.add(dirForward)
 
-        //if (this._currentWalkingControls.constructor.name === this._pointer.constructor.name) {
-        //    dirLeft.x *= this._currentSpeedLeft
-        //    dirLeft.z *= this._currentSpeedLeft
-        //    v3Result.add(dirLeft)
-        //}
-
-        // обновляем физику игрока направлениями
+        const { camera } = this._root.studio
         const { playerBody } = this._root.phisics
-        //playerBody.velocity.x = v3Result.x
-        //playerBody.velocity.z = v3Result.z
 
-        // применяем результат физики к позиции камеры
-        //camera.position.x = playerBody.position.x
-        //camera.position.y = playerBody.position.y
-        //camera.position.z = playerBody.position.z
+        camera.position.x = playerBody.position.x
+        camera.position.y = playerBody.position.y
+        camera.position.z = playerBody.position.z
 
-        // // camera debounce
-        // this._timeRot += delta
-        // // качаем камеру влево-вправо если есть скорость вперед
-        // const walkingDebounce = Math.sin(this._timeRot * 0.015) * this._amplitudeLeftRightWalk * this._currentSpeedForward
-        // // качаем медленно камеру если стоим 
-        // const idleDebounceStrength = Math.sin(this._timeRot * 0.001) * 0.01
-        // const idleDebounce = idleDebounceStrength * (1 - (Math.abs(this._currentSpeedForward) / this._maxSpeedForward))
-        // // применяем оба качения
-        // this._eulerRot.setFromQuaternion(camera.quaternion)
-        // this._eulerRot.z = walkingDebounce + idleDebounce
-        // camera.quaternion.setFromEuler(this._eulerRot)
+
+        this._objectDir.translateZ(this._currentSpeedForward * delta * .03)
+        this._objectDir.translateX(this._currentSpeedLeft * delta * .03)
+
+
+        playerBody.velocity.x = this._objectDir.position.x
+        playerBody.velocity.y = this._objectDir.position.y
+        playerBody.velocity.z = this._objectDir.position.z
+        
+        this._objectDir.position.set(0, 0, 0)
+    }
+
+    setFrontDirTopDir(forward: THREE.Vector3, top: THREE.Vector3) {
+        this._objectDir.matrix.lookAt(new THREE.Vector3(), forward, top)
+        this._objectDir.updateMatrix()
+        this._objectDir.updateMatrixWorld()
+        this._pointer.setDirMatrix(this._objectDir.matrix)
     }
 
     setRotation(x: number, y: number, z: number) {
