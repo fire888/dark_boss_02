@@ -9,7 +9,9 @@ export class AudioManagerCustom extends AudioManager {
         super()
     }
 
+    // @ts-ignore
     init (root: Root) {
+        // @ts-ignore
         super.init(root)
         const listener = new AudioListener()
 

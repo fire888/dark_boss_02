@@ -1,7 +1,7 @@
 import { Ticker } from "_CORE/Ticker"
 import { Keyboard } from "_CORE/Keyboard"
 import { Phisics } from "_CORE/Phisics"
-import { ControlsSystem } from "_CORE/controls/ControlsSystem"
+import { ControlsSystem } from "_CORE/controls/controlsWalkOnWalls/ControlsSystem"
 import { DeviceData } from "_CORE/DeviceData"
 import { Studio } from "_CORE/Studio"
 import { LoaderAssets } from "_CORE/Loader"
@@ -9,7 +9,6 @@ import { LoaderAssets } from "_CORE/Loader"
 import { CONSTANTS, STUDIO_CONF, CONTROLS_CONF, LOAD_ASSETS } from "./constants/CONSTANTS"
 
 import { Particles } from './entities/Particles'
-//import { LoaderAssets } from "./entities/Loader";
 
 import { UiCustom } from "./entities/Ui"
 
@@ -22,6 +21,7 @@ import { pipeEnd_04 } from "./pipelines/pipeEnd_04"
 import { Core } from '_CORE/types'
 import { PlayerWallDirection } from "./entities/PlayerWallDirection"
 
+// @ts-ignore
 export interface Root extends Core {
     CONSTANTS: typeof CONSTANTS,
     ui: UiCustom,
@@ -37,7 +37,7 @@ export interface Root extends Core {
     assets: {
         [key: string]: any
     },
-    playerWallDirection: PlayerWallDirection
+    playerWallDirection: PlayerWallDirection,
 }
 
 

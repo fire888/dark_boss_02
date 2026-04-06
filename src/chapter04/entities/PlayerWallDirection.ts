@@ -1,4 +1,3 @@
-import { distance } from "three/examples/jsm/nodes/Nodes"
 import { Root } from "../index"
 import * as THREE from "three"
 
@@ -13,6 +12,7 @@ export class PlayerWallDirection {
 
     init(root: Root) {
         this._root = root
+        this._root.studio.camera.up.set(.5, .5, 0)
     }
 
     update() {
