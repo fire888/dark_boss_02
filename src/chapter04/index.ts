@@ -21,6 +21,8 @@ import { pipeEnd_04 } from "./pipelines/pipeEnd_04"
 import { Core } from '_CORE/types'
 import { PlayerWallDirection } from "./entities/PlayerWallDirection"
 
+import "./moveTest"
+
 // @ts-ignore
 export interface Root extends Core {
     CONSTANTS: typeof CONSTANTS,
@@ -41,42 +43,42 @@ export interface Root extends Core {
 }
 
 
-window.addEventListener("DOMContentLoaded", async () => {
-    // @ts-ignore:next-line
-    console.log("branch:" + __GIT_CURRENT_BRANCH__ + ' commit:' + __HASH_COMMIT__)
+// window.addEventListener("DOMContentLoaded", async () => {
+//     // @ts-ignore:next-line
+//     console.log("branch:" + __GIT_CURRENT_BRANCH__ + ' commit:' + __HASH_COMMIT__)
 
-    const root: Root = {
-        CONSTANTS,
-        assets: {},
-        ticker: new Ticker(),
-        studioConf: STUDIO_CONF, 
-        studio: new Studio(),
-        keyboard: new Keyboard(),
+//     const root: Root = {
+//         CONSTANTS,
+//         assets: {},
+//         ticker: new Ticker(),
+//         studioConf: STUDIO_CONF, 
+//         studio: new Studio(),
+//         keyboard: new Keyboard(),
 
-        controlsConf: CONTROLS_CONF,
-        controls: new ControlsSystem(),
+//         controlsConf: CONTROLS_CONF,
+//         controls: new ControlsSystem(),
         
-        ui: new UiCustom(),
-        particles: new Particles(),
+//         ui: new UiCustom(),
+//         particles: new Particles(),
 
-        LOAD_ASSETS,
-        loader: new LoaderAssets(),
+//         LOAD_ASSETS,
+//         loader: new LoaderAssets(),
         
-        deviceData: new DeviceData(),
-        phisics: new Phisics(),
-        lab: new Lab03(),
+//         deviceData: new DeviceData(),
+//         phisics: new Phisics(),
+//         lab: new Lab03(),
 
-        audioConf: { 
-            stepsSpeed: 1 
-        },
-        audio: new AudioManagerCustom(),
+//         audioConf: { 
+//             stepsSpeed: 1 
+//         },
+//         audio: new AudioManagerCustom(),
         
-        materials: new Materials(),
+//         materials: new Materials(),
 
-        playerWallDirection: new PlayerWallDirection()
-    }
+//         playerWallDirection: new PlayerWallDirection()
+//     }
 
-    await pipeInit_04(root)
-    await pipePlay_04(root)
-    await pipeEnd_04(root)
-})
+//     await pipeInit_04(root)
+//     await pipePlay_04(root)
+//     await pipeEnd_04(root)
+// })

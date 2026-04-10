@@ -50,8 +50,8 @@ export class ControlsPointer {
         //this._controls.getObject().rotation.set(x, y, z)
     }
 
-    setDirMatrix(m4: THREE.Matrix4) {
-        this._controls.setDirMatrix(m4)
+    setDirObject(o: THREE.Object3D) {
+        this._controls.setDirObject(o)
     }
 
     enable() {

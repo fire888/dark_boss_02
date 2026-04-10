@@ -21,7 +21,8 @@ const _PI_2 = Math.PI / 2;
 // z matrix
 //const m4 = new THREE.Matrix4().lookAt(new THREE.Vector3(0, 0, 0), new THREE.Vector3(0, 1, 0), new THREE.Vector3(0, 0, 1))
 // custom
-const m4 = new THREE.Matrix4().lookAt(new THREE.Vector3(0, 0, 0), new THREE.Vector3(0, 0, -1), new THREE.Vector3(0, 1, 0))
+//const m4 = new THREE.Matrix4().lookAt(new THREE.Vector3(0, 0, 0), new THREE.Vector3(0, 0, -1), new THREE.Vector3(0, 1, 0))
+let dirObj = new THREE.Object3D()
 
 class PointerLockControls extends Controls {
 
@@ -121,9 +122,8 @@ class PointerLockControls extends Controls {
 
 	}
 
-	setDirMatrix(m4dir) {
-		console.log('%^%^%^ ---', m4dir)
-		m4.copy(m4dir)
+	setDirObject(ob) {
+		dirObj = ob
 	}
 
 	_onMouseMove( event ) {
@@ -139,9 +139,16 @@ class PointerLockControls extends Controls {
 
 		_objectMouseMove.quaternion.setFromEuler( _euler );
 		
+		console.log(dirObj)
+		
 		const camera = this.object;
-		m4.decompose(new THREE.Vector3(), camera.quaternion, new THREE.Vector3())
-		camera.quaternion.multiply(_objectMouseMove.quaternion)
+		
+		camera.quaternion.copy(_objectMouseMove.quaternion)
+		//_objectMouseMove.matrix.decompose(new THREE.Vector3(), camera.quaternion, new THREE.Vector3())
+		//camera.quaternion.multiply(_objectMouseMove.quaternion)
+
+		//camera.quaternion.copy(_objectMouseMove.quaternion)
+		//camera.quaternion.multiply(dirObj.quaternion)
 		
 		this.dispatchEvent( _changeEvent );
 

@@ -89,5 +89,12 @@ export const pipeInit_04 = async (root: Root) => {
     ticker.on(audio.update.bind(audio))
     audio.playAmbient()
 
-    controls.setFrontDirTopDir(new THREE.Vector3(0, 1, 0), new THREE.Vector3(0, 0, 1))
+    // top
+    //controls.setFrontDirTopDir(new THREE.Vector3(0, 1, 0), new THREE.Vector3(0, 0, 1))
+    
+    // front
+    //controls.setFrontDirTopDir(new THREE.Vector3(-1, 0, 0), new THREE.Vector3(0, 1, 0))
+
+    // bottom
+    controls.setFrontDirTopDir(new THREE.Vector3(0, -1, 0), new THREE.Vector3(1, 0, 0))
 }

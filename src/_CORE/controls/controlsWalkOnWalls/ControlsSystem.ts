@@ -182,6 +182,15 @@ export class ControlsSystem {
         camera.position.y = playerBody.position.y
         camera.position.z = playerBody.position.z
 
+       // console.log(this._objectDir.position.x, this._objectDir.position.y, this._objectDir.position.z)
+
+        // const dir = new THREE.Vector3()
+        // this._objectDir.getWorldDirection(dir)
+        // dir.multiplyScalar(this._currentSpeedForward * delta * .03)
+        // this._objectDir.position.add(dir)
+        console.log(this._objectDir.rotation.x)
+
+
 
         this._objectDir.translateZ(this._currentSpeedForward * delta * .03)
         this._objectDir.translateX(this._currentSpeedLeft * delta * .03)
@@ -195,10 +204,11 @@ export class ControlsSystem {
     }
 
     setFrontDirTopDir(forward: THREE.Vector3, top: THREE.Vector3) {
-        this._objectDir.matrix.lookAt(new THREE.Vector3(), forward, top)
-        this._objectDir.updateMatrix()
-        this._objectDir.updateMatrixWorld()
-        this._pointer.setDirMatrix(this._objectDir.matrix)
+        this._objectDir.position.set(0, 0, 0)
+        this._objectDir.up.copy(top)
+        this._objectDir.lookAt(forward)
+        //this._objectDir.matrix.lookAt(new THREE.Vector3(), forward, top)
+        this._pointer.setDirObject(this._objectDir)
     }
 
     setRotation(x: number, y: number, z: number) {
