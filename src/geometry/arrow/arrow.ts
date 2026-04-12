@@ -1,3 +1,6 @@
+import { _M } from "../../_CORE/_M/_m"
+import * as THREE from 'three'
+
 export const createArrow = (s: number = 10, wA: number = .2): { v: number[] } => {
     const w = wA * .2
     const wH = w * .5
@@ -21,4 +24,31 @@ export const createArrow = (s: number = 10, wA: number = .2): { v: number[] } =>
     ]
 
     return { v }
+}
+
+
+type T_CrMeshArrow = {
+    startPos?: THREE.Vector3
+    endPos?: THREE.Vector3
+    color?: THREE.Color
+    w?: number
+    l?: number
+}
+
+export const createMeshArrow = (opts: T_CrMeshArrow) => {
+    const {
+        startPos = new THREE.Vector3(0, 0, 0),
+        endPos = new THREE.Vector3(10, 0, 0),
+        color: color = new THREE.Color().setRGB(1, 0, 0),
+        l = startPos.distanceTo(endPos),
+        w = startPos.distanceTo(endPos) * .05
+    } = opts
+
+    const dataV = createArrow(l, w)
+    
+    const m = _M.createMesh({ v: dataV.v, material: new THREE.MeshBasicMaterial({ color, side: THREE.DoubleSide }) } )
+    m.position.copy(startPos)
+    m.lookAt(endPos)
+        
+    return m
 }

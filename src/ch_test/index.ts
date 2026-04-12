@@ -2,7 +2,7 @@ import { _M } from '_CORE/_M/_m'
 import * as THREE from 'three';
 import { PointerLockControls } from 'three/examples/jsm/controls/PointerLockControls'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
-import { createArrow } from '../geometry/arrow/arrow'
+import { createArrow, createMeshArrow } from '../geometry/arrow/arrow'
 
 const scene = new THREE.Scene()
         
@@ -136,11 +136,28 @@ class Player extends THREE.Object3D {
 
 
         this.dir1 = new THREE.Object3D()
-        this.dir1.position.set(0, 0, 1)
+        this.dir1.position.set(0, .5, .5).normalize()
+        const dir1Arrow = createMeshArrow({ 
+            endPos: new THREE.Vector3().copy(this.dir1.position).multiplyScalar(3), 
+            color: new THREE.Color().setRGB(.3, .3, .3) 
+        })
+        scene.add(dir1Arrow)
+
         this.dir2 = new THREE.Object3D()
-        this.dir2.position.set(-1, 0, 0)
+        this.dir2.position.set(.5, 0, 0).normalize()
+        const dir2Arrow = createMeshArrow({ 
+            endPos: new THREE.Vector3().copy(this.dir2.position).multiplyScalar(3), 
+            color: new THREE.Color().setRGB(.3, .3, .5) 
+        })
+        scene.add(dir2Arrow)
+
         this.dirUp = new THREE.Object3D()
-        this.dirUp.position.copy(this.dir1.position).multiply(this.dir2.position)
+        this.dirUp.position.copy(this.dir1.position).cross(this.dir2.position).normalize()
+        const dirUpArrow = createMeshArrow({ 
+            endPos: new THREE.Vector3().copy(this.dirUp.position).multiplyScalar(15), 
+            color: new THREE.Color().setRGB(.7, .7, .7) 
+        })
+        scene.add(dirUpArrow)
 
 
 
@@ -150,8 +167,8 @@ class Player extends THREE.Object3D {
 
         const camArrowV = createArrow(5, 1)
         this.camArrow = _M.createMesh({ v: camArrowV.v, material: new THREE.MeshBasicMaterial({ color: 0xff0000, side: THREE.DoubleSide }) })
-        this.camArrow.position.set(0, 1.2, 0)
-        this.add(this.camArrow)
+        this.camArrow.scale.z = -1
+        scene.add(this.camArrow)
 
         this.camArrowChild = new THREE.Object3D()
         this.camArrowChild.position.set(0, 0, 1)
@@ -186,18 +203,18 @@ class Player extends THREE.Object3D {
     }
 
     update() {
-        this.translateX(this.spdLeft)
-        this.translateZ(this.spdForward)
+        //this.translateX(this.spdLeft)
+        //this.translateZ(this.spdForward)
     
-        this.camArrow.up.copy(this.dirUp.quaternion)
+        this.camArrow.up.copy(this.dirUp.position)
         
-        this.quaternion.copy(this.camArrow.quaternion)
+        //this.quaternion.copy(this.camArrow.quaternion)
         
         
-        //const applyTo = camera        
-        const applyTo = arrow                
-        applyTo.quaternion.copy(this.quaternion)
-        applyTo.position.copy(this.position)
+        const applyTo = camera        
+        //const applyTo = arrow                
+        applyTo.quaternion.copy(this.camArrow.quaternion)
+        //applyTo.position.copy(this.position)
     }
 
     lock() {
