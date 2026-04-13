@@ -14,7 +14,6 @@ export const pipeInit_04 = async (root: Root) => {
         playerWallDirection,
     } = root
 
-    // @ts-ignore
     loader.init(root)
     await loader.loadAssets(LOAD_ASSETS)
 
@@ -26,14 +25,12 @@ export const pipeInit_04 = async (root: Root) => {
 
     materials.init(root)
 
-    // @ts-ignore
     studio.init(root)
     ticker.on(studio.render.bind(studio))
     // studio.addAxisHelper()
     // studio.fog.far = 5
     // studio.fog.near = .2 
 
-    // @ts-ignore
     phisics.init(root)
     ticker.on(phisics.update.bind(phisics))
     phisics.createPlayer()
@@ -81,7 +78,6 @@ export const pipeInit_04 = async (root: Root) => {
         await ui.hideStartScreen()
     }
 
-    // @ts-ignore
     controls.init(root, IS_DEV_START_ORBIT)
     ticker.on(controls.update.bind(controls))
 
@@ -96,5 +92,5 @@ export const pipeInit_04 = async (root: Root) => {
     //controls.setFrontDirTopDir(new THREE.Vector3(-1, 0, 0), new THREE.Vector3(0, 1, 0))
 
     // bottom
-    controls.setFrontDirTopDir(new THREE.Vector3(0, -1, 0), new THREE.Vector3(1, 0, 0))
+    //controls.setFrontDirTopDir(new THREE.Vector3(0, -1, 0), new THREE.Vector3(1, 0, 0))
 }

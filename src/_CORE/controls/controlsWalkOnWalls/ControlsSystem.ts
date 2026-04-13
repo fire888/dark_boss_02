@@ -1,124 +1,34 @@
-import { ControlsOrbit } from "../ControlsOrbit"
-import { ControlsPointer } from "./ControlsPointer"
-import { ControlsPhone } from "../ControlsPhone"
-import { Core } from "../../types"
-import { Tween, Interpolation } from '@tweenjs/tween.js'
 import * as THREE from 'three'
+import { ControlsSystem } from "../ControlsSystem"
+import { PointerLockControls } from 'three/examples/jsm/controls/PointerLockControls'
+import { Core } from "../../types"
 
-export class ControlsSystem {
-    _orbit: ControlsOrbit
-    _pointer: ControlsPointer
-    _phone: ControlsPhone
-    _root: Core
-    _currentWalkingControls: ControlsPointer | ControlsPhone | null
+export class ControlsSystemWall extends ControlsSystem {
+    dir1: THREE.Vector3
+    dirUp: THREE.Vector3
+
+    zeroObject: THREE.Object3D
+    controlObj: THREE.Object3D
+
+    _contrPointer: PointerLockControls 
     
-    _isDisabled = false
-    _isMoveDisabled = false
+    constructor() {
+        super()
 
-    _jumpSpeed = 6
+        this.dir1 = new THREE.Vector3(.5, .5, 0)
+        this.dirUp = new THREE.Vector3(0, .5, .5)
 
-    _amplitudeLeftRightWalk = 0.002
-    _currentSpeedForward = 0.
-    _maxSpeedForward = 5.
-    _tweenSpeedForward: Tween<any> | null = null
+        this.zeroObject = new THREE.Object3D()
+        this.controlObj = new THREE.Object3D()
+        this.zeroObject.add(this.controlObj)
 
-    _currentSpeedLeft = 0.
-    _maxSpeedLeft = 5.
-    _tweenSpeedLeft: Tween<any> | null = null
+        // @ts-ignore
+        this._contrPointer = new PointerLockControls(this.controlObj, document.body)
+    }
 
-    _timeRot = 0 
-    _eulerRot = new THREE.Euler(0, 0, 0, 'YXZ')
-    _strengthIdle = 1
-
-    _objectPos = new THREE.Object3D()
-    _objectDir = new THREE.Object3D()
-    
-    init (root: Core, isStartOrbit: boolean) {
+    init (root: Core, IS_DEV_START_ORBIT = false) {
         this._root = root
-    
-        const { 
-            deviceData, ui, studio,
-            controlsConf
-        } = root
-
-        if (controlsConf && controlsConf.playerSpeedForward) {
-            this._maxSpeedForward = controlsConf.playerSpeedForward
-        }
-        if (controlsConf && controlsConf.amplitudeLeftRightWalk) {
-            this._amplitudeLeftRightWalk = controlsConf.amplitudeLeftRightWalk
-        }
-        if (controlsConf && controlsConf.jumpSpeed) {
-            this._jumpSpeed = controlsConf.jumpSpeed
-        }
-
-        this._orbit = new ControlsOrbit()
-        this._orbit.init(studio.camera, studio.containerDom)
-
-        this._pointer = new ControlsPointer()
-        this._pointer.init(root)
-
-        this._phone = new ControlsPhone()
-        this._phone.init(root)
-
-        this._currentWalkingControls = deviceData.device === 'desktop' 
-            ? this._pointer
-            : this._phone
-
-        if (isStartOrbit) {
-            this._orbit.enable()
-            ui.toggleVisibleButtonLock(false) 
-        } else {
-            this._currentWalkingControls.enable()
-        }
-        
-        // click on buttonPointerLock: enable pointerLock and hide phoneControls  
-        ui.lockButton.onclick = () => {
-            this._pointer.enable().then(isOn => {
-                if (this._isDisabled) {
-                    return
-                }
-                if (!isOn) { 
-                    return 
-                }
-
-                this._currentWalkingControls = this._pointer
-                this._phone.disable()
-                this._orbit.disable()
-                ui.toggleVisibleButtonLock(false) 
-
-                root.studio.addFog()            
-            })
-        }
-        // callback on pointerUnlock: enable phoneControls and show buttonPointerLock
-        this._pointer.onUnlock(() => {
-            if (this._isDisabled) {
-                return
-            }
-            if (this._orbit.isEnabled) {
-                return
-            }
-            this._currentWalkingControls = this._phone
-            ui.toggleVisibleButtonLock(true) 
-            this._phone.enable()
-        }) 
-
-        // key O: disable/enable orbitControls
-        const onKeyUp = (event: KeyboardEvent ) => {
-            if (event.code === 'KeyO') {
-                if (this._orbit.isEnabled) {
-                    this._orbit.disable()
-                    if (this._currentWalkingControls) this._currentWalkingControls.enable()
-
-                    root.studio.addFog()
-                } else {
-                    if (this._currentWalkingControls) this._currentWalkingControls.disable()
-                    this._orbit.enable()
-
-                    root.studio.removeFog()
-                }
-            }
-        }
-        document.addEventListener('keyup', onKeyUp)
+        const { ui } = root   
 
         root.keyboard.on('FORWARD', (is: boolean) => {
             this._changeForwardSpeedTo(is ? this._maxSpeedForward : 0) 
@@ -132,151 +42,152 @@ export class ControlsSystem {
         root.keyboard.on('RIGHT', (is: boolean) => {
             this._changeLeftSpeedTo(is ? -this._maxSpeedLeft : 0) 
         })
-
-        let isCanJump = true
-        if (controlsConf && controlsConf.isCanJump !== undefined) isCanJump = controlsConf.isCanJump
-        if (isCanJump) {
-            root.keyboard.on('JUMP', (is: boolean) => {
-                if (is && root.phisics.isGround) {
-                    this._root.phisics.playerBody.velocity.y += this._jumpSpeed
-                }
-            })
+        
+        ui.lockButton.onclick = () => {
+            console.log('lock') 
+            this._contrPointer.lock()            
         }
-
-        this._phone.on('FORWARD', (is) => {
-            this._changeForwardSpeedTo(is ? this._maxSpeedForward : 0) 
-        })
-        this._phone.on('BACKWARD', (is) => {
-            this._changeForwardSpeedTo(is ? -this._maxSpeedForward : 0) 
-        })
+        this._contrPointer.lock()
     }
 
+    setDir1setDirUp(dir1: THREE.Vector3, dirUp: THREE.Vector3) {
+        this.dir1.copy(dir1)
+        this.dirUp.copy(dirUp)
+    }
 
-    update (delta: number) {
-        this._orbit.update()
-
-        if (!this._currentWalkingControls) {
-            return;
-        }
+    update(delta: number, ) {
+        //this._orbit.update()
 
         if (this._isDisabled) {
             return
         }
 
-        if (this._currentWalkingControls && !this._currentWalkingControls.isEnabled) {
-            return
-        }
+        // if (!this._currentWalkingControls.isEnabled) {
+        //     return
+        // }
 
+        //this._phone.update()
+
+        const camera = this._root.studio.camera
 
         if (!this._root.phisics.isUpdate) { 
             return
         }
 
-        //this._phone.update()
+        this.zeroObject.up.copy(this.dirUp)
+        this.zeroObject.lookAt(this.dir1)
 
-
-        const { camera } = this._root.studio
-        const { playerBody } = this._root.phisics
-
-        camera.position.x = playerBody.position.x
-        camera.position.y = playerBody.position.y
-        camera.position.z = playerBody.position.z
-
-       // console.log(this._objectDir.position.x, this._objectDir.position.y, this._objectDir.position.z)
-
-        // const dir = new THREE.Vector3()
-        // this._objectDir.getWorldDirection(dir)
-        // dir.multiplyScalar(this._currentSpeedForward * delta * .03)
-        // this._objectDir.position.add(dir)
-        console.log(this._objectDir.rotation.x)
+        this._contrPointer.moveForward(this._currentSpeedForward * 0.01)
+        this._contrPointer.moveRight(-this._currentSpeedLeft * 0.01)
 
 
 
-        this._objectDir.translateZ(this._currentSpeedForward * delta * .03)
-        this._objectDir.translateX(this._currentSpeedLeft * delta * .03)
+        const wQ = new THREE.Quaternion()
+        this.controlObj.getWorldQuaternion(wQ)
+        camera.quaternion.copy(wQ)
+        const p = new THREE.Vector3()
+        this.controlObj.getWorldPosition(p)
+        camera.position.copy(p)
 
 
-        playerBody.velocity.x = this._objectDir.position.x
-        playerBody.velocity.y = this._objectDir.position.y
-        playerBody.velocity.z = this._objectDir.position.z
+
+        // const v3Result = new THREE.Vector3()
         
-        this._objectDir.position.set(0, 0, 0)
+        // двигаем достаем плучившиеся направления из камеры и применяем движения клавиш
+        // const dirForward = new THREE.Vector3()
+        // camera.getWorldDirection(dirForward)
+        // dirForward.setY(0).normalize()
+        // const dirLeft = dirForward.clone().applyAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI * .5)
+
+        //dirForward.x *= this._currentSpeedForward
+        //dirForward.z *= this._currentSpeedForward
+        //v3Result.add(dirForward)
+
+        //if (this._currentWalkingControls.constructor.name === this._pointer.constructor.name) {
+        //    dirLeft.x *= this._currentSpeedLeft
+        //    dirLeft.z *= this._currentSpeedLeft
+        //    v3Result.add(dirLeft)
+        //}
+
+        // // обновляем физику игрока направлениями
+        // const { playerBody } = this._root.phisics
+        // playerBody.velocity.x = v3Result.x
+        // playerBody.velocity.z = v3Result.z
+
+        // // применяем результат физики к позиции камеры
+        // camera.position.x = playerBody.position.x
+        // camera.position.y = playerBody.position.y
+        // camera.position.z = playerBody.position.z
+
+        // // camera debounce
+        // this._timeRot += delta
+        // // качаем камеру влево-вправо если есть скорость вперед
+        // const walkingDebounce = Math.sin(this._timeRot * 0.015) * this._amplitudeLeftRightWalk * this._currentSpeedForward
+        // // качаем медленно камеру если стоим 
+        // const idleDebounceStrength = Math.sin(this._timeRot * 0.001) * 0.01
+        // const idleDebounce = idleDebounceStrength * (1 - (Math.abs(this._currentSpeedForward) / this._maxSpeedForward))
+        // // применяем оба качения
+        // this._eulerRot.setFromQuaternion(camera.quaternion)
+        // this._eulerRot.z = walkingDebounce + idleDebounce
+        // camera.quaternion.setFromEuler(this._eulerRot)
     }
 
-    setFrontDirTopDir(forward: THREE.Vector3, top: THREE.Vector3) {
-        this._objectDir.position.set(0, 0, 0)
-        this._objectDir.up.copy(top)
-        this._objectDir.lookAt(forward)
-        //this._objectDir.matrix.lookAt(new THREE.Vector3(), forward, top)
-        this._pointer.setDirObject(this._objectDir)
-    }
+    // updateOld (delta: number) {
+    //     this._orbit.update()
 
-    setRotation(x: number, y: number, z: number) {
-        //this._pointer.setRotation(x, y, z)
-        //this._phone.setRotation(y)
-    }
+    //     if (this._isDisabled) {
+    //         return
+    //     }
 
-    disable () {
-        this._isDisabled = true
-        this._currentWalkingControls = null
-        this._pointer.disable()
-        this._phone.disable()
-        this._root.ui.toggleVisibleButtonLock(false) 
-    }
+    //     if (!this._currentWalkingControls.isEnabled) {
+    //         return
+    //     }
 
-    enable () {
-        this._currentWalkingControls = this._root.deviceData.device === 'desktop' 
-            ? this._pointer
-            : this._phone
-        this._currentWalkingControls.enable()    
-        this._isDisabled = false
-    }
+    //     this._phone.update()
 
-    disableMove() {
-        if (this._isMoveDisabled) {
-            return;
-        }
-        this._isMoveDisabled = true
-        this._changeForwardSpeedTo(0)
-    }
+    //     const camera = this._root.studio.camera
 
-    enableMove() {
-        this._isMoveDisabled = false
-    }
+    //     if (!this._root.phisics.isUpdate) { 
+    //         return
+    //     }
+    //     const v3Result = new THREE.Vector3()
 
-    _changeForwardSpeedTo(v: number) {
-        if (this._tweenSpeedForward) {
-            this._tweenSpeedForward.stop()
-        }
+    //     // двигаем достаем плучившиеся направления из камеры и применяем движения клавиш
+    //     const dirForward = new THREE.Vector3()
+    //     camera.getWorldDirection(dirForward)
+    //     dirForward.setY(0).normalize()
+    //     const dirLeft = dirForward.clone().applyAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI * .5)
 
-        const obj = { speed: this._currentSpeedForward }
-        this._tweenSpeedForward = new Tween(obj)
-            .interpolation(Interpolation.Linear)
-            .to({ speed: v }, 200)
-            .onUpdate(() => {
-                this._currentSpeedForward = obj.speed
-            })
-            .onComplete(() => {
-                this._tweenSpeedForward = null
-            })
-            .start()
-    }
+    //     dirForward.x *= this._currentSpeedForward
+    //     dirForward.z *= this._currentSpeedForward
+    //     v3Result.add(dirForward)
 
-    _changeLeftSpeedTo(v: number) {
-        if (this._tweenSpeedLeft) {
-            this._tweenSpeedLeft.stop()
-        }
+    //     if (this._currentWalkingControls.constructor.name === this._pointer.constructor.name) {
+    //         dirLeft.x *= this._currentSpeedLeft
+    //         dirLeft.z *= this._currentSpeedLeft
+    //         v3Result.add(dirLeft)
+    //     }
 
-        const obj = { speed: this._currentSpeedLeft }
-        this._tweenSpeedLeft = new Tween(obj)
-            .interpolation(Interpolation.Linear)
-            .to({ speed: v }, 200)
-            .onUpdate(() => {
-                this._currentSpeedLeft = obj.speed
-            })
-            .onComplete(() => {
-                this._tweenSpeedLeft = null
-            })
-            .start()
-    }
+    //     // обновляем физику игрока направлениями
+    //     const { playerBody } = this._root.phisics
+    //     playerBody.velocity.x = v3Result.x
+    //     playerBody.velocity.z = v3Result.z
+
+    //     // применяем результат физики к позиции камеры
+    //     camera.position.x = playerBody.position.x
+    //     camera.position.y = playerBody.position.y
+    //     camera.position.z = playerBody.position.z
+
+    //     // camera debounce
+    //     this._timeRot += delta
+    //     // качаем камеру влево-вправо если есть скорость вперед
+    //     const walkingDebounce = Math.sin(this._timeRot * 0.015) * this._amplitudeLeftRightWalk * this._currentSpeedForward
+    //     // качаем медленно камеру если стоим 
+    //     const idleDebounceStrength = Math.sin(this._timeRot * 0.001) * 0.01
+    //     const idleDebounce = idleDebounceStrength * (1 - (Math.abs(this._currentSpeedForward) / this._maxSpeedForward))
+    //     // применяем оба качения
+    //     this._eulerRot.setFromQuaternion(camera.quaternion)
+    //     this._eulerRot.z = walkingDebounce + idleDebounce
+    //     camera.quaternion.setFromEuler(this._eulerRot)
+    // }
 }

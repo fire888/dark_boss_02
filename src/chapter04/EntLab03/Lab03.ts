@@ -31,7 +31,7 @@ export class Lab03 {
 
         for (let i = 0; i < level.children.length; i++) {
             const child = level.children[i]
-            console.log('--', child.name)
+            //console.log('--', child.name)
             if (
                 child.name === 'level_000_000'
                 ||
@@ -41,7 +41,7 @@ export class Lab03 {
                 ||
                 child.name === 'roadwall_001_000'
             ) {
-                console.log('ADD', child.name)
+                // console.log('ADD', child.name)
                 const mat = child.name.includes('level') ? root.materials.wall : root.materials.wall2
                 const mesh = new THREE.Mesh(child.geometry.clone(), mat)
                 mesh.name = child.name

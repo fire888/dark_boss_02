@@ -104,11 +104,11 @@ export class ControlsSystem {
             if (event.code === 'KeyO') {
                 if (this._orbit.isEnabled) {
                     this._orbit.disable()
-                    this._currentWalkingControls.enable()
+                    if (this._currentWalkingControls) this._currentWalkingControls.enable()
 
                     root.studio.addFog()
                 } else {
-                    this._currentWalkingControls.disable()
+                    if (this._currentWalkingControls) this._currentWalkingControls.disable()
                     this._orbit.enable()
 
                     root.studio.removeFog()
@@ -156,7 +156,7 @@ export class ControlsSystem {
             return
         }
 
-        if (!this._currentWalkingControls.isEnabled) {
+        if (this._currentWalkingControls && !this._currentWalkingControls.isEnabled) {
             return
         }
 
@@ -179,7 +179,7 @@ export class ControlsSystem {
         dirForward.z *= this._currentSpeedForward
         v3Result.add(dirForward)
 
-        if (this._currentWalkingControls.constructor.name === this._pointer.constructor.name) {
+        if (this._currentWalkingControls && this._currentWalkingControls.constructor.name === this._pointer.constructor.name) {
             dirLeft.x *= this._currentSpeedLeft
             dirLeft.z *= this._currentSpeedLeft
             v3Result.add(dirLeft)
