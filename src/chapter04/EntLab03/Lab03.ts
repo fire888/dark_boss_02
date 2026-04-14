@@ -54,6 +54,7 @@ export class Lab03 {
     _addMesh(mesh: THREE.Mesh) {
         this._root.studio.add(mesh)
         this._root.phisics.addMeshToCollision(mesh)
+        this._root.controls.addLevelElem(mesh)
         this.currentLevelMeshes.push(mesh)
     }
 }
