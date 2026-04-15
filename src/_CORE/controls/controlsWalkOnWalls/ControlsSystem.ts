@@ -4,8 +4,13 @@ import { PointerLockControls } from 'three/examples/jsm/controls/PointerLockCont
 import { Core } from "../../types"
 
 const box = new THREE.Mesh(
-    new THREE.BoxGeometry(.3, .3, .3),
+    new THREE.BoxGeometry(.05, .05, .05),
     new THREE.MeshBasicMaterial({ color: 0xff0000 })
+)
+
+const box2 = new THREE.Mesh(
+    new THREE.BoxGeometry(.05, .05, .05),
+    new THREE.MeshBasicMaterial({ color: 0xffff00 })
 )
 
 export class ControlsSystemWall extends ControlsSystem {
@@ -101,15 +106,43 @@ export class ControlsSystemWall extends ControlsSystem {
 
         this._raycaster.set(camera.position, wDir.negate())
         const intersects = this._raycaster.intersectObjects(this._levelElems)
-        if (intersects[0] && intersects[0].distance) {
-            const int = intersects[0]
-            box.position.copy(int.point)
-            console.log(int)
+        if (intersects[0] && intersects[0].distance < .6) {
+            const intercept = intersects[0]
+            box.position.copy(intercept.point)
+            console.log(intercept)
+            if (intercept.face) { 
+                this.dirUp.copy(intercept.face.normal)
+                const dir = this._findDirLevelPoligon(intercept.point)
+                if (dir) {
+                    this.dir.copy(dir).add(this.dirUp)
+                    this.zeroObject.position.copy(intercept.point).add(this.dirUp)
+                    this.controlObj.position.set(0, 0, 0)
+                }
+            }
         }
     }
 
     addLevelElem(elem: THREE.Mesh) {
         this._levelElems.push(elem)
+    }
+
+    _findDirLevelPoligon(pointOnLevel: THREE.Vector3): THREE.Vector3 | null {
+        let resultVec = null 
+
+        const camera = this._root.studio.camera
+        const savedQ = new THREE.Quaternion().copy(camera.quaternion)
+        camera.rotateX(.05)
+        const wDir = new THREE.Vector3(0, 0, 1)
+        wDir.applyQuaternion(camera.quaternion)
+        this._raycaster.set(camera.position, wDir.negate())
+        const intersects = this._raycaster.intersectObjects(this._levelElems)
+        if (intersects[0]) {
+            const point = intersects[0].point
+            resultVec = pointOnLevel.clone().sub(point).normalize()
+        }
+        camera.quaternion.copy(savedQ)
+
+        return resultVec
     }
 
 }
