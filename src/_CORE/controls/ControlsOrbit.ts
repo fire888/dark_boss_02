@@ -3,7 +3,7 @@ import * as THREE from 'three'
 
 export class ControlsOrbit {
     isEnabled = false
-    controls: OrbitControls
+    controls: OrbitControls | null = null
     constructor () {}
 
     init (camera: THREE.PerspectiveCamera, domElem: HTMLElement) {
@@ -17,16 +17,26 @@ export class ControlsOrbit {
     }
 
     enable () {
+        if (!this.controls) {
+            return
+        }
         this.isEnabled = true
         this.controls.enabled = true
+        this.controls.object.up.set( 0, 1, 0 )
     }
 
     disable () {
+        if (!this.controls) {
+            return
+        }
         this.isEnabled = false
         this.controls.enabled = false
     }
 
     update () {
+        if (!this.controls) {
+            return
+        }
         if (!this.controls.enabled) {
             return;
         }

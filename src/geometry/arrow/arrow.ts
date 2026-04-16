@@ -35,7 +35,7 @@ type T_CrMeshArrow = {
     l?: number
 }
 
-export const createMeshArrow = (opts: T_CrMeshArrow) => {
+export const createMeshArrow = (opts: T_CrMeshArrow = {}) => {
     const {
         startPos = new THREE.Vector3(0, 0, 0),
         endPos = new THREE.Vector3(10, 0, 0),

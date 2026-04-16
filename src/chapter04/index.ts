@@ -1,7 +1,7 @@
 import { Ticker } from "_CORE/Ticker"
 import { Keyboard } from "_CORE/Keyboard"
 import { Phisics } from "_CORE/Phisics"
-import { ControlsSystemWall } from "_CORE/controls/controlsWalkOnWalls/ControlsSystem"
+import { ControlsSystemWall } from "_CORE/controls/controlsWalkOnWalls/ControlsSystemWall"
 import { DeviceData } from "_CORE/DeviceData"
 import { Studio } from "_CORE/Studio"
 import { LoaderAssets } from "_CORE/Loader"
