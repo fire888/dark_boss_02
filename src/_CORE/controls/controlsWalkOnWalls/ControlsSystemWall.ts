@@ -44,10 +44,11 @@ export class ControlsSystemWall extends ControlsSystem {
 
         this._arrow = createMeshArrow()
         this._arrow.scale.set(.4, .1, -.1)
+        this._arrow.position.set(0, 0, 0)
+        this._arrow.rotation.set(0, 0, 0)
 
         this._arrow2 = createMeshArrow({ color: new THREE.Color().setRGB(1, 1, 1) })
         this._arrow2.scale.set(.4, .1, -.1)
-
 
         this._arrowFaceNormal = createMeshArrow({ color: new THREE.Color().setRGB(0, 1, 0) })
         this._arrowFaceNormal.scale.set(.2, .1, .1)
@@ -56,7 +57,7 @@ export class ControlsSystemWall extends ControlsSystem {
         this._arrowDirProj.scale.set(.2, .1, -.1)
 
 
-        this.vLookAt = new THREE.Vector3(0, 0, 1)
+        this.vLookAt = new THREE.Vector3(0, 0, -1)
         this.dirUp = new THREE.Vector3(0, 1, 0)
 
         this.zeroObject = new THREE.Object3D()
@@ -102,8 +103,8 @@ export class ControlsSystemWall extends ControlsSystem {
         studio.add(this._arrowFaceNormal)
         studio.add(this._arrowDirProj)
 
-        this.switchMode('POINTER')
-        //this.switchMode('ORBIT')
+        //this.switchMode('POINTER')
+        this.switchMode('ORBIT')
     }
 
     switchMode(mode: string) {
@@ -153,9 +154,6 @@ export class ControlsSystemWall extends ControlsSystem {
 
         const { phisics } = this._root
 
-        // сохраняем предыдущее положение
-        const vPrevPos = this.zeroObject.position.clone()
-
         // ОСНОВНОЙ  
         // выравнивается относительн полигона
         this.zeroObject.up.copy(this.dirUp)
@@ -203,7 +201,7 @@ export class ControlsSystemWall extends ControlsSystem {
                 this._arrowFaceNormal.position.copy(intercept.point)
                 this._arrowFaceNormal.lookAt(intercept.point.clone().add(intercept.face.normal))
                 
-                this.dirUp.copy(intercept.face.normal)
+                //this.dirUp.copy(intercept.face.normal)
                 
                 this._raycaster.set(this._arrow2.position, wDir)
                 const intercepts2 = this._raycaster.intersectObjects(this._levelElems)
@@ -213,18 +211,22 @@ export class ControlsSystemWall extends ControlsSystem {
                     const vAddOverFace = intercept.face.normal.clone().multiplyScalar(.6)
 
                     const dir = intercept.point.clone().sub(intercept2.point)
-                    this.vLookAt.copy(intercept.point).add(dir).add(vAddOverFace)
+                    const newLookAt = intercept.point.clone().add(dir).add(vAddOverFace)    
+                    //this.vLookAt.copy(intercept.point).add(dir).add(vAddOverFace)
 
                     this._arrowDirProj.position.copy(intercept.point).add(vAddOverFace)
                     this._arrowDirProj.lookAt(intercept.point.clone().add(dir).add(vAddOverFace))
 
                     this.zeroObject.position.copy(intercept.point).add(vAddOverFace)
-                    this.zeroObject.lookAt(this.vLookAt)
+                                        
+                    //this.zeroObject.lookAt(this.vLookAt)
                     this.controlObj.position.set(0, 0, 0)
                     this.controlObj.rotation.set(0, 0, 0)
 
-                    const vGraviti = this.dirUp.clone().multiplyScalar(9.81).negate()
+                    const vGraviti = intercept.face.normal.clone().multiplyScalar(9.81).negate()
                     phisics.setGravity(vGraviti)
+
+                    this._alignToNewDir(this.vLookAt, this.dirUp, newLookAt, intercept.face.normal.clone())
                 }
             }
         }
@@ -239,7 +241,6 @@ export class ControlsSystemWall extends ControlsSystem {
             this.controlObj.rotateY(this._currentSpeedLeft * 0.01)
         }
         if (this._currentMode === 'POINTER') {
-
             this._contrPointer.moveForward(this._currentSpeedForward * 0.01)
             this._contrPointer.moveRight(-this._currentSpeedLeft * 0.01)
         }
@@ -249,7 +250,9 @@ export class ControlsSystemWall extends ControlsSystem {
         this._levelElems.push(elem)
     }
 
-    _alignToNewDir() {
+    _alignToNewDir(vDirStart: THREE.Vector3, vUpStart: THREE.Vector3, vDirEnd: THREE.Vector3, vUpEnd: THREE.Vector3) {
+        const { studio } = this._root
+        
         this._isDisabled = true
         const TIME = 1000
         
@@ -258,7 +261,30 @@ export class ControlsSystemWall extends ControlsSystem {
             .easing(TWEEN.Easing.Linear.In)
             .to({ v: 1 }, TIME)
             .onUpdate(() => {
+                const vDir = vDirStart.clone().lerp(vDirEnd, obj.v)
+                this.vLookAt.copy(vDir)
+                this.zeroObject.lookAt(this.vLookAt)
+                const vUp = vUpStart.clone().lerp(vUpEnd, obj.v)
+                this.dirUp.copy(vUp)
+                this.zeroObject.up.copy(this.dirUp)
 
+
+                // СТРЕЛКА
+                // поворот из контролсов
+                const wQ = new THREE.Quaternion()
+                this.controlObj.getWorldQuaternion(wQ)
+                this._arrow.quaternion.copy(wQ)
+                // позиция позиция из контролсов
+                const vPosControls = new THREE.Vector3()
+                this.controlObj.getWorldPosition(vPosControls)
+                this.controlObj.position.set(0, 0, 0)
+                this._arrow.position.copy(vPosControls)
+
+
+                if (this._currentMode !== 'ORBIT') {
+                    studio.camera.position.copy(this._arrow.position)
+                    studio.camera.quaternion.copy(this._arrow.quaternion)
+                }
             })
             .onComplete(() => {
                 this._isDisabled = false
