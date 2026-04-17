@@ -85,7 +85,7 @@ export class Phisics {
 
         // DEBUGGER PHISICS
         // @ts-ignore
-        // this.cannonDebugger = new CannonDebugger(root.studio.scene, this.world, {})
+        this.cannonDebugger = new CannonDebugger(root.studio.scene, this.world, {})
     }
 
     createPlayer () {
@@ -235,6 +235,10 @@ export class Phisics {
     }
     switchToGravity () {
         this.world.gravity.set(0, -9.82, 0)
+    }
+
+    setGravity (v3: THREE.Vector3) {
+        this.world.gravity.set(v3.x, v3.y, v3.z)
     }
 
     switchToGravityGorizontalBoost () {

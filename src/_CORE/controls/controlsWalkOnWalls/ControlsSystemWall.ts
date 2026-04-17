@@ -4,6 +4,7 @@ import { ControlsOrbit } from "../ControlsOrbit"
 import { PointerLockControls } from 'three/examples/jsm/controls/PointerLockControls'
 import { Core } from "../../types"
 import { createMeshArrow } from 'geometry/arrow/arrow'
+import * as TWEEN from '@tweenjs/tween.js'
 
 const box = new THREE.Mesh(
     new THREE.BoxGeometry(.05, .05, .05),
@@ -26,7 +27,9 @@ export class ControlsSystemWall extends ControlsSystem {
     dirUp: THREE.Vector3
 
     zeroObject: THREE.Object3D
+    prevZeroObjPos: THREE.Vector3 
     controlObj: THREE.Object3D
+
 
     _contrPointer: PointerLockControls
     _contrilsOrbit: ControlsOrbit | null = null
@@ -34,6 +37,7 @@ export class ControlsSystemWall extends ControlsSystem {
     _raycaster = new THREE.Raycaster()
     _currentMode: string = 'none' 
     
+    _isUpdate = true
     
     constructor() {
         super()
@@ -49,13 +53,14 @@ export class ControlsSystemWall extends ControlsSystem {
         this._arrowFaceNormal.scale.set(.2, .1, .1)
         
         this._arrowDirProj = createMeshArrow({ color: new THREE.Color().setRGB(1, 1, 0) })
-        this._arrowDirProj.scale.set(.2, .1, .1)
+        this._arrowDirProj.scale.set(.2, .1, -.1)
 
 
-        this.vLookAt = new THREE.Vector3(.5, .5, 0)
-        this.dirUp = new THREE.Vector3(0, .5, .5)
+        this.vLookAt = new THREE.Vector3(0, 0, 1)
+        this.dirUp = new THREE.Vector3(0, 1, 0)
 
         this.zeroObject = new THREE.Object3D()
+        this.prevZeroObjPos = new THREE.Vector3()
         this.controlObj = new THREE.Object3D()
         this.zeroObject.add(this.controlObj)
         
@@ -82,9 +87,9 @@ export class ControlsSystemWall extends ControlsSystem {
             this._changeLeftSpeedTo(is ? -this._maxSpeedLeft : 0)
         })
         
-        // ui.lockButton.onclick = () => {
-        //     this._contrPointer.lock()
-        // }
+        ui.lockButton.onclick = () => {
+            this._contrPointer.lock()
+        }
 
         this._contrilsOrbit?.init(root.studio.camera, root.studio.containerDom)
         this._contrilsOrbit?.enable()
@@ -97,7 +102,8 @@ export class ControlsSystemWall extends ControlsSystem {
         studio.add(this._arrowFaceNormal)
         studio.add(this._arrowDirProj)
 
-        this.switchMode('ORBIT')
+        this.switchMode('POINTER')
+        //this.switchMode('ORBIT')
     }
 
     switchMode(mode: string) {
@@ -105,8 +111,6 @@ export class ControlsSystemWall extends ControlsSystem {
 
         if (mode === 'ORBIT') {
             if (this._currentMode !== 'ORBIT') {
-                
-                //this._contrPointer.disable()
                 this._contrilsOrbit?.enable()
 
                 const vPos = new THREE.Vector3().copy(studio.camera.position)
@@ -117,6 +121,22 @@ export class ControlsSystemWall extends ControlsSystem {
                 this._contrilsOrbit?.update()
 
                 this._currentMode = 'ORBIT'
+            }
+        }
+
+        if (mode === 'POINTER') {
+            if (this._currentMode !== 'POINTER') { 
+                if (this._currentMode === 'ORBIT') {
+                    this._contrilsOrbit?.disable()
+                    const camPos = this._arrow.position.clone()
+                    studio.camera.position.copy(camPos)
+                    const q = this._arrow.quaternion.clone()
+                    studio.camera.quaternion.copy(q)
+                }
+
+                this._contrPointer.lock()
+                this._currentMode = 'POINTER'
+
             }
         }
 
@@ -131,29 +151,55 @@ export class ControlsSystemWall extends ControlsSystem {
             return
         }
 
+        const { phisics } = this._root
+
+        // сохраняем предыдущее положение
+        const vPrevPos = this.zeroObject.position.clone()
+
+        // ОСНОВНОЙ  
+        // выравнивается относительн полигона
         this.zeroObject.up.copy(this.dirUp)
         this.zeroObject.lookAt(this.vLookAt)
+        // ставится позиция после апдейта физики
+        this.zeroObject.position.set(
+            phisics.playerBody.position.x,
+            phisics.playerBody.position.y,
+            phisics.playerBody.position.z
+        )
 
+        // СТРЕЛКА
+        // поворот из контролсов
         const wQ = new THREE.Quaternion()
         this.controlObj.getWorldQuaternion(wQ)
         this._arrow.quaternion.copy(wQ)
-        const wDir = new THREE.Vector3(0, 0, 1)
-        wDir.applyQuaternion(this._arrow.quaternion)
+        // позиция позиция из контролсов
+        const vPosControls = new THREE.Vector3()
+        this.controlObj.getWorldPosition(vPosControls)
+        this.controlObj.position.set(0, 0, 0)
+        this._arrow.position.copy(vPosControls)
 
-        const p = new THREE.Vector3()
-        this.controlObj.getWorldPosition(p)
-        this._arrow.position.copy(p)
+        // Направление движения 
+        // берется из новой позиции контролсов минус текущее направление
+        const vDir = vPosControls.clone().sub(this.zeroObject.position).normalize().multiplyScalar(.2)
+        // Задаем направление для физики
+        phisics.playerBody.velocity.x += vDir.x
+        phisics.playerBody.velocity.y += vDir.y
+        phisics.playerBody.velocity.z += vDir.z
 
+        // СТРЕЛКА2 (для проекции направления на полигоне)
+        // ставится чуть выше обычной стрелки
         this._arrow2.position.copy(this._arrow.position)
         this._arrow2.quaternion.copy(this._arrow.quaternion)
         this._arrow2.translateY(.1)
 
+        const wDir = new THREE.Vector3(0, 0, 1)
+        wDir.applyQuaternion(this._arrow.quaternion)
         this._raycaster.set(this._arrow.position, wDir.negate())
         const intersects = this._raycaster.intersectObjects(this._levelElems)
         if (intersects[0]) {
             const intercept = intersects[0]
             box.position.copy(intercept.point)
-            if (intercept.distance < .6 && intercept.face) {
+            if (intercept.distance < .6 && intercept.face && !intercept.face.normal.equals(this.dirUp)) {
                 this._arrowFaceNormal.position.copy(intercept.point)
                 this._arrowFaceNormal.lookAt(intercept.point.clone().add(intercept.face.normal))
                 
@@ -164,18 +210,21 @@ export class ControlsSystemWall extends ControlsSystem {
                 if (intercepts2[0]) {
                     const intercept2 = intercepts2[0]
 
-                    const vAddOverFace = intercept.face.normal.clone().multiplyScalar(.1)
+                    const vAddOverFace = intercept.face.normal.clone().multiplyScalar(.6)
 
                     const dir = intercept.point.clone().sub(intercept2.point)
                     this.vLookAt.copy(intercept.point).add(dir).add(vAddOverFace)
 
                     this._arrowDirProj.position.copy(intercept.point).add(vAddOverFace)
-                    this._arrowDirProj.lookAt(intercept.point.clone().add(dir.clone().negate()).add(vAddOverFace))
+                    this._arrowDirProj.lookAt(intercept.point.clone().add(dir).add(vAddOverFace))
 
                     this.zeroObject.position.copy(intercept.point).add(vAddOverFace)
                     this.zeroObject.lookAt(this.vLookAt)
                     this.controlObj.position.set(0, 0, 0)
                     this.controlObj.rotation.set(0, 0, 0)
+
+                    const vGraviti = this.dirUp.clone().multiplyScalar(9.81).negate()
+                    phisics.setGravity(vGraviti)
                 }
             }
         }
@@ -183,13 +232,14 @@ export class ControlsSystemWall extends ControlsSystem {
         const camera = this._root.studio.camera
         if (this._currentMode !== 'ORBIT') {
             camera.position.copy(this._arrow.position)
-            camera.quaternion.copy(this._arrow.quaternion).conjugate()
+            camera.quaternion.copy(this._arrow.quaternion)
         }
         if (this._currentMode === 'ORBIT') {
             this.controlObj.translateZ(-this._currentSpeedForward * 0.01)
             this.controlObj.rotateY(this._currentSpeedLeft * 0.01)
         }
         if (this._currentMode === 'POINTER') {
+
             this._contrPointer.moveForward(this._currentSpeedForward * 0.01)
             this._contrPointer.moveRight(-this._currentSpeedLeft * 0.01)
         }
@@ -197,6 +247,25 @@ export class ControlsSystemWall extends ControlsSystem {
 
     addLevelElem(elem: THREE.Mesh) {
         this._levelElems.push(elem)
+    }
+
+    _alignToNewDir() {
+        this._isDisabled = true
+        const TIME = 1000
+        
+        const obj = { v: 0 }
+        new TWEEN.Tween(obj)
+            .easing(TWEEN.Easing.Linear.In)
+            .to({ v: 1 }, TIME)
+            .onUpdate(() => {
+
+            })
+            .onComplete(() => {
+                this._isDisabled = false
+            })
+            .start()
+        
+
     }
 
 }
