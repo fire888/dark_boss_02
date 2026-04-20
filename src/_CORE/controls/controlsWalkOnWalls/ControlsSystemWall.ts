@@ -5,6 +5,7 @@ import { PointerLockControls } from 'three/examples/jsm/controls/PointerLockCont
 import { Core } from "../../types"
 import { createMeshArrow } from 'geometry/arrow/arrow'
 import * as TWEEN from '@tweenjs/tween.js'
+aaaa efeeef
 asasasa
 const box = new THREE.Mesh(
     new THREE.BoxGeometry(.05, .05, .05),
@@ -223,8 +224,7 @@ export class ControlsSystemWall extends ControlsSystem {
                     this.controlObj.position.set(0, 0, 0)
                     this.controlObj.rotation.set(0, 0, 0)
 
-                    const vGraviti = intercept.face.normal.clone().multiplyScalar(9.81).negate()
-                    phisics.setGravity(vGraviti)
+                    phisics.setGravity(new THREE.Vector3(0, 0, 0))
 
                     this._alignToNewDir(this.vLookAt, this.dirUp, newLookAt, intercept.face.normal.clone())
                 }
@@ -251,7 +251,7 @@ export class ControlsSystemWall extends ControlsSystem {
     }
 
     _alignToNewDir(vDirStart: THREE.Vector3, vUpStart: THREE.Vector3, vDirEnd: THREE.Vector3, vUpEnd: THREE.Vector3) {
-        const { studio } = this._root
+        const { studio,phisics } = this._root
         
         this._isDisabled = true
         const TIME = 1000
@@ -278,6 +278,7 @@ export class ControlsSystemWall extends ControlsSystem {
                 const vPosControls = new THREE.Vector3()
                 this.controlObj.getWorldPosition(vPosControls)
                 this.controlObj.position.set(0, 0, 0)
+                this.controlObj.rotation.set(0, 0, 0)
                 this._arrow.position.copy(vPosControls)
 
 
@@ -288,6 +289,9 @@ export class ControlsSystemWall extends ControlsSystem {
             })
             .onComplete(() => {
                 this._isDisabled = false
+                const vGraviti = vUpEnd.clone().multiplyScalar(9.81).negate()
+                phisics.setGravity(vGraviti)
+                //phisics.playerBody.quaternion
             })
             .start()
         
