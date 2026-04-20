@@ -6,6 +6,7 @@ import { Core } from "../../types"
 import { createMeshArrow } from 'geometry/arrow/arrow'
 import * as TWEEN from '@tweenjs/tween.js'
 aaaa efeeef
+asasasa
 const box = new THREE.Mesh(
     new THREE.BoxGeometry(.05, .05, .05),
     new THREE.MeshBasicMaterial({ color: 0xff0000 })
