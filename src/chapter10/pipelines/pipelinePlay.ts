@@ -3,6 +3,8 @@ import * as THREE from 'three'
 import { THEMES } from 'chapter10/constants/CONSTANTS'
 import { Tween, Easing } from '@tweenjs/tween.js'
 
+THREE.ArrayCamera\
+
 export const pipelinePlay = async (root: Root, currentIndexLevel = 0) => {
     console.log('[MESSAGE:] START PLAY')
 
