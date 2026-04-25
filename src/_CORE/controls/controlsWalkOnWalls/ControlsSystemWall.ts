@@ -245,59 +245,41 @@ export class ControlsSystemWall extends ControlsSystem {
         
         const { studio, phisics } = this._root
         
-        //this._isDisabled = true
+        this._isDisabled = true
 
-        this._zeroObject.up.copy(vUpEnd)
-        this._zeroObject.lookAt(vDirEnd)
-        phisics.setGravity(vUpEnd.clone().negate().multiplyScalar(9.82))
+        const vStartLookAt = new THREE.Vector3()
+        this._arrow.getWorldDirection(vStartLookAt)
+        vStartLookAt.negate().add(this._arrow.position)
+        const vStartUp = this._zeroObject.up.clone()
 
+        const TIME = 300
 
-        //const TIME = 1000
+        const obj = { v: 0 }
+        new TWEEN.Tween(obj)
+             .easing(TWEEN.Easing.Quadratic.InOut)
+             .to({ v: 1 }, TIME)
+             .onUpdate(() => {
+                const vUp = vStartUp.clone().lerp(vUpEnd, obj.v)
+                const vDir = vStartLookAt.clone().lerp(vDirEnd, obj.v)
+                this._zeroObject.up.copy(vUp)
+                this._zeroObject.lookAt(vDir)
 
-
-        //const neqQuaternion = 
-
-        
-        // const obj = { v: 0 }
-        // new TWEEN.Tween(obj)
-        //     .easing(TWEEN.Easing.Linear.In)
-        //     .to({ v: 1 }, TIME)
-        //     .onUpdate(() => {
-        //         const vDir = vDirStart.clone().lerp(vDirEnd, obj.v)
-        //         this.vLookAt.copy(vDir)
-        //         this.zeroObject.lookAt(this.vLookAt)
-        //         const vUp = vUpStart.clone().lerp(vUpEnd, obj.v)
-        //         this.dirUp.copy(vUp)
-        //         this.zeroObject.up.copy(this.dirUp)
-
-
-        //         // СТРЕЛКА
-        //         // поворот из контролсов
-        //         const wQ = new THREE.Quaternion()
-        //         this.controlObj.getWorldQuaternion(wQ)
-        //         this._arrow.quaternion.copy(wQ)
-        //         // позиция позиция из контролсов
-        //         const vPosControls = new THREE.Vector3()
-        //         this.controlObj.getWorldPosition(vPosControls)
-        //         this.controlObj.position.set(0, 0, 0)
-        //         this.controlObj.rotation.set(0, 0, 0)
-        //         this._arrow.position.copy(vPosControls)
-
-
-        //         if (this._currentMode !== 'ORBIT') {
-        //             studio.camera.position.copy(this._arrow.position)
-        //             studio.camera.quaternion.copy(this._arrow.quaternion)
-        //         }
-        //     })
-        //     .onComplete(() => {
-        //         this._isDisabled = false
-        //         const vGraviti = vUpEnd.clone().multiplyScalar(9.81).negate()
-        //         phisics.setGravity(vGraviti)
-        //         //phisics.playerBody.quaternion
-        //     })
-        //     .start()
-        
-
+                // СТРЕЛКА
+                // поворот из контролсов
+                const wQ = new THREE.Quaternion()
+                this._controlObj.getWorldQuaternion(wQ)
+                this._arrow.quaternion.copy(wQ)
+                if (this._currentMode !== 'ORBIT') {
+                    studio.camera.quaternion.copy(this._arrow.quaternion)
+                }
+             })
+            .onComplete(() => {
+                this._isDisabled = false
+                this._zeroObject.up.copy(vUpEnd)
+                this._zeroObject.lookAt(vDirEnd)
+                phisics.setGravity(vUpEnd.clone().negate().multiplyScalar(9.82))
+            })
+            .start()
     }
 
 }
