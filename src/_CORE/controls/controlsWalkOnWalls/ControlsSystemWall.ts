@@ -5,6 +5,7 @@ import { PointerLockControls } from 'three/examples/jsm/controls/PointerLockCont
 import { Core } from "../../types"
 import { createMeshArrow } from 'geometry/arrow/arrow'
 import * as TWEEN from '@tweenjs/tween.js'
+import { _M } from '_CORE/_M/_m'
 
 const boxResultDir = new THREE.Mesh(
     new THREE.BoxGeometry(.05, .05, .05),
@@ -13,6 +14,7 @@ const boxResultDir = new THREE.Mesh(
 
 export class ControlsSystemWall extends ControlsSystem {
     _arrow: THREE.Mesh
+    _arrowX0: THREE.Mesh
     _arrow2: THREE.Mesh
     _arrowFaceNormal: THREE.Mesh
     _arrowDirProj: THREE.Mesh
@@ -51,6 +53,10 @@ export class ControlsSystemWall extends ControlsSystem {
         this._zeroObject.lookAt(0, 0, -1)
         this._controlObj = new THREE.Object3D()
         this._zeroObject.add(this._controlObj)
+
+        this._arrowX0 = createMeshArrow({ color: new THREE.Color().setRGB(1, 0, 0) })
+        this._arrowX0.scale.set(.4, .1, -.1)
+        this._zeroObject.add(this._arrowX0)
         
         // @ts-ignore
         this._contrPointer = new PointerLockControls(this._controlObj, document.body)
@@ -146,6 +152,7 @@ export class ControlsSystemWall extends ControlsSystem {
         // зануляем контролсы и сдвигаем в сторону движения
         this._controlObj.position.set(0, 0, 0)
         
+        // Если под игроком нет поверхности поворачиваемся вверх и падаем
         if (!this._zeroObject.up.equals(new THREE.Vector3(0, 1, 0))) {
             this._raycaster.set(this._arrow.position, this._zeroObject.up.clone().negate())
             const intersectsPlayerBottom = this._raycaster.intersectObjects(this._levelElems)
@@ -188,9 +195,13 @@ export class ControlsSystemWall extends ControlsSystem {
         phisics.playerBody.velocity.z += vDir.z
 
         // чекаем есть ли впереди стенка на которую можно повернуть
-        const vDirArrow = new THREE.Vector3(0, 0, 1)
-        vDirArrow.applyQuaternion(this._arrow.quaternion)
-        this._raycaster.set(this._arrow.position, vDirArrow.negate())
+        const vDirArrow = new THREE.Vector3(1, 0, 0)
+        const angle = _M.angleFromCoords(this._controlObj.matrix.elements[8], this._controlObj.matrix.elements[10])
+        this._arrowX0.quaternion.setFromAxisAngle(new THREE.Vector3(0, 1, 0), -angle)
+        const q = new THREE.Quaternion()
+        this._arrowX0.getWorldQuaternion(q)
+        vDirArrow.applyQuaternion(q)
+        this._raycaster.set(this._arrow.position, vDirArrow)
         const intersects = this._raycaster.intersectObjects(this._levelElems)
         if (intersects[0]) {
             const intercept = intersects[0]
