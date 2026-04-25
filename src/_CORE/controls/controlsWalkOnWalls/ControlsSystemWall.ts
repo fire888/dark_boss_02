@@ -59,7 +59,7 @@ export class ControlsSystemWall extends ControlsSystem {
 
     init (root: Core, IS_DEV_START_ORBIT = false) {
         this._root = root
-        const { ui, studio } = root
+        const { ui, studio, phisics } = root
 
         root.keyboard.on('FORWARD', (is: boolean) => {
             this._currentSpeedForward = is ? this._maxSpeedForward : 0
@@ -76,6 +76,12 @@ export class ControlsSystemWall extends ControlsSystem {
         root.keyboard.on('RIGHT', (is: boolean) => {
             this._currentSpeedLeft = is ? this._maxSpeedLeft : 0
             //this._changeLeftSpeedTo(is ? -this._maxSpeedLeft : 0)
+        })
+        root.keyboard.on('JUMP', (is: boolean) => {
+            if (is) {
+                const dir = this._zeroObject.up.clone().multiplyScalar(10)
+                phisics.playerBody.velocity.set(dir.x, dir.y, dir.z)
+            }
         })
         
         ui.lockButton.onclick = () => {
@@ -153,6 +159,29 @@ export class ControlsSystemWall extends ControlsSystem {
         )
         // зануляем контролсы и сдвигаем в сторону движения
         this._controlObj.position.set(0, 0, 0)
+        
+        if (!this._zeroObject.up.equals(new THREE.Vector3(0, 1, 0))) {
+            this._raycaster.set(this._arrow.position, this._zeroObject.up.clone().negate())
+            const intersectsPlayerBottom = this._raycaster.intersectObjects(this._levelElems)
+            let isWallUnderPlayer = true
+            if (intersectsPlayerBottom.length === 0) {
+                isWallUnderPlayer = false
+            }
+            if (
+                intersectsPlayerBottom.length > 0 && 
+                intersectsPlayerBottom[0].distance > .8
+            ) {
+                isWallUnderPlayer = false
+            }
+            if (!isWallUnderPlayer) {
+                this._isDisabled = true
+                this._resetGravitation().then(() => {
+                    this._isDisabled = false
+                })
+                return
+            }
+        }
+     
         this._contrPointer.moveForward(this._currentSpeedForward * 0.01)
         this._contrPointer.moveRight(this._currentSpeedLeft * 0.01)
 
@@ -255,7 +284,20 @@ export class ControlsSystemWall extends ControlsSystem {
         }
     }
 
-    _alignToNewDirAnimate(vDirEnd: THREE.Vector3, vUpEnd: THREE.Vector3) {
+    async _resetGravitation() {
+        const { phisics } = this._root
+        phisics.setGravity(new THREE.Vector3(0, 0, 0))
+
+        const vDirView = new THREE.Vector3()
+        this._arrow.getWorldDirection(vDirView).setY(0).normalize()
+        const vLookAt = this._arrow.position.clone().add(vDirView)
+        
+        await this._alignToNewDirAnimate(vLookAt, new THREE.Vector3(0, 1, 0))
+        
+        phisics.setGravity(new THREE.Vector3(0, -1, 0).multiplyScalar(9.82))
+    }
+
+    _alignToNewDirAnimate(newLookAt: THREE.Vector3, vUpEnd: THREE.Vector3) {
         return new Promise((resolve) => {
             const vStartLookAt = new THREE.Vector3()
             this._arrow.getWorldDirection(vStartLookAt)
@@ -270,7 +312,7 @@ export class ControlsSystemWall extends ControlsSystem {
                 .to({ v: 1 }, TIME)
                 .onUpdate(() => {
                     const vUp = vStartUp.clone().lerp(vUpEnd, obj.v)
-                    const vDir = vStartLookAt.clone().lerp(vDirEnd, obj.v)
+                    const vDir = vStartLookAt.clone().lerp(newLookAt, obj.v)
                     this._zeroObject.up.copy(vUp)
                     this._zeroObject.lookAt(vDir)
 
