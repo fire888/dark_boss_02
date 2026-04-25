@@ -54,42 +54,19 @@ export class ControlsSystemWall extends ControlsSystem {
         
         // @ts-ignore
         this._contrPointer = new PointerLockControls(this._controlObj, document.body)
+        this._contrPointer.addEventListener('unlock', () => {
+            this.switchMode('PHONE')
+        })
         this._contrilsOrbit = new ControlsOrbit()
     }
 
     init (root: Core, IS_DEV_START_ORBIT = false) {
         this._root = root
-        const { ui, studio, phisics } = root
+        const { studio } = root
 
-        root.keyboard.on('FORWARD', (is: boolean) => {
-            this._currentSpeedForward = is ? this._maxSpeedForward : 0
-            //this._changeForwardSpeedTo(is ? this._maxSpeedForward : 0)
-        })
-        root.keyboard.on('BACKWARD', (is: boolean) => {
-            this._currentSpeedForward = is ? -this._maxSpeedForward : 0
-            //this._changeForwardSpeedTo(is ? -this._maxSpeedForward : 0)
-        })
-        root.keyboard.on('LEFT', (is: boolean) => {
-            this._currentSpeedLeft = is ? -this._maxSpeedLeft : 0
-            //this._changeLeftSpeedTo(is ? this._maxSpeedLeft : 0)
-        })
-        root.keyboard.on('RIGHT', (is: boolean) => {
-            this._currentSpeedLeft = is ? this._maxSpeedLeft : 0
-            //this._changeLeftSpeedTo(is ? -this._maxSpeedLeft : 0)
-        })
-        root.keyboard.on('JUMP', (is: boolean) => {
-            if (is) {
-                const dir = this._zeroObject.up.clone().multiplyScalar(10)
-                phisics.playerBody.velocity.set(dir.x, dir.y, dir.z)
-            }
-        })
-        
-        ui.lockButton.onclick = () => {
-            this._contrPointer.lock()
-        }
+        this._addInputListeners()
 
         this._contrilsOrbit?.init(root.studio.camera, root.studio.containerDom)
-        this._contrilsOrbit?.enable()
 
         studio.add(boxResultDir)
         studio.add(this._arrow)
@@ -99,12 +76,11 @@ export class ControlsSystemWall extends ControlsSystem {
         studio.add(this._arrowFaceNormal)
         studio.add(this._arrowDirProj)
 
-        this.switchMode('POINTER')
-        //this.switchMode('ORBIT')
+        this.switchMode(IS_DEV_START_ORBIT ? 'ORBIT' : 'POINTER')
     }
 
     switchMode(mode: string) {
-        const { studio } = this._root
+        const { studio, ui } = this._root
 
         if (mode === 'ORBIT') {
             if (this._currentMode !== 'ORBIT') {
@@ -118,21 +94,31 @@ export class ControlsSystemWall extends ControlsSystem {
                 this._contrilsOrbit?.update()
 
                 this._currentMode = 'ORBIT'
+
+                ui.toggleControlsArrows(false)                
+            }
+        }
+
+        if (mode === 'PHONE') {
+            if (this._currentMode !== 'PHONE') {
+                this._contrPointer.unlock()
+                this._contrilsOrbit?.disable()
+                this._currentMode = 'PHONE'
+
+                const dir = new THREE.Vector3(0, 0, 1).applyQuaternion(this._controlObj.quaternion).setY(0).normalize()
+                this._controlObj.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), dir)
+            
+                ui.toggleVisibleButtonLock(true)
+                ui.toggleControlsArrows(true)    
             }
         }
 
         if (mode === 'POINTER') {
             if (this._currentMode !== 'POINTER') { 
-                if (this._currentMode === 'ORBIT') {
-                    this._contrilsOrbit?.disable()
-                    const camPos = this._arrow.position.clone()
-                    studio.camera.position.copy(camPos)
-                    const q = this._arrow.quaternion.clone()
-                    studio.camera.quaternion.copy(q)
-                }
-
+                ui.toggleVisibleButtonLock(false)
                 this._contrPointer.lock()
                 this._currentMode = 'POINTER'
+                ui.toggleControlsArrows(false)
             }
         }
     }
@@ -182,8 +168,15 @@ export class ControlsSystemWall extends ControlsSystem {
             }
         }
      
-        this._contrPointer.moveForward(this._currentSpeedForward * 0.01)
-        this._contrPointer.moveRight(this._currentSpeedLeft * 0.01)
+        if (this._currentMode === 'POINTER') {
+            this._contrPointer.moveForward(this._currentSpeedForward * 0.01)
+            this._contrPointer.moveRight(this._currentSpeedLeft * 0.01)
+        }
+        if (this._currentMode !== 'POINTER') {
+            this._controlObj.translateZ(-this._currentSpeedForward * 0.01)
+            this._controlObj.rotateY(-this._currentSpeedLeft * 0.01)
+        }
+
 
         // Направление движения 
         // берется из новой мировой позиции контролсов минус текущее направление
@@ -323,6 +316,81 @@ export class ControlsSystemWall extends ControlsSystem {
                 })
                 .start()
         })
+    }
+
+    _addInputListeners() {
+        const { ui, studio, phisics, keyboard } = this._root
+
+        keyboard.on('FORWARD', (is: boolean) => {
+            this._currentSpeedForward = is ? this._maxSpeedForward : 0
+        })
+        keyboard.on('BACKWARD', (is: boolean) => {
+            this._currentSpeedForward = is ? -this._maxSpeedForward : 0
+        })
+        keyboard.on('LEFT', (is: boolean) => {
+            this._currentSpeedLeft = is ? -this._maxSpeedLeft : 0
+        })
+        keyboard.on('RIGHT', (is: boolean) => {
+            this._currentSpeedLeft = is ? this._maxSpeedLeft : 0
+        })
+        keyboard.on('JUMP', (is: boolean) => {
+            if (is) {
+                const dir = this._zeroObject.up.clone().multiplyScalar(10)
+                phisics.playerBody.velocity.set(dir.x, dir.y, dir.z)
+            }
+        })
+
+        ui.moveForwardDiv.addEventListener("pointerdown", () => { 
+            this._currentSpeedForward = this._maxSpeedForward
+        })
+        ui.moveForwardDiv.addEventListener("pointerup", () => {
+            this._currentSpeedForward = 0
+        })
+        ui.moveForwardDiv.addEventListener("pointerout", () => {
+            this._currentSpeedForward = 0
+        })
+        ui.moveBackDiv.addEventListener("pointerdown", () => { 
+            this._currentSpeedForward = -this._maxSpeedForward
+        })
+        ui.moveBackDiv.addEventListener("pointerup", () => {
+            this._currentSpeedForward = 0
+        })
+        ui.moveBackDiv.addEventListener("pointerout", () => {
+            this._currentSpeedForward = 0
+        })
+        ui.moveLeftDiv.addEventListener("pointerdown", () => { 
+            this._currentSpeedLeft = -this._maxSpeedLeft
+        })
+        ui.moveLeftDiv.addEventListener("pointerup", () => { 
+            this._currentSpeedLeft = 0
+        })
+        ui.moveLeftDiv.addEventListener("pointerout", () => { 
+            this._currentSpeedLeft = 0
+        })
+        ui.moveRightDiv.addEventListener("pointerdown", () => { 
+            this._currentSpeedLeft = this._maxSpeedLeft
+        })
+        ui.moveRightDiv.addEventListener("pointerup", () => { 
+            this._currentSpeedLeft = 0
+        })
+        ui.moveRightDiv.addEventListener("pointerout", () => { 
+            this._currentSpeedLeft = 0
+        })
+
+
+        ui.lockButton.onclick = () => {
+            this.switchMode('POINTER')
+        }
+        const onKeyUp = (event: KeyboardEvent ) => {
+            if (event.code === 'KeyO') {
+                if (this._currentMode === 'ORBIT') {
+                    this.switchMode('POINTER')
+                } else {
+                    this.switchMode('ORBIT')
+                }
+            }
+        }
+        document.addEventListener('keyup', onKeyUp)
     }
 
 }
