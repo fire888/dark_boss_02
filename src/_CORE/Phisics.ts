@@ -50,7 +50,7 @@ export class Phisics {
 
     init (root: Core) {
         this.world = new World()
-        //this.world.gravity.set(0, -9.82, 0)
+        this.world.gravity.set(0, -9.82, 0)
         this.world.gravity.set(0, 0, 0)
         this.world.quatNormalizeSkip = 0
         this.world.quatNormalizeFast = false
