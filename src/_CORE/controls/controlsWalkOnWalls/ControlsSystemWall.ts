@@ -6,14 +6,9 @@ import { Core } from "../../types"
 import { createMeshArrow } from 'geometry/arrow/arrow'
 import * as TWEEN from '@tweenjs/tween.js'
 
-const box = new THREE.Mesh(
+const boxResultDir = new THREE.Mesh(
     new THREE.BoxGeometry(.05, .05, .05),
     new THREE.MeshBasicMaterial({ color: 0xff0000 })
-)
-
-const box2 = new THREE.Mesh(
-    new THREE.BoxGeometry(.05, .05, .05),
-    new THREE.MeshBasicMaterial({ color: 0xffff00 })
 )
 
 export class ControlsSystemWall extends ControlsSystem {
@@ -22,7 +17,6 @@ export class ControlsSystemWall extends ControlsSystem {
     _arrowFaceNormal: THREE.Mesh
     _arrowDirProj: THREE.Mesh
     _gridHelper = new THREE.GridHelper(10, 10, 0x0000ff, 0xeeeeee)
-
 
     _zeroObject: THREE.Object3D
     _controlObj: THREE.Object3D
@@ -51,10 +45,6 @@ export class ControlsSystemWall extends ControlsSystem {
         
         this._arrowDirProj = createMeshArrow({ color: new THREE.Color().setRGB(1, 1, 0) })
         this._arrowDirProj.scale.set(.2, .1, -.1)
-
-
-        //this.vLookAt = new THREE.Vector3(0, 0, -1)
-        //this.dirUp = new THREE.Vector3(0, 1, 0)
 
         this._zeroObject = new THREE.Object3D()
         this._zeroObject.up.set(0, 1, 0)
@@ -95,7 +85,7 @@ export class ControlsSystemWall extends ControlsSystem {
         this._contrilsOrbit?.init(root.studio.camera, root.studio.containerDom)
         this._contrilsOrbit?.enable()
 
-        studio.add(box)
+        studio.add(boxResultDir)
         studio.add(this._arrow)
         studio.add(this._arrow2)
         this._zeroObject.add(this._gridHelper)
@@ -139,7 +129,6 @@ export class ControlsSystemWall extends ControlsSystem {
                 this._currentMode = 'POINTER'
             }
         }
-
     }
 
     update(delta: number, ) {
@@ -147,92 +136,54 @@ export class ControlsSystemWall extends ControlsSystem {
             return
         }
 
-        if (!this._root.phisics.isUpdate) { 
+        const { phisics } = this._root
+
+        if (!phisics.isUpdate) { 
             return
         }
 
-        const { phisics } = this._root
+        this._updateCamera()
 
-        // ОСНОВНОЙ  
-        // выравнивается относительн полигона
-        //this.zeroObject.up.copy(this.dirUp)
-        //this.zeroObject.lookAt(this.vLookAt)
+        // ОСНОВНОЙ
         // ставится позиция после апдейта физики
         this._zeroObject.position.set(
             phisics.playerBody.position.x,
             phisics.playerBody.position.y,
             phisics.playerBody.position.z
         )
-
-        // СТРЕЛКА
-        // поворот из контролсов
-        const wQ = new THREE.Quaternion()
-        this._controlObj.getWorldQuaternion(wQ)
-        this._arrow.quaternion.copy(wQ)
-        // позиция позиция из контролсов
-        const vWorldPosControls = new THREE.Vector3()
-        this._controlObj.getWorldPosition(vWorldPosControls)
+        // зануляем контролсы и сдвигаем в сторону движения
         this._controlObj.position.set(0, 0, 0)
-        this._arrow.position.copy(vWorldPosControls)
+        this._contrPointer.moveForward(this._currentSpeedForward * 0.01)
+        this._contrPointer.moveRight(this._currentSpeedLeft * 0.01)
 
         // Направление движения 
-        // берется из новой позиции контролсов минус текущее направление
-        const vDir = vWorldPosControls.clone().sub(this._zeroObject.position).normalize().multiplyScalar(.2)
+        // берется из новой мировой позиции контролсов минус текущее направление
+        const vNewWorldPos = this._controlObj.getWorldPosition(new THREE.Vector3())
+        const vDir = vNewWorldPos.clone().sub(this._zeroObject.position).normalize().multiplyScalar(.2)
         // Задаем направление для физики
         phisics.playerBody.velocity.x += vDir.x
         phisics.playerBody.velocity.y += vDir.y
         phisics.playerBody.velocity.z += vDir.z
 
-        // СТРЕЛКА2 (для проекции направления на полигоне)
-        // ставится чуть выше обычной стрелки
-        this._arrow2.position.copy(this._arrow.position)
-        this._arrow2.quaternion.copy(this._arrow.quaternion)
-        this._arrow2.translateY(.1)
-
-        const wDir = new THREE.Vector3(0, 0, 1)
-        wDir.applyQuaternion(this._arrow.quaternion)
-        this._raycaster.set(this._arrow.position, wDir.negate())
+        // чекаем есть ли впереди стенка на которую можно повернуть
+        const vDirArrow = new THREE.Vector3(0, 0, 1)
+        vDirArrow.applyQuaternion(this._arrow.quaternion)
+        this._raycaster.set(this._arrow.position, vDirArrow.negate())
         const intersects = this._raycaster.intersectObjects(this._levelElems)
         if (intersects[0]) {
             const intercept = intersects[0]
-            box.position.copy(intercept.point)
-            if (intercept.distance < .6 && intercept.face && !intercept.face.normal.equals(this._zeroObject.up)) {
-                this._arrowFaceNormal.position.copy(intercept.point)
-                this._arrowFaceNormal.lookAt(intercept.point.clone().add(intercept.face.normal))
-                
-                this._raycaster.set(this._arrow2.position, wDir)
-                const intercepts2 = this._raycaster.intersectObjects(this._levelElems)
-                if (intercepts2[0]) {
-                    const intercept2 = intercepts2[0]
-
-                    const vAddOverFace = intercept.face.normal.clone().multiplyScalar(.6)
-
-                    const dir = intercept.point.clone().sub(intercept2.point)
-                    const newLookAt = intercept.point.clone().add(dir).add(vAddOverFace)    
-
-                    this._arrowDirProj.position.copy(intercept.point).add(vAddOverFace)
-                    this._arrowDirProj.lookAt(intercept.point.clone().add(dir).add(vAddOverFace))
-
-                    this._zeroObject.position.copy(intercept.point).add(vAddOverFace)
-                                        
-                    this._controlObj.position.set(0, 0, 0)
-                    this._controlObj.rotation.set(0, 0, 0)
-
-                    phisics.setGravity(new THREE.Vector3(0, 0, 0))
-
-                    this._alignToNewDirAnimate(newLookAt, intercept.face.normal.clone())
-                }
+            boxResultDir.position.copy(intercept.point)
+            if (
+                intercept.distance < .6 && 
+                intercept.face && 
+                !intercept.face.normal.equals(this._zeroObject.up)
+            ) {
+                // если пересечение со стенкой есть поворачиваем камеру на стенку
+                this._isDisabled = true
+                this._rotateToWall(vDirArrow, intercept).then(() => {
+                    this._isDisabled = false
+                })
             }
-        }
-
-        const camera = this._root.studio.camera
-        if (this._currentMode !== 'ORBIT') {
-            camera.position.copy(this._arrow.position)
-            camera.quaternion.copy(this._arrow.quaternion)
-        }
-        if (this._currentMode === 'POINTER') {
-            this._contrPointer.moveForward(this._currentSpeedForward * 0.01)
-            this._contrPointer.moveRight(-this._currentSpeedLeft * 0.01)
         }
     }
 
@@ -240,46 +191,96 @@ export class ControlsSystemWall extends ControlsSystem {
         this._levelElems.push(elem)
     }
 
+    _updateCamera() {
+        // СТРЕЛКА
+        // поворот из контролсов мирового направления
+        const wQ = new THREE.Quaternion()
+        this._controlObj.getWorldQuaternion(wQ)
+        this._arrow.quaternion.copy(wQ)
+        // позиция позиция из контролсов мирового положения
+        const vWorldPosControls = new THREE.Vector3()
+        this._controlObj.getWorldPosition(vWorldPosControls)
+        this._controlObj.position.set(0, 0, 0)
+        this._arrow.position.copy(vWorldPosControls)
+
+        // КАМЕРА
+        const camera = this._root.studio.camera
+        if (this._currentMode !== 'ORBIT') {
+            camera.position.copy(this._arrow.position)
+            camera.quaternion.copy(this._arrow.quaternion)
+        }
+    }
+
+    async _rotateToWall(vDirArrow: THREE.Vector3, intercept: THREE.Intersection) {
+        if (intercept && intercept.face) {
+            const v3NewUp = intercept.face.normal.clone()
+            const v3NewPos = intercept.point.clone()
+
+            this._arrowFaceNormal.position.copy(intercept.point)
+            this._arrowFaceNormal.lookAt(v3NewPos.clone().add(v3NewUp))
+
+            // СТРЕЛКА2 (для проекции направления на полигоне)
+            // ставится чуть выше обычной стрелки
+            // чекается пересечение со стеной
+            // из разности перевого и второго пересечения берется направление куда пользователь будет смотреть 
+            this._arrow2.position.copy(this._arrow.position)
+            this._arrow2.quaternion.copy(this._arrow.quaternion)
+            this._arrow2.translateY(.1)
+            this._raycaster.set(this._arrow2.position, vDirArrow)
+            const intercepts2 = this._raycaster.intersectObjects(this._levelElems)
+            if (intercepts2[0]) {
+                const intercept2 = intercepts2[0]
+
+                const vAddOverFace = v3NewUp.clone().multiplyScalar(.6)
+
+                // чекаем куда смотреть на новом полигоне
+                const dir = intercept.point.clone().sub(intercept2.point)
+                const newLookAt = intercept.point.clone().add(dir).add(vAddOverFace)    
+
+                this._arrowDirProj.position.copy(v3NewPos).add(vAddOverFace)
+                this._arrowDirProj.lookAt(v3NewPos.clone().add(dir).add(vAddOverFace))
+
+                // зануляем контролсы и ставим обьект в новую позицию
+                this._zeroObject.position.copy(v3NewPos).add(vAddOverFace)
+                this._controlObj.position.set(0, 0, 0)
+                this._controlObj.rotation.set(0, 0, 0)
+
+                const { phisics } = this._root
+                phisics.setGravity(new THREE.Vector3(0, 0, 0))
+
+                await this._alignToNewDirAnimate(newLookAt, v3NewUp.clone())
+                
+                phisics.setGravity(v3NewUp.clone().negate().multiplyScalar(9.82))
+            }
+        }
+    }
+
     _alignToNewDirAnimate(vDirEnd: THREE.Vector3, vUpEnd: THREE.Vector3) {
-        console.log('_alignToNewDirAnimate')
-        
-        const { studio, phisics } = this._root
-        
-        this._isDisabled = true
+        return new Promise((resolve) => {
+            const vStartLookAt = new THREE.Vector3()
+            this._arrow.getWorldDirection(vStartLookAt)
+            vStartLookAt.negate().add(this._arrow.position)
+            const vStartUp = this._zeroObject.up.clone()
 
-        const vStartLookAt = new THREE.Vector3()
-        this._arrow.getWorldDirection(vStartLookAt)
-        vStartLookAt.negate().add(this._arrow.position)
-        const vStartUp = this._zeroObject.up.clone()
+            const TIME = 300
 
-        const TIME = 300
+            const obj = { v: 0 }
+            new TWEEN.Tween(obj)
+                .easing(TWEEN.Easing.Quadratic.InOut)
+                .to({ v: 1 }, TIME)
+                .onUpdate(() => {
+                    const vUp = vStartUp.clone().lerp(vUpEnd, obj.v)
+                    const vDir = vStartLookAt.clone().lerp(vDirEnd, obj.v)
+                    this._zeroObject.up.copy(vUp)
+                    this._zeroObject.lookAt(vDir)
 
-        const obj = { v: 0 }
-        new TWEEN.Tween(obj)
-             .easing(TWEEN.Easing.Quadratic.InOut)
-             .to({ v: 1 }, TIME)
-             .onUpdate(() => {
-                const vUp = vStartUp.clone().lerp(vUpEnd, obj.v)
-                const vDir = vStartLookAt.clone().lerp(vDirEnd, obj.v)
-                this._zeroObject.up.copy(vUp)
-                this._zeroObject.lookAt(vDir)
-
-                // СТРЕЛКА
-                // поворот из контролсов
-                const wQ = new THREE.Quaternion()
-                this._controlObj.getWorldQuaternion(wQ)
-                this._arrow.quaternion.copy(wQ)
-                if (this._currentMode !== 'ORBIT') {
-                    studio.camera.quaternion.copy(this._arrow.quaternion)
-                }
-             })
-            .onComplete(() => {
-                this._isDisabled = false
-                this._zeroObject.up.copy(vUpEnd)
-                this._zeroObject.lookAt(vDirEnd)
-                phisics.setGravity(vUpEnd.clone().negate().multiplyScalar(9.82))
-            })
-            .start()
+                    this._updateCamera()
+                })
+                .onComplete(() => {
+                    resolve(true)
+                })
+                .start()
+        })
     }
 
 }
