@@ -108,6 +108,14 @@ export class Ui {
         this.lockButton.style.display = visible ? 'flex' : 'none'
     }
 
+    toggleControlsArrows(is: boolean) {
+        const val = is ? 'block' : 'none'
+        this.moveForwardDiv.style.display = val
+        this.moveBackDiv.style.display = val
+        this.moveLeftDiv.style.display = val
+        this.moveRightDiv.style.display = val
+    }
+
     async showFinalPage () {
         if (!IS_SHOW_INFO) {
             const wrapper = document.createElement('div')
