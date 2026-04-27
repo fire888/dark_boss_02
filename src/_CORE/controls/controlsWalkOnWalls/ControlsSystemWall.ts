@@ -7,6 +7,10 @@ import { createMeshArrow } from 'geometry/arrow/arrow'
 import * as TWEEN from '@tweenjs/tween.js'
 import { _M } from '_CORE/_M/_m'
 
+type T_Tween = {
+    v: number
+} 
+
 const boxResultDir = new THREE.Mesh(
     new THREE.BoxGeometry(.05, .05, .05),
     new THREE.MeshBasicMaterial({ color: 0xff0000 })
@@ -24,12 +28,14 @@ export class ControlsSystemWall extends ControlsSystem {
     _controlObj: THREE.Object3D
 
     _contrPointer: PointerLockControls
-    _contrilsOrbit: ControlsOrbit | null = null
+    _controlsOrbit: ControlsOrbit | null = null
     _levelElems: THREE.Mesh[] = []
     _raycaster = new THREE.Raycaster()
     _currentMode: string = 'NONE' 
     
     _isUpdate = true
+
+    _tweenRotation: TWEEN.Tween<T_Tween> | null = null  
     
     constructor() {
         super()
@@ -54,8 +60,9 @@ export class ControlsSystemWall extends ControlsSystem {
         this._controlObj = new THREE.Object3D()
         this._zeroObject.add(this._controlObj)
 
-        this._arrowX0 = createMeshArrow({ color: new THREE.Color().setRGB(1, 0, 0) })
-        this._arrowX0.scale.set(.4, .1, -.1)
+        this._arrowX0 = createMeshArrow({ color: new THREE.Color().setRGB(1, 0, 1) })
+        this._arrowX0.geometry.scale(.4, .1, -.1)
+        this._arrowX0.geometry.rotateY(Math.PI / 2)
         this._zeroObject.add(this._arrowX0)
         
         // @ts-ignore
@@ -63,7 +70,7 @@ export class ControlsSystemWall extends ControlsSystem {
         this._contrPointer.addEventListener('unlock', () => {
             this.switchMode('PHONE')
         })
-        this._contrilsOrbit = new ControlsOrbit()
+        this._controlsOrbit = new ControlsOrbit()
     }
 
     init (root: Core, IS_DEV_START_ORBIT = false) {
@@ -72,7 +79,7 @@ export class ControlsSystemWall extends ControlsSystem {
 
         this._addInputListeners()
 
-        this._contrilsOrbit?.init(root.studio.camera, root.studio.containerDom)
+        this._controlsOrbit?.init(root.studio.camera, root.studio.containerDom)
 
         studio.add(boxResultDir)
         studio.add(this._arrow)
@@ -88,44 +95,41 @@ export class ControlsSystemWall extends ControlsSystem {
     switchMode(mode: string) {
         const { studio, ui } = this._root
 
+        if (this._currentMode === mode) {
+            return
+        }
+
         if (mode === 'ORBIT') {
-            if (this._currentMode !== 'ORBIT') {
-                this._contrilsOrbit?.enable()
+            this._controlsOrbit?.enable()
 
-                const vPos = new THREE.Vector3().copy(studio.camera.position)
-                const offset = new THREE.Vector3(0, 5, 15)
-                studio.camera.position.add(offset)
-                studio.camera.lookAt(vPos)
+            const vPos = this._arrow.position.clone()
+            const offset = new THREE.Vector3(0, 7, 2)
+            studio.camera.position.add(offset)
+            studio.camera.lookAt(vPos)
 
-                this._contrilsOrbit?.update()
+            this._currentMode = 'ORBIT'
 
-                this._currentMode = 'ORBIT'
-
-                ui.toggleControlsArrows(false)                
-            }
+            ui.toggleControlsArrows(false)                
         }
 
         if (mode === 'PHONE') {
-            if (this._currentMode !== 'PHONE') {
-                this._contrPointer.unlock()
-                this._contrilsOrbit?.disable()
-                this._currentMode = 'PHONE'
+            this._contrPointer.unlock()
+            this._controlsOrbit?.disable()
+            this._currentMode = 'PHONE'
 
-                const dir = new THREE.Vector3(0, 0, 1).applyQuaternion(this._controlObj.quaternion).setY(0).normalize()
-                this._controlObj.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), dir)
-            
-                ui.toggleVisibleButtonLock(true)
-                ui.toggleControlsArrows(true)    
-            }
+            const dir = new THREE.Vector3(0, 0, 1).applyQuaternion(this._controlObj.quaternion).setY(0).normalize()
+            this._controlObj.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), dir)
+        
+            ui.toggleVisibleButtonLock(true)
+            ui.toggleControlsArrows(true)    
         }
 
         if (mode === 'POINTER') {
-            if (this._currentMode !== 'POINTER') { 
-                ui.toggleVisibleButtonLock(false)
-                this._contrPointer.lock()
-                this._currentMode = 'POINTER'
-                ui.toggleControlsArrows(false)
-            }
+            this._controlsOrbit?.disable()
+            ui.toggleVisibleButtonLock(false)
+            this._contrPointer.lock()
+            this._currentMode = 'POINTER'
+            ui.toggleControlsArrows(false)
         }
     }
 
@@ -195,7 +199,7 @@ export class ControlsSystemWall extends ControlsSystem {
         phisics.playerBody.velocity.z += vDir.z
 
         // чекаем есть ли впереди стенка на которую можно повернуть
-        const vDirArrow = new THREE.Vector3(1, 0, 0)
+        const vDirArrow = new THREE.Vector3(-1, 0, 0)
         const angle = _M.angleFromCoords(this._controlObj.matrix.elements[8], this._controlObj.matrix.elements[10])
         this._arrowX0.quaternion.setFromAxisAngle(new THREE.Vector3(0, 1, 0), -angle)
         const q = new THREE.Quaternion()
@@ -303,6 +307,8 @@ export class ControlsSystemWall extends ControlsSystem {
 
     _alignToNewDirAnimate(newLookAt: THREE.Vector3, vUpEnd: THREE.Vector3) {
         return new Promise((resolve) => {
+            if (this._tweenRotation) this._tweenRotation.stop()
+
             const vStartLookAt = new THREE.Vector3()
             this._arrow.getWorldDirection(vStartLookAt)
             vStartLookAt.negate().add(this._arrow.position)
@@ -311,7 +317,7 @@ export class ControlsSystemWall extends ControlsSystem {
             const TIME = 300
 
             const obj = { v: 0 }
-            new TWEEN.Tween(obj)
+            this._tweenRotation = new TWEEN.Tween(obj)
                 .easing(TWEEN.Easing.Quadratic.InOut)
                 .to({ v: 1 }, TIME)
                 .onUpdate(() => {
@@ -323,6 +329,7 @@ export class ControlsSystemWall extends ControlsSystem {
                     this._updateCamera()
                 })
                 .onComplete(() => {
+                    this._tweenRotation = null
                     resolve(true)
                 })
                 .start()
