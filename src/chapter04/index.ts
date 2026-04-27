@@ -19,7 +19,7 @@ import { pipeInit_04 } from "./pipelines/pipeInit_04"
 import { pipePlay_04 } from "./pipelines/pipePlay_04"
 import { pipeEnd_04 } from "./pipelines/pipeEnd_04"
 import { Core } from '_CORE/types'
-import { PlayerWallDirection } from "./entities/PlayerWallDirection"
+import { ChangerCurrentLevelPart } from "./entities/ChangerCurrentLevelPart"
 
 //import "./moveTest"
 
@@ -39,7 +39,7 @@ export interface Root extends Core {
     assets: {
         [key: string]: any
     },
-    playerWallDirection: PlayerWallDirection,
+    changerCurrentLevelPart: ChangerCurrentLevelPart,
 }
 
 
@@ -75,7 +75,7 @@ window.addEventListener("DOMContentLoaded", async () => {
         
         materials: new Materials(),
 
-        playerWallDirection: new PlayerWallDirection()
+        changerCurrentLevelPart: new ChangerCurrentLevelPart()
     }
 
     await pipeInit_04(root)

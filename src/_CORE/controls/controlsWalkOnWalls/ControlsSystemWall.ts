@@ -17,6 +17,8 @@ const boxResultDir = new THREE.Mesh(
 )
 
 export class ControlsSystemWall extends ControlsSystem {
+    obj: THREE.Mesh
+
     _arrow: THREE.Mesh
     _arrowX0: THREE.Mesh
     _arrow2: THREE.Mesh
@@ -44,6 +46,7 @@ export class ControlsSystemWall extends ControlsSystem {
         this._arrow.scale.set(.4, .1, -.1)
         this._arrow.position.set(0, 0, 0)
         this._arrow.rotation.set(0, 0, 0)
+        this.obj = this._arrow
 
         this._arrow2 = createMeshArrow({ color: new THREE.Color().setRGB(1, 1, 1) })
         this._arrow2.scale.set(.4, .1, -.1)

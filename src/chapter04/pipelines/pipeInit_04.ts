@@ -11,7 +11,8 @@ export const pipeInit_04 = async (root: Root) => {
         studio, controls, ui, ticker,
         loader, phisics, lab, 
         audio, materials, particles,
-        playerWallDirection,
+        //playerWallDirection,
+        changerCurrentLevelPart,
     } = root
 
     loader.init(root)
@@ -69,8 +70,8 @@ export const pipeInit_04 = async (root: Root) => {
     // }
     // await flyCameraToLevel()
 
-    playerWallDirection.init(root)
-    ticker.on(playerWallDirection.update.bind(playerWallDirection))
+    //playerWallDirection.init(root)
+    //ticker.on(playerWallDirection.update.bind(playerWallDirection))
 
     if (IS_DEV_START_ORBIT) {
         await ui.hideStartScreenForce()
@@ -80,6 +81,8 @@ export const pipeInit_04 = async (root: Root) => {
 
     controls.init(root, IS_DEV_START_ORBIT)
     ticker.on(controls.update.bind(controls))
+
+    changerCurrentLevelPart.init(root)
 
     audio.init(root)
     ticker.on(audio.update.bind(audio))
