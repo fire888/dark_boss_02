@@ -15,7 +15,69 @@ export class Materials {
     wall: THREE.MeshPhongMaterial
     wall2: THREE.MeshPhongMaterial
     
+
     init (root: Root) {
+        // 'wall': {
+        //     mat: 'MeshPhongMaterial',
+        //     props: {
+        //         color: 0x338877,
+        //         emissive: 0x9997777,
+        //         map: 'mapFloorOuter',
+        //         bumpMap: 'mapFloorOuter',
+        //         bumpScale: 1,
+        //         envMap: 'skyBox',
+        //         reflectivity: 0.3,
+        //         shininess: 60,
+        //         specular: 0x222222,
+        //     },
+        // },
+
+
+        // 'groundTop': {
+        //     mat: 'MeshPhongMaterial',
+        //     props: {
+        //         color: 0xaa6666,
+        //         emissive: 0xaa6666,
+        //         map: 'mapTop',
+        //         bumpMap: 'mapTop',
+        //         bumpScale: 1,
+        //         envMap: 'skyBox2',
+        //         reflectivity: 0.5,
+        //         specular: 0x222222,
+        //     },
+        // },
+
+        // 'road': {
+        //     mat: 'MeshPhongMaterial',
+        //     props: {
+        //         color: 0xffffff,
+        //         emissive: 0x666666,
+        //         map: 'mapFloorOuter2',
+        //         bumpMap: 'mapFloorOuter2',
+        //         bumpScale: 1,
+        //         envMap: 'skyBox',
+        //         reflectivity: 0.3,
+        //     },
+        // },
+
+        // 'skin': {
+        //     mat: 'MeshPhongMaterial',
+        //     props: {
+        //         color: 0xffffff,
+        //         emissive: 0x555555,
+        //         specular: 0xffffff,
+        //         shininess: 12,
+        //         bumpMap: 'skin',
+        //         bumpScale: 0.8,
+        //         envMap: 'skyBox',
+        //         reflectivity: 0.5,
+        //         map: 'skin',
+        //         skinning: true,
+        //     },        
+        // }
+
+
+
         this.iron = new THREE.MeshPhongMaterial({
             //color: 0xcccccc,
             color: 0xdddddd,
@@ -76,13 +138,23 @@ export class Materials {
         floorOuterMap.repeat.set(1, 1)
 
         this.wall = new THREE.MeshPhongMaterial({
-            color: 0xffffff,
+            // color: 0xffffff,
+            // map: floorOuterMap,
+            // bumpMap: floorOuterMap,
+            // bumpScale: 10,
+            // //envMap: root.assets.matIronBox,
+            // reflectivity: 3,
+            // specular: 0xffffff,
+
+            color: new THREE.Color().setStyle('#81d2eb'),
+            emissive: new THREE.Color().setStyle('#a9545d'),
             map: floorOuterMap,
             bumpMap: floorOuterMap,
-            bumpScale: 10,
-            //envMap: root.assets.matIronBox,
-            reflectivity: 3,
-            specular: 0xffffff,
+            bumpScale: 15,
+            envMap: root.assets.matIronBox,
+            reflectivity: 0.01,
+            shininess: 100,
+            specular: 0x555555,
         })
 
         const { floorOuterMap2 } = root.assets

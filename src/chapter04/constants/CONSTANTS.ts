@@ -53,28 +53,29 @@ export const IS_OLD_GAMES_INFO = true
 export const PLAYER_POS_START = [0, -2.5, 0]
 //export const PLAYER_POS_START = [-65.36023754162309,78.82307855723435,-11.683569743268201]
 
-const BACK_COLOR = 0x505f68 
+//const BACK_COLOR = 0x505f68 
+const BACK_COLOR = '#1e2053'
 export const STUDIO_CONF: StudioConf = {
     spotLightParams: {
-        color: new THREE.Color().setHex(0xffffff),
+        color: new THREE.Color().setStyle('#ffffff'),
         intensity: 1,
         pos: new THREE.Vector3(0, 3, 5),
         angle: Math.PI * .2,
         penumbra: 1,
         decay: .1,
         distance: 300,
-        targetPos: new THREE.Vector3(0, 0, -50)
+        targetPos: new THREE.Vector3(0, 0, -5)
     },
     directionalLightParams: { 
-        color: new THREE.Color(0x777777), intensity: 7,
-        pos: new THREE.Vector3(-3, 3, -2)
+        color: new THREE.Color().setStyle('#777777'), intensity: 6,
+        pos: new THREE.Vector3(0, 5, 0)
     },
     cameraPos: new THREE.Vector3().fromArray(PLAYER_POS_START),
     cameraLookAt: new THREE.Vector3(30, 1, 0).fromArray(PLAYER_POS_START).add(new THREE.Vector3(0, 0, 10)),
     cameraFov: 55,
-    ambientLightParams: { color: new THREE.Color().setHex(BACK_COLOR), intensity: 8 },
-    sceneBackground: new THREE.Color().setHex(BACK_COLOR),
-    fogParams: { color: new THREE.Color().setHex(BACK_COLOR), near: 5, far: 80 },
+    ambientLightParams: { color: new THREE.Color().setStyle('#a6cfe6'), intensity: 2 },
+    sceneBackground: new THREE.Color().setStyle(BACK_COLOR),
+    fogParams: { color: new THREE.Color().setStyle(BACK_COLOR), near: 1, far: 30 },
     saturatePass: true,
 }
 
