@@ -8,12 +8,14 @@ import * as THREE from 'three'
 export const pipeInit_04 = async (root: Root) => {
     const {
         LOAD_ASSETS,
+        debug,
         studio, controls, ui, ticker,
         loader, phisics, lab, 
         audio, materials, particles,
-        //playerWallDirection,
         changerCurrentLevelPart,
     } = root
+
+    debug.init(root)
 
     loader.init(root)
     await loader.loadAssets(LOAD_ASSETS)

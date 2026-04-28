@@ -11,10 +11,13 @@ type T_Tween = {
     v: number
 } 
 
+const IS_HIDE_HELPERS = true
+
 const boxResultDir = new THREE.Mesh(
     new THREE.BoxGeometry(.05, .05, .05),
     new THREE.MeshBasicMaterial({ color: 0xff0000 })
 )
+if (IS_HIDE_HELPERS) boxResultDir.visible = false
 
 export class ControlsSystemWall extends ControlsSystem {
     obj: THREE.Mesh
@@ -24,7 +27,6 @@ export class ControlsSystemWall extends ControlsSystem {
     _arrow2: THREE.Mesh
     _arrowFaceNormal: THREE.Mesh
     _arrowDirProj: THREE.Mesh
-    _gridHelper = new THREE.GridHelper(10, 10, 0x0000ff, 0xeeeeee)
 
     _zeroObject: THREE.Object3D
     _controlObj: THREE.Object3D
@@ -46,16 +48,20 @@ export class ControlsSystemWall extends ControlsSystem {
         this._arrow.scale.set(.4, .1, -.1)
         this._arrow.position.set(0, 0, 0)
         this._arrow.rotation.set(0, 0, 0)
+        if (IS_HIDE_HELPERS) this._arrow.visible = false
         this.obj = this._arrow
 
         this._arrow2 = createMeshArrow({ color: new THREE.Color().setRGB(1, 1, 1) })
         this._arrow2.scale.set(.4, .1, -.1)
+        if (IS_HIDE_HELPERS) this._arrow2.visible = false
 
         this._arrowFaceNormal = createMeshArrow({ color: new THREE.Color().setRGB(0, 1, 0) })
         this._arrowFaceNormal.scale.set(.2, .1, .1)
+        if (IS_HIDE_HELPERS) this._arrowFaceNormal.visible = false
         
         this._arrowDirProj = createMeshArrow({ color: new THREE.Color().setRGB(1, 1, 0) })
         this._arrowDirProj.scale.set(.2, .1, -.1)
+        if (IS_HIDE_HELPERS) this._arrowDirProj.visible = false
 
         this._zeroObject = new THREE.Object3D()
         this._zeroObject.up.set(0, 1, 0)
@@ -67,6 +73,7 @@ export class ControlsSystemWall extends ControlsSystem {
         this._arrowX0.geometry.scale(.4, .1, -.1)
         this._arrowX0.geometry.rotateY(Math.PI / 2)
         this._zeroObject.add(this._arrowX0)
+        if (IS_HIDE_HELPERS) this._arrowX0.visible = false
         
         // @ts-ignore
         this._contrPointer = new PointerLockControls(this._controlObj, document.body)
@@ -87,7 +94,10 @@ export class ControlsSystemWall extends ControlsSystem {
         studio.add(boxResultDir)
         studio.add(this._arrow)
         studio.add(this._arrow2)
-        this._zeroObject.add(this._gridHelper)
+        if (!IS_HIDE_HELPERS) {
+            const _gridHelper = new THREE.GridHelper(10, 10, 0x0000ff, 0xeeeeee)
+            this._zeroObject.add(_gridHelper) 
+        }
         studio.add(this._zeroObject)
         studio.add(this._arrowFaceNormal)
         studio.add(this._arrowDirProj)
@@ -317,7 +327,7 @@ export class ControlsSystemWall extends ControlsSystem {
             vStartLookAt.negate().add(this._arrow.position)
             const vStartUp = this._zeroObject.up.clone()
 
-            const TIME = 300
+            const TIME = 500
 
             const obj = { v: 0 }
             this._tweenRotation = new TWEEN.Tween(obj)

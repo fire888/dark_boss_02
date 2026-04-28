@@ -30,7 +30,8 @@ import mapTop from '../assets/mapGround.jpg'
 import floorOuterMap from '../assets/floor_outer_map3.jpg'
 import floorOuterMap2 from '../assets/floor_outer_map2.jpg'
 
-import level from '../assets/level02.obj'
+//import level from '../assets/level02.obj'
+import level from '../assets/level03.obj'
 
 
 // DEBUG FLAGS ************************************* / 
@@ -50,6 +51,7 @@ export const IS_OLD_GAMES_INFO = true
 // ************************************************/ 
 
 export const PLAYER_POS_START = [0, -2.5, 0]
+//export const PLAYER_POS_START = [-65.36023754162309,78.82307855723435,-11.683569743268201]
 
 const BACK_COLOR = 0x505f68 
 export const STUDIO_CONF: StudioConf = {

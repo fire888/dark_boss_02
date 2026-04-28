@@ -12,29 +12,25 @@ export class ChangerCurrentLevelPart {
     }
 
     init(root: Root) {
-        this._root = root
+        // this._root = root
         
-        const { ticker, lab, studio, controls } = this._root
+        // const { ticker, lab, studio, controls } = this._root
         
-        const DIR = new THREE.Vector3(0, -1, 0)
+        // const DIR = new THREE.Vector3(0, -1, 0)
    
-        ticker.on((t: number) => {
-            this._raycaster.set(controls.obj.position, DIR)     
-            const intercepts = this._raycaster.intersectObjects(lab.currentLevelMeshes)
-            if (intercepts.length > 0) {
-                const ind = +intercepts[0].object.name.split('_')[1]
-                console.log('IND', ind, this.currentLevel)
-                if (ind !== this.currentLevel) {
-                    this.currentLevel = ind
-                    lab._addMesh(ind + 1)
-                    lab._addMesh(ind + 2)
-                    console.log('ADDD !!!')
-                }
-                //const ind = 
-                //console.log(intercepts[0].object)            
-            }
-        })
-
+        // ticker.on((t: number) => {
+        //     this._raycaster.set(controls.obj.position, DIR)     
+        //     const intercepts = this._raycaster.intersectObjects(lab.currentLevelMeshes)
+        //     if (intercepts.length > 0) {
+        //         const ind = +intercepts[0].object.name.split('_')[1]
+        //         console.log('IND', ind, this.currentLevel)
+        //         if (ind !== this.currentLevel) {
+        //             this.currentLevel = ind
+        //             lab._addMesh(ind + 1)
+        //             lab._addMesh(ind + 2)
+        //         }       
+        //     }
+        // })
     }
 
 }

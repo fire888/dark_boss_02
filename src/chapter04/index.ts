@@ -5,6 +5,7 @@ import { ControlsSystemWall } from "_CORE/controls/controlsWalkOnWalls/ControlsS
 import { DeviceData } from "_CORE/DeviceData"
 import { Studio } from "_CORE/Studio"
 import { LoaderAssets } from "_CORE/Loader"
+import { Debug } from "_CORE/Debug"
 
 import { CONSTANTS, STUDIO_CONF, CONTROLS_CONF, LOAD_ASSETS } from "./constants/CONSTANTS"
 
@@ -40,6 +41,8 @@ export interface Root extends Core {
         [key: string]: any
     },
     changerCurrentLevelPart: ChangerCurrentLevelPart,
+
+    debug: Debug
 }
 
 
@@ -75,7 +78,9 @@ window.addEventListener("DOMContentLoaded", async () => {
         
         materials: new Materials(),
 
-        changerCurrentLevelPart: new ChangerCurrentLevelPart()
+        changerCurrentLevelPart: new ChangerCurrentLevelPart(),
+
+        debug: new Debug(),
     }
 
     await pipeInit_04(root)
