@@ -138,15 +138,7 @@ export class Materials {
         floorOuterMap.repeat.set(1, 1)
 
         this.wall = new THREE.MeshPhongMaterial({
-            // color: 0xffffff,
-            // map: floorOuterMap,
-            // bumpMap: floorOuterMap,
-            // bumpScale: 10,
-            // //envMap: root.assets.matIronBox,
-            // reflectivity: 3,
-            // specular: 0xffffff,
-
-            color: new THREE.Color().setStyle('#81d2eb'),
+            color: new THREE.Color().setStyle('#b5eeff'),
             emissive: new THREE.Color().setStyle('#a9545d'),
             map: floorOuterMap,
             bumpMap: floorOuterMap,
@@ -163,13 +155,14 @@ export class Materials {
         floorOuterMap2.repeat.set(1, 1)
 
         this.wall2 = new THREE.MeshPhongMaterial({
-            color: 0xffffff,
             map: floorOuterMap2,
             bumpMap: floorOuterMap2,
             bumpScale: 10,
-            //envMap: root.assets.matIronBox,
-            reflectivity: 3,
             specular: 0xffffff,
+            color: 0xffffff,
+            emissive: 0x666666,
+            envMap: root.assets.matIronBox,
+            reflectivity: 0.3,
         })
 
         this.collision = new THREE.MeshBasicMaterial({ color: 0x00ff00 })
