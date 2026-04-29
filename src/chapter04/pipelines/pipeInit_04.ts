@@ -31,7 +31,6 @@ export const pipeInit_04 = async (root: Root) => {
     materials.init(root)
 
     studio.init(root)
-    console.log(assets)
     studio.scene.background = assets.skybox
     ticker.on(studio.render.bind(studio))
     // studio.addAxisHelper()

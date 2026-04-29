@@ -6,8 +6,8 @@ export class Materials {
     wall: THREE.MeshPhongMaterial
     wall2: THREE.MeshPhongMaterial
     topGround: THREE.MeshPhongMaterial
+    skin: THREE.MeshPhongMaterial
     
-
     init (root: Root) {
         // 'wall': {
         //     mat: 'MeshPhongMaterial',
@@ -115,6 +115,19 @@ export class Materials {
             envMap: root.assets.matIronBox,
             reflectivity: 0.2,
             specular: new THREE.Color().setStyle('#222222'),
+        })
+
+        this.skin = new THREE.MeshPhongMaterial({
+            // @ts-ignore
+            skinning: true,
+            color: new THREE.Color().setStyle('#ffffff'),
+            emissive: new THREE.Color().setStyle('#555555'),
+            specular: new THREE.Color().setStyle('#ffffff'),
+            map: root.assets.skinMap,
+            bumpMap: root.assets.skinMap,
+            bumpScale: 30,
+            envMap: root.assets.matIronBox,
+            reflectivity: 0.5,
         })
 
         this.collision = new THREE.MeshBasicMaterial({ color: 0x00ff00 })

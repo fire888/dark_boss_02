@@ -43,7 +43,6 @@ export class Lab03 {
         })
 
         arrElemsSrc.forEach((el: THREE.Mesh) => {
-            console.log(el.name)
             let mat = el.name.includes('level') ? materials.wall : materials.wall2
             if (el.name === 'level_020_001') {
                 mat = materials.topGround

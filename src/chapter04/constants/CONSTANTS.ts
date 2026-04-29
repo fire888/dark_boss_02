@@ -40,6 +40,8 @@ import floorOuterMap2 from '../assets/floor_outer_map2.jpg'
 
 //import level from '../assets/level02.obj'
 import level from '../assets/level03.obj'
+import bot from '../assets/botWalk.gltf'
+import skinMap from '../assets/skin.jpg'
 
 
 // DEBUG FLAGS ************************************* / 
@@ -58,7 +60,8 @@ export const IS_OLD_GAMES_INFO = true
 
 // ************************************************/ 
 
-export const PLAYER_POS_START = [0, -2.5, 0]
+// export const PLAYER_POS_START = [0, -2.5, 0]
+export const PLAYER_POS_START = [-35.30573983271848,-1.1944231948263353,10.876251805833402] // первый робот
 // export const PLAYER_POS_START = [-100.17600906526624,106.30813953401274,-3.0490489145751796] // финиш
 //export const PLAYER_POS_START = [-65.36023754162309,78.82307855723435,-11.683569743268201] // узкий тоннель
 
@@ -116,4 +119,6 @@ export const LOAD_ASSETS: LoadConf = [
     { key: 'level', src: level, loader: 'obj' },
     { key: 'floorOuterMap', src: floorOuterMap, loader: 'texture' },
     { key: 'floorOuterMap2', src: floorOuterMap2, loader: 'texture' },
+    { key: 'skinMap', src: skinMap, loader: 'texture' },
+    { key: 'bot', src: bot, loader: 'glb' },
 ] 
