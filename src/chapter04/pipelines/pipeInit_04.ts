@@ -13,6 +13,8 @@ export const pipeInit_04 = async (root: Root) => {
         loader, phisics, lab, 
         audio, materials, particles,
         changerCurrentLevelPart,
+        assets,
+        bots
     } = root
 
     debug.init(root)
@@ -29,6 +31,8 @@ export const pipeInit_04 = async (root: Root) => {
     materials.init(root)
 
     studio.init(root)
+    console.log(assets)
+    studio.scene.background = assets.skybox
     ticker.on(studio.render.bind(studio))
     // studio.addAxisHelper()
     // studio.fog.far = 5
@@ -45,6 +49,8 @@ export const pipeInit_04 = async (root: Root) => {
     particles.init(root)
     ticker.on(particles.update.bind(particles))
     studio.add(particles.m)
+
+    await bots.init(root)
     
     ui.init()
     ui.hideBackgroundStartScreen()

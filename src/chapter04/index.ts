@@ -21,6 +21,7 @@ import { pipePlay_04 } from "./pipelines/pipePlay_04"
 import { pipeEnd_04 } from "./pipelines/pipeEnd_04"
 import { Core } from '_CORE/types'
 import { ChangerCurrentLevelPart } from "./entities/ChangerCurrentLevelPart"
+import { Bots } from "./entities/Bots"
 
 //import "./moveTest"
 
@@ -42,7 +43,9 @@ export interface Root extends Core {
     },
     changerCurrentLevelPart: ChangerCurrentLevelPart,
 
-    debug: Debug
+    debug: Debug,
+
+    bots: Bots
 }
 
 
@@ -79,6 +82,7 @@ window.addEventListener("DOMContentLoaded", async () => {
         materials: new Materials(),
 
         changerCurrentLevelPart: new ChangerCurrentLevelPart(),
+        bots: new Bots(),
 
         debug: new Debug(),
     }

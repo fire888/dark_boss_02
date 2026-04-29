@@ -25,7 +25,15 @@ import nY from '../assets/matIronBox/negy.jpg'
 import pZ from '../assets/matIronBox/posz.jpg'
 import nZ from '../assets/matIronBox/negz.jpg'
 
-import mapTop from '../assets/mapGround.jpg'
+import pX2 from "../assets/skybox/px.jpg"
+import nX2 from "../assets/skybox/nx.jpg"
+import pY2 from "../assets/skybox/py.jpg"
+import nY2 from "../assets/skybox/ny.jpg"
+import pZ2 from "../assets/skybox/pz.jpg"
+import nZ2 from "../assets/skybox/nz.jpg"
+
+//import mapTop from '../assets/mapGround.jpg'
+import mapTop from '../assets/noise00.webp'
 
 import floorOuterMap from '../assets/floor_outer_map3.jpg'
 import floorOuterMap2 from '../assets/floor_outer_map2.jpg'
@@ -51,10 +59,12 @@ export const IS_OLD_GAMES_INFO = true
 // ************************************************/ 
 
 export const PLAYER_POS_START = [0, -2.5, 0]
-//export const PLAYER_POS_START = [-65.36023754162309,78.82307855723435,-11.683569743268201]
+// export const PLAYER_POS_START = [-100.17600906526624,106.30813953401274,-3.0490489145751796] // финиш
+//export const PLAYER_POS_START = [-65.36023754162309,78.82307855723435,-11.683569743268201] // узкий тоннель
 
 //const BACK_COLOR = 0x505f68 
-const BACK_COLOR = '#1e2053'
+//const BACK_COLOR = '#1e2053'
+const BACK_COLOR = '#17257d'
 export const STUDIO_CONF: StudioConf = {
     spotLightParams: {
         color: new THREE.Color().setStyle('#ffffff'),
@@ -74,7 +84,7 @@ export const STUDIO_CONF: StudioConf = {
     cameraLookAt: new THREE.Vector3(30, 1, 0).fromArray(PLAYER_POS_START).add(new THREE.Vector3(0, 0, 10)),
     cameraFov: 55,
     ambientLightParams: { color: new THREE.Color().setStyle('#a6cfe6'), intensity: 2 },
-    sceneBackground: new THREE.Color().setStyle(BACK_COLOR),
+    //sceneBackground: new THREE.Color().setStyle(BACK_COLOR),
     fogParams: { color: new THREE.Color().setStyle(BACK_COLOR), near: 1, far: 30 },
     saturatePass: true,
 }
@@ -102,6 +112,7 @@ export const LOAD_ASSETS: LoadConf = [
     { key: 'ironAlbedo', src: ironAlbedo, loader: 'texture' },
     { key: 'mapGround', src: mapTop, loader: 'texture' },
     { key: 'matIronBox', src: [pX, nX, pY, nY, pZ, nZ], loader: 'cubeTexture' },
+    { key: 'skybox', src: [pX2, nX2, pY2, nY2, pZ2, nZ2], loader: 'cubeTexture' },
     { key: 'level', src: level, loader: 'obj' },
     { key: 'floorOuterMap', src: floorOuterMap, loader: 'texture' },
     { key: 'floorOuterMap2', src: floorOuterMap2, loader: 'texture' },

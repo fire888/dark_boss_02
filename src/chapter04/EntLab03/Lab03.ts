@@ -43,7 +43,11 @@ export class Lab03 {
         })
 
         arrElemsSrc.forEach((el: THREE.Mesh) => {
-            const mat = el.name.includes('level') ? materials.wall : materials.wall2
+            console.log(el.name)
+            let mat = el.name.includes('level') ? materials.wall : materials.wall2
+            if (el.name === 'level_020_001') {
+                mat = materials.topGround
+            }
             const mesh = new THREE.Mesh(el.geometry.clone(), mat)
             mesh.name = el.name
             mesh.geometry.scale(scale, scale, scale)
