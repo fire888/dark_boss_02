@@ -19,7 +19,7 @@ import { Core } from './types'
 const Q_ZERO = new THREE.Quaternion()
 const V3_TOP = new THREE.Vector3(0, 1, 0)
 
-class BodyN extends Body {
+export class BodyN extends Body {
     myName: string = 'none'
 }
 
@@ -84,7 +84,7 @@ export class Phisics {
 
         // DEBUGGER PHISICS
         // @ts-ignore
-        // this.cannonDebugger = new CannonDebugger(root.studio.scene, this.world, {})
+        //this.cannonDebugger = new CannonDebugger(root.studio.scene, this.world, {})
     }
 
     createPlayer () {
@@ -158,6 +158,20 @@ export class Phisics {
  
         this.world.addBody(body)
         this._bodies.push(body)
+    }
+
+    createSphereStatic(name = 'sphereStatic', r: number = .5) {
+        const sphere = new Sphere(r)
+        const s = new BodyN({ 
+            mass: 0, 
+            type: Body.STATIC, 
+        })
+        s.myName = name
+        s.addShape(sphere)
+
+        this.world.addBody(s)
+
+        return s
     }
 
     addListen(nameBody: string, nameEvent: string, f: () => void) {

@@ -1,6 +1,7 @@
 import { Root } from "../index"
 import * as THREE from "three"
 import { Lab03 } from "../EntLab03/Lab03"
+import { BodyN  } from "../../_CORE/Phisics"
 
 const SCALE = 0.04
 
@@ -35,18 +36,22 @@ const MONSTERS_DATA = {
 }
 
 type T_Clips = { [key: string]: THREE.AnimationAction }
-
+type T_Action = { 
+    actionKey: string, 
+    angleTo?: number 
+}
 class Walk {
-    _state: string = 'WALK'
+    state: string = 'WALK'
     _bot: THREE.Mesh 
     _root: Root
     _ray = new THREE.Raycaster()
     _clips: T_Clips
-    _targetRot = 0
-    active = false
+    _actions: T_Action[] = []
+    _botPhisics: BodyN = null as any
 
     constructor (bot: THREE.Mesh, clips: T_Clips, root: Root) {
         this._bot = bot
+        this._botPhisics = root.phisics.createSphereStatic('botPhisics', 0.3)
         this._root = root
         this._clips = clips
 
@@ -56,48 +61,90 @@ class Walk {
     }
 
     _update() {
-        if (this._state === 'WALK') {
+        const { actionKey, angleTo } = this._actions[0]
+
+        if (actionKey === 'go') {
             const dir = new THREE.Vector3()
             this._bot.getWorldDirection(dir)
-
             this._ray.set(this._bot.position, dir)
 
             const intersects = this._ray.intersectObjects(this._root.lab.currentLevelMeshes)
             if (intersects.length && intersects[0].distance > 1) {
                 this._bot.translateZ(0.006)
+                this._botPhisics.position.set(this._bot.position.x, this._bot.position.y + .5, this._bot.position.z)
+                this._botPhisics.updateAABB()
             } else {
-                this.setState('ROTATE')    
+                this._actions.shift()
             }
             if (Math.random() < .002) {
-                this.setState('ROTATE')
+                this._actions.shift()
             }
         }
 
-        if (this._state === 'ROTATE') {
-            this._bot.rotation.y += (this._targetRot - this._bot.rotation.y) * .1
-            if (Math.abs(this._targetRot - this._bot.rotation.y) < .01) {
-                this.setState('WALK')
+        if (actionKey === 'rotate' && angleTo !== undefined) {
+            this._bot.rotation.y += (angleTo - this._bot.rotation.y) * .05
+            if (Math.abs(angleTo - this._bot.rotation.y) < .01) {
+                this._actions.shift()
             }
+        }
+
+        if (actionKey === 'wait') {
+            if (Math.random() < .05) {
+                this._actions.shift()
+            }
+        }
+
+        if (actionKey === 'superWait') {
+
+        }
+
+        if (this._actions.length === 0) {
+            this.setState(this.state)
         }
     }
 
     setState(state: string) {
-        if (state === 'ROTATE') {
-            this.active = true
-            this._targetRot = this._bot.rotation.y + Math.PI + (Math.random() - .5) * Math.PI
-            this._clips['walk'].reset().play()
-        }
+        Object.values(this._clips).forEach((clip: THREE.AnimationAction) => {
+            clip.stop()
+        })
+
         if (state === 'WALK') {
-            this.active = true
             this._clips['walk'].reset().play()
+            this._actions = [
+                { actionKey: 'rotate', angleTo: this._bot.rotation.y + Math.PI },
+                { actionKey: 'go' },
+            ]
         }
-        if (state === 'NONE') {
-            this.active = false
-            this._clips['walk'].stop()
-            this._clips['dialog'].play()
+        if (state === 'DIALOG') {
+            this._clips['dialog'].reset().play()
+
+            const posPlayer = this._root.studio.camera.position.clone().setY(0)
+            const posBot = this._bot.position.clone().setY(0)
+            const angleTo = Math.atan2(posPlayer.x - posBot.x, posPlayer.z - posBot.z)
+
+            this._actions = [
+                { actionKey: 'rotate', angleTo },
+                { actionKey: 'wait' },
+            ]
+        }
+        if (state === 'STAY') {
+            this._clips['stay'].reset().play()
+            this._actions = [
+                { actionKey: 'superWait' },
+                { actionKey: 'superWait' },
+                { actionKey: 'superWait' },
+                { actionKey: 'superWait' },
+                { actionKey: 'superWait' },
+            ]
         }
 
-        this._state = state
+        this.state = state
+    }
+
+    setPos(x: number, y: number, z: number) {
+        this._bot.position.set(x, y, z)
+        this._botPhisics.position.set(x, y + .5, z)
+        this._botPhisics.updateAABB()
     }
 }
 
@@ -122,8 +169,6 @@ export class Bots {
     }
 
     async init(root: Root) {
-        console.log(root.assets)
-
         this._root = root
 
         const { assets, studio, materials, ticker } = root
@@ -155,9 +200,8 @@ export class Bots {
         ticker.on((d: number) => {
             this._mixer.update(d * 0.001)
             const dist = this._bot.position.distanceTo(studio.camera.position)
-            if (dist < 1 && this._walk.active) this._walk.setState('NONE')
-            if (dist > 1 && !this._walk.active) this._walk.setState('ROTATE')   
-            //if ()
+            if (dist < 1 && this._walk.state === 'WALK') this._walk.setState('DIALOG')
+            if (dist > 1 && this._walk.state === 'DIALOG') this._walk.setState('WALK')   
         })
 
         this._walk = new Walk(this._bot, this._clips, root)
@@ -170,6 +214,18 @@ export class Bots {
 
         this._mixer.stopAllAction()
         
+    }
+
+    moveToInLocation(locNum: number) {
+        if (locNum === 13) { 
+            const pos = [-47.319585772196874,63.1,-0.8187502704036255]
+            this._walk.setPos(pos[0], pos[1], pos[2])
+        }
+        if (locNum === 19) {
+            const pos = [-102.90140699284755,105.9,-1.5127320925863286]
+            this._walk.setState('STAY')
+            this._walk.setPos(pos[0], pos[1], pos[2])
+        }
     }
 
 }
