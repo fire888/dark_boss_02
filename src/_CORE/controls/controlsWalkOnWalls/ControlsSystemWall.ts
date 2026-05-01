@@ -105,9 +105,12 @@ export class ControlsSystemWall extends ControlsSystem {
         this.switchMode(IS_DEV_START_ORBIT ? 'ORBIT' : 'POINTER')
     }
 
+    unlockPointer() {
+        this._contrPointer.unlock()
+    }
+
     disable(): void {
         this._isDisabled = true
-        this._contrPointer.unlock()
         this._currentMode = 'NONE'
     }
 

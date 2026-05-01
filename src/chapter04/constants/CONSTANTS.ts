@@ -56,18 +56,17 @@ export const IS_DEBUG_SHOW_BUILD_HOUSES_EXAMPLES: boolean = false
 //export const IS_DEBUG_SHOW_BUILD_HOUSES_EXAMPLES: boolean = true
 
 export const IS_OLD_GAMES_INFO = true
-//export const IS_OLD_GAMES_INFO = false
 
 // ************************************************/ 
 
-//export const PLAYER_POS_START = [0, -2.5, 0]
+export const PLAYER_POS_START = [0, -2.5, 0]
 //export const PLAYER_POS_START = [-35.30573983271848,-1.1944231948263353,10.876251805833402] // первый робот
 //export const PLAYER_POS_START = [-17.391872301246643,19.84348148141515,6.019241987154789] // железная труба
 //export const PLAYER_POS_START = [-30.660971037627885,67.40614812727637,4.601998845469798] // за трубой
 //export const PLAYER_POS_START = [-47.319585772196874,63.477016340698356,-0.8187502704036255] // второй робот
 //export const PLAYER_POS_START = [-65.36023754162309,78.82307855723435,-11.683569743268201] // узкий тоннель
 //export const PLAYER_POS_START = [-87.24280089832291,93.7153662552499,1.7337827217520143] // перед финишем
-export const PLAYER_POS_START = [-100.17600906526624,106.30813953401274,-3.0490489145751796] // финиш
+//export const PLAYER_POS_START = [-100.17600906526624,106.30813953401274,-3.0490489145751796] // финиш
 
 
 //const BACK_COLOR = 0x505f68 
@@ -89,7 +88,7 @@ export const STUDIO_CONF: StudioConf = {
         pos: new THREE.Vector3(0, 5, 0)
     },
     cameraPos: new THREE.Vector3().fromArray(PLAYER_POS_START),
-    cameraLookAt: new THREE.Vector3(30, 1, 0).fromArray(PLAYER_POS_START).add(new THREE.Vector3(0, 0, 10)),
+    cameraLookAt: new THREE.Vector3().fromArray(PLAYER_POS_START).add(new THREE.Vector3(0, 0, 10)),
     cameraFov: 55,
     ambientLightParams: { color: new THREE.Color().setStyle('#a6cfe6'), intensity: 2 },
     //sceneBackground: new THREE.Color().setStyle(BACK_COLOR),

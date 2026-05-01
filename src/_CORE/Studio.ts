@@ -63,6 +63,7 @@ export class Studio {
         this.camera.position.copy(studioConf.cameraPos)
         this.camera.lookAt(...studioConf.cameraLookAt.toArray())
         this.camera.updateProjectionMatrix()
+        this.scene.add(this.camera)
 
         if (studioConf.spotLightParams) {
             this.spotLight = new SpotLight()

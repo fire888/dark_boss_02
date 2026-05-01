@@ -24,12 +24,9 @@ export const pipePlay_04 = async (root: Root) => {
         }
     })
 
-
     const waitEnd = () => { 
         return new Promise((resolve) => {
-            const check = () => { 
-
-                console.log('current level', changerCurrentLevelPart.currentLevel)
+            const check = () => {
                 if (changerCurrentLevelPart.currentLevel === 20) { 
                     resolve(true)
                 } else { 

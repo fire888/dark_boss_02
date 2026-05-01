@@ -4,6 +4,7 @@ import { IS_DEV_START_ORBIT } from '../constants/CONSTANTS'
 import { Tween, Easing } from '@tweenjs/tween.js'
 import { PLAYER_POS_START } from '../constants/CONSTANTS'
 import * as THREE from 'three'
+import { pause } from '_CORE/helpers/htmlHelpers'
 
 export const pipeInit_04 = async (root: Root) => {
     const {
@@ -33,9 +34,9 @@ export const pipeInit_04 = async (root: Root) => {
     studio.init(root)
     studio.scene.background = assets.skybox
     ticker.on(studio.render.bind(studio))
-    // studio.addAxisHelper()
-    // studio.fog.far = 5
-    // studio.fog.near = .2 
+    //studio.addAxisHelper()
+    studio.fog.far = .8
+    studio.fog.near = .1 
 
     phisics.init(root)
     ticker.on(phisics.update.bind(phisics))
@@ -54,32 +55,6 @@ export const pipeInit_04 = async (root: Root) => {
     ui.init()
     ui.hideBackgroundStartScreen()
 
-    // const flyCameraToLevel = () => {
-    //     const nearStart = 0
-    //     const nearEnd = 5
-    //     const farStart = .1
-    //     const farEnd = 50
-    //     return new Promise(res => {        
-    //         const obj = { v: 0 }
-    //         new Tween(obj)
-    //             .easing(Easing.Exponential.InOut)
-    //             .to({ v: 1 }, 3000)
-    //             .onUpdate(() => {
-    //                 studio.camera.position.z = PLAYER_POS_START[2] - (1 - obj.v) * 15
-    //                 studio.camera.rotation.x = -Math.PI + (1 - obj.v) * .8
-    //                 studio.setFogNearFar(nearStart + (nearEnd - nearStart) * obj.v, farStart + (farEnd - farStart) * obj.v)
-    //             })
-    //             .onComplete(() => {
-    //                 res(true)
-    //             })
-    //             .start()
-    //     })
-    // }
-    // await flyCameraToLevel()
-
-    //playerWallDirection.init(root)
-    //ticker.on(playerWallDirection.update.bind(playerWallDirection))
-
     if (IS_DEV_START_ORBIT) {
         await ui.hideStartScreenForce()
     } else {
@@ -89,18 +64,19 @@ export const pipeInit_04 = async (root: Root) => {
     controls.init(root, IS_DEV_START_ORBIT)
     ticker.on(controls.update.bind(controls))
 
-    changerCurrentLevelPart.init(root)
-
     audio.init(root)
     ticker.on(audio.update.bind(audio))
     audio.playAmbient()
 
-    // top
-    //controls.setFrontDirTopDir(new THREE.Vector3(0, 1, 0), new THREE.Vector3(0, 0, 1))
-    
-    // front
-    //controls.setFrontDirTopDir(new THREE.Vector3(-1, 0, 0), new THREE.Vector3(0, 1, 0))
+    changerCurrentLevelPart.init(root)
 
-    // bottom
-    //controls.setFrontDirTopDir(new THREE.Vector3(0, -1, 0), new THREE.Vector3(1, 0, 0))
+    await pause(2000)
+    await studio.animateFog(({ endFogNear: .01, endFogFar: .02, time: 1000 }))
+
+    bots.moveToInLocation(4)
+
+    await studio.animateFog(({ endFogNear: 1, endFogFar: 30, time: 1000 }))
+
+    bots.startCheckerNearPlayer()
+
 }

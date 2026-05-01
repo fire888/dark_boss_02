@@ -5,7 +5,7 @@ import { BodyN  } from "../../_CORE/Phisics"
 
 const SCALE = 0.04
 
-const POS_1 = [-35.30573983271848,-1.6,10.876251805833402] 
+
         
 const MONSTERS_DATA = {
     '0': {
@@ -41,7 +41,7 @@ type T_Action = {
     angleTo?: number 
 }
 class Walk {
-    state: string = 'WALK'
+    state: string = 'NONE'
     _bot: THREE.Mesh 
     _root: Root
     _ray = new THREE.Raycaster()
@@ -61,6 +61,8 @@ class Walk {
     }
 
     _update() {
+        if (this._actions.length === 0) return
+
         const { actionKey, angleTo } = this._actions[0]
 
         if (actionKey === 'go') {
@@ -84,6 +86,7 @@ class Walk {
         if (actionKey === 'rotate' && angleTo !== undefined) {
             this._bot.rotation.y += (angleTo - this._bot.rotation.y) * .05
             if (Math.abs(angleTo - this._bot.rotation.y) < .01) {
+                this._bot.rotation.y = this._bot.rotation.y % (2 * Math.PI) 
                 this._actions.shift()
             }
         }
@@ -98,7 +101,7 @@ class Walk {
 
         }
 
-        if (this._actions.length === 0) {
+        if (this._actions.length === 0 && this.state !== 'NONE') {
             this.setState(this.state)
         }
     }
@@ -111,7 +114,7 @@ class Walk {
         if (state === 'WALK') {
             this._clips['walk'].reset().play()
             this._actions = [
-                { actionKey: 'rotate', angleTo: this._bot.rotation.y + Math.PI },
+                { actionKey: 'rotate', angleTo: this._bot.rotation.y + Math.PI + Math.PI * Math.random() -.5 },
                 { actionKey: 'go' },
             ]
         }
@@ -137,7 +140,6 @@ class Walk {
                 { actionKey: 'superWait' },
             ]
         }
-
         this.state = state
     }
 
@@ -146,9 +148,8 @@ class Walk {
         this._botPhisics.position.set(x, y + .5, z)
         this._botPhisics.updateAABB()
     }
+
 }
-
-
 
 export class Bots {
     _mixer: THREE.AnimationMixer
@@ -159,6 +160,8 @@ export class Bots {
     _root: Root
 
     _walk: Walk 
+
+    _isStarted = false
 
 
     constructor () {
@@ -178,13 +181,13 @@ export class Bots {
         this._bot.traverse((item: THREE.Object3D) => {
             if (item instanceof THREE.Mesh) item.material = materials['skin']
         })
-        this._bot.position.set(POS_1[0], POS_1[1], POS_1[2])
-        this._bot.rotation.set(0, Math.random() * Math.PI * 2, 0)
-        this._bot.scale.set(SCALE, SCALE, SCALE)
-        studio.add(this._bot)
+        this._bot.position.set(0, -.4, -.6)
+        this._bot.scale.set(SCALE, SCALE, SCALE) 
+        studio.camera.add(this._bot)
 
         const animations = botAsset.animations
         this._mixer = new THREE.AnimationMixer(this._bot)
+        ticker.on((d: number) => { this._mixer.update(d * 0.001) })
 
         const dialog = this._mixer.clipAction(animations[2])
         dialog.timeScale = 1.5
@@ -196,36 +199,38 @@ export class Bots {
         stay.timeScale = 1
 
         this._clips = { dialog, walk, stay }
-
-        ticker.on((d: number) => {
-            this._mixer.update(d * 0.001)
-            const dist = this._bot.position.distanceTo(studio.camera.position)
-            if (dist < 1 && this._walk.state === 'WALK') this._walk.setState('DIALOG')
-            if (dist > 1 && this._walk.state === 'DIALOG') this._walk.setState('WALK')   
-        })
+        this._clips['dialog'].play()
 
         this._walk = new Walk(this._bot, this._clips, root)
-        this._walk.setState('WALK')
     }
-
-    play(key: string) {
-        if (this._currentAction === key) return;
-        this._currentAction = key
-
-        this._mixer.stopAllAction()
-        
-    }
-
     moveToInLocation(locNum: number) {
+        if (locNum === 4) {
+            this._root.studio.add(this._bot)
+            const pos = [-35.30573983271848,-1.6,10.876251805833402]
+            this._walk.setState('WALK')
+            this._walk.setPos(pos[0], pos[1], pos[2])
+        }
         if (locNum === 13) { 
+            this._root.studio.add(this._bot)
             const pos = [-47.319585772196874,63.1,-0.8187502704036255]
+            this._walk.setState('WALK')
             this._walk.setPos(pos[0], pos[1], pos[2])
         }
         if (locNum === 19) {
+            this._root.studio.add(this._bot)
             const pos = [-102.90140699284755,105.9,-1.5127320925863286]
             this._walk.setState('STAY')
             this._walk.setPos(pos[0], pos[1], pos[2])
         }
+    }
+
+    startCheckerNearPlayer() {
+        const { studio, ticker } = this._root
+        ticker.on((d: number) => {
+            const dist = this._bot.position.distanceTo(studio.camera.position)
+            if (dist < 1 && this._walk.state === 'WALK') this._walk.setState('DIALOG')
+            if (dist > 1 && this._walk.state === 'DIALOG') this._walk.setState('WALK')   
+        })
     }
 
 }
