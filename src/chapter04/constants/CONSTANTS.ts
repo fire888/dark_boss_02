@@ -2,16 +2,10 @@ import * as THREE from 'three'
 import { StudioConf, ControlsConf } from "_CORE/types"
 import { LoadConf } from '_CORE/Loader'
 
-import audioAmbient from '../assets/audio/ambient_loop.mp3'
+import audioAmbient from '../assets/ambient.mp3'
 import steps from '../assets/audio/steps.mp3'
 import symbol from '../assets/audio/symbol.mp3'
-//import audioBzink from '../assets/bzink.mp3'
-//import audioDoor from '../assets/door.mp3'
-//import audioFly from '../assets/fly.mp3'
 
-import roadImg from '../assets/road_stone.webp'
-import wallTile from '../assets/tiles_wall.webp'
-import noise00 from '../assets/noise00.webp'
 import sprite from '../assets/sprite.webp'
 
 import ironNormal from '../assets/concrete/broken_down_concrete2_Normal-dx.jpg'
@@ -32,13 +26,11 @@ import nY2 from "../assets/skybox/ny.jpg"
 import pZ2 from "../assets/skybox/pz.jpg"
 import nZ2 from "../assets/skybox/nz.jpg"
 
-//import mapTop from '../assets/mapGround.jpg'
 import mapTop from '../assets/noise00.webp'
 
 import floorOuterMap from '../assets/floor_outer_map3.jpg'
 import floorOuterMap2 from '../assets/floor_outer_map2.jpg'
 
-//import level from '../assets/level02.obj'
 import level from '../assets/level03.obj'
 import bot from '../assets/botWalk.gltf'
 import skinMap from '../assets/skin.jpg'

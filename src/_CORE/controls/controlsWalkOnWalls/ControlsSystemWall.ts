@@ -80,7 +80,7 @@ export class ControlsSystemWall extends ControlsSystem {
         this._contrPointer.addEventListener('unlock', () => {
             this.switchMode('PHONE')
         })
-        this._controlsOrbit = new ControlsOrbit()
+        //this._controlsOrbit = new ControlsOrbit()
     }
 
     init (root: Core, IS_DEV_START_ORBIT = false) {
