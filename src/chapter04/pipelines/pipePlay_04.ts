@@ -24,6 +24,25 @@ export const pipePlay_04 = async (root: Root) => {
         }
     })
 
-    await pause(10000000)
+
+    const waitEnd = () => { 
+        return new Promise((resolve) => {
+            const check = () => { 
+
+                console.log('current level', changerCurrentLevelPart.currentLevel)
+                if (changerCurrentLevelPart.currentLevel === 20) { 
+                    resolve(true)
+                } else { 
+                    setTimeout(check, 1000)
+                }
+            }
+            check()
+        })
+    }
+
+    await waitEnd()
+
+    await pause(10000)
+
     console.log('[MESSAGE:] COMPLETE SCENARIO')
 }

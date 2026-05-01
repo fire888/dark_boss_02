@@ -105,6 +105,12 @@ export class ControlsSystemWall extends ControlsSystem {
         this.switchMode(IS_DEV_START_ORBIT ? 'ORBIT' : 'POINTER')
     }
 
+    disable(): void {
+        this._isDisabled = true
+        this._contrPointer.unlock()
+        this._currentMode = 'NONE'
+    }
+
     switchMode(mode: string) {
         const { studio, ui } = this._root
 
@@ -407,7 +413,6 @@ export class ControlsSystemWall extends ControlsSystem {
         ui.moveRightDiv.addEventListener("pointerout", () => { 
             this._currentSpeedLeft = 0
         })
-
 
         ui.lockButton.onclick = () => {
             this.switchMode('POINTER')
