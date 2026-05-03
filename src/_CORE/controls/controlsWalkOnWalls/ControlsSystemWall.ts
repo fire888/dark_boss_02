@@ -373,8 +373,8 @@ export class ControlsSystemWall extends ControlsSystem {
         keyboard.on('RIGHT', (is: boolean) => {
             this._currentSpeedLeft = is ? this._maxSpeedLeft : 0
         })
-        keyboard.on('JUMP', (is: boolean) => {
-            if (is) {
+        keyboard.on('JUMP', (is: boolean) => { /////////
+            if (is && this._root.phisics.isGround) {
                 const dir = this._zeroObject.up.clone().multiplyScalar(10)
                 phisics.playerBody.velocity.set(dir.x, dir.y, dir.z)
             }
