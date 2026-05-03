@@ -4,7 +4,6 @@ import { LoadConf } from '_CORE/Loader'
 
 import audioAmbient from '../assets/audio/ambient.mp3'
 import steps from '../assets/audio/steps.mp3'
-import soundCar from '../assets/audio/car.mp3'
 import sprite from '../assets/sprite.webp'
 
 import pX2 from "../assets/skybox/px.jpg"
@@ -14,15 +13,19 @@ import nY2 from "../assets/skybox/ny.jpg"
 import pZ2 from "../assets/skybox/pz.jpg"
 import nZ2 from "../assets/skybox/nz.jpg"
 
+import pX from '../assets/matIronBox/posx.jpg'
+import nX from '../assets/matIronBox/negx.jpg'
+import pY from '../assets/matIronBox/posy.jpg'
+import nY from '../assets/matIronBox/negy.jpg'
+import pZ from '../assets/matIronBox/posz.jpg'
+import nZ from '../assets/matIronBox/negz.jpg'
+
 import greenStars from '../assets/green_stars.jpg'
 
 import groundPointsMap from '../assets/map02.jpg'
 import mapTop from '../assets/floor_outer_map.jpg'
 
-import levelObj from '../assets/level.obj'
-import carShadow from '../assets/car_sh.jpg'
-import mapBody from '../assets/botMap.png'
-import bodyShadow from '../assets/body_sh_map.jpg'
+import levelObj from '../assets/level-rooms.obj'
 
 import wallTexture from '../assets/txt1.jpg'
 
@@ -32,13 +35,13 @@ export const IS_DEV_START_ORBIT = false
 
 // ************************************************/ 
 
-export const PLAYER_POS_START = [10, 1, 10]
+export const PLAYER_POS_START = [0, 1, 0]
 
-const BACK_COLOR = 0x17257d
+const BACK_COLOR = '#6373a2'
 export const STUDIO_CONF: StudioConf = {
     spotLightParams: {
         color: new THREE.Color().setHex(0xffffff),
-        intensity: 1,
+        intensity: 3,
         pos: new THREE.Vector3(0, 3, 5),
         angle: Math.PI * .2,
         penumbra: 1,
@@ -53,9 +56,9 @@ export const STUDIO_CONF: StudioConf = {
     cameraPos: new THREE.Vector3().fromArray(PLAYER_POS_START),
     cameraLookAt: new THREE.Vector3(0, 1, 0),
     cameraFov: 55,
-    ambientLightParams: { color: new THREE.Color().setHex(BACK_COLOR), intensity: 3 },
+    ambientLightParams: { color: new THREE.Color().setStyle(BACK_COLOR), intensity: 5 },
     sceneBackgroundCubeKeyAsset: 'skybox',
-    fogParams: { color: new THREE.Color().setHex(BACK_COLOR), near: 5, far: 80 },
+    fogParams: { color: new THREE.Color().setStyle(BACK_COLOR), near: 5, far: 80 },
     saturatePass: true,
 }
 
@@ -73,14 +76,11 @@ export const CONSTANTS = {}
 export const LOAD_ASSETS: LoadConf = [
     { key: 'soundAmbient', src: audioAmbient, loader: 'audio' },
     { key: 'soundStepsMetal', src: steps, loader: 'audio' },
-    { key: 'soundCar', src: soundCar, loader: 'audio' },
     { key: 'sprite', src: sprite, loader: 'texture' },
     { key: 'mapGround', src: mapTop, loader: 'texture' },
     { key: 'groundPointsMap', src: groundPointsMap, loader: 'texture' },
     { key: 'levelObj', src: levelObj, loader: 'obj' },
-    { key: 'mapBody', src: mapBody, loader: 'texture' },
-    { key: 'bodyShadow', src: bodyShadow, loader: 'texture' },
-    { key: 'carShadow', src: carShadow, loader: 'texture' },
+    { key: 'matIronBox', src: [pX, nX, pY, nY, pZ, nZ], loader: 'cubeTexture' },
     { key: 'skybox', src: [pX2, nX2, pY2, nY2, pZ2, nZ2], loader: 'cubeTexture' },
     { key: 'skyboxGreenStars', src: [greenStars, greenStars, greenStars, greenStars, greenStars, greenStars], loader: 'cubeTexture' },
     { key: 'wallTexture', src: wallTexture, loader: 'texture' },

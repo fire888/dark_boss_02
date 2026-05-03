@@ -9,7 +9,7 @@ export const pipeInit_03 = async (root: Root) => {
         loader, phisics, lab,
         audio, materials, particles, 
         // car, 
-        body, pers
+        // body, pers
     } = root
 
     loader.init(root)
@@ -42,11 +42,11 @@ export const pipeInit_03 = async (root: Root) => {
     ticker.on(particles.update.bind(particles))
     studio.add(particles.m)
 
-    body.init(root)
+    //body.init(root)
 
-    pers.init(root)
-    pers.mesh.position.set(10000, 0, 0)
-    ticker.on(pers.update.bind(pers))
+    // pers.init(root)
+    // pers.mesh.position.set(10000, 0, 0)
+    // ticker.on(pers.update.bind(pers))
     
     ui.init(root)
 
