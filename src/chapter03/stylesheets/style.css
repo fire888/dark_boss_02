@@ -1,0 +1,34 @@
+.drive-car {
+    position: absolute;
+    z-index: 100;
+    left: 50vw;
+    transform: translate(-100px, 0);
+    bottom: 40vh;
+    width: 200px;
+    height: 50px;
+    border: 2px solid #e4f9ff;
+    border-radius: 5px;
+    background-size: contain;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    align-content: center;
+    transition: 0.2s;
+    text-align: center;
+    font-weight: bold;
+}
+
+.circle_done {
+    position: absolute;
+    z-index: 100;
+    top: 40px;
+    transform: translate(-50%, -50%);
+    bottom: 40vh;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background-color: #3bc300;
+    border: 3px solid #000000;
+    transition: 0.2s;
+}
