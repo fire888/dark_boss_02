@@ -31,8 +31,8 @@ import wallTexture from '../assets/txt1.jpg'
 
 
 // DEBUG FLAGS ************************************* / 
-//export const IS_DEV_START_ORBIT = false
-export const IS_DEV_START_ORBIT = true
+export const IS_DEV_START_ORBIT = false
+//export const IS_DEV_START_ORBIT = true
 
 // ************************************************/ 
 
@@ -57,10 +57,10 @@ export const STUDIO_CONF: StudioConf = {
     cameraPos: new THREE.Vector3().fromArray(PLAYER_POS_START),
     cameraLookAt: new THREE.Vector3(0, 1, 0),
     cameraFov: 55,
-    cameraFar: 10000,
+    cameraFar: 1000,
     ambientLightParams: { color: new THREE.Color().setStyle(BACK_COLOR), intensity: 5 },
     sceneBackgroundCubeKeyAsset: 'skybox',
-    fogParams: { color: new THREE.Color().setStyle(BACK_COLOR), near: 5, far: 80 },
+    fogParams: { color: new THREE.Color().setStyle(BACK_COLOR), near: 5, far: 1580 },
     saturatePass: true,
 }
 
