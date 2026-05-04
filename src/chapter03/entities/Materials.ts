@@ -13,18 +13,19 @@ export class Materials {
         const mapGround = root.assets.mapGround
         mapGround.wrapS = THREE.RepeatWrapping
         mapGround.wrapT = THREE.RepeatWrapping
-        mapGround.repeat.set(5, 5)
+        mapGround.repeat.set(1, 1)
 
         this.floorMatNorm = new THREE.MeshPhongMaterial({
-            color: new THREE.Color().setStyle('#efb0ff'),
+            color: new THREE.Color().setStyle('#e682ff'),
             emissive: new THREE.Color().setStyle('#317287'),
             map: root.assets.mapGround,
             bumpMap: root.assets.mapGround,
             bumpScale: 30,
             envMap: root.assets.matIronBox,
-            reflectivity: .5,
-            shininess: .01,
+            reflectivity: .05,
+            shininess: .1,
             specular: new THREE.Color().setStyle('#ffffff'),
+            vertexColors: true,
         }) 
 
         const mapGroundPoints = root.assets.groundPointsMap

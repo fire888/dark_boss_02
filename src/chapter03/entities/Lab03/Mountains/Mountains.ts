@@ -13,8 +13,8 @@ export class Mountains {
 
         const { studio, phisics, materials } = root
 
-        const W = 150
-        const STEP = 7
+        const W = 250
+        const STEP = 15
         const MAX_H = 2
         const MAX_H_2 = 15
         const Y = -2.5
@@ -62,7 +62,7 @@ export class Mountains {
 
                 const m = _M.createMesh({
                     index: f.index || undefined,
-                    v: f.v, uv: f.uv,
+                    v: f.v, uv: f.uv, c: f.c,
                     material: materials.floorMatNorm,
                 })
                 m.position.x = j * W - W

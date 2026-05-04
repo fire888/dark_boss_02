@@ -25,6 +25,7 @@ export const createFloor01 = (opts: T_f): T_Floor01 => {
     const v: number[] = []
     const index: number[] = []
     const uv: number[] = []
+    const c: number[] = []
     const vCollide: number[] = []
 
     const p: number[][][] = []
@@ -56,6 +57,9 @@ export const createFloor01 = (opts: T_f): T_Floor01 => {
 
     let countIndex = 0
 
+    const color = new THREE.Color().setStyle('#e9ffff')
+    const colorB = new THREE.Color().setStyle('#420c7c')
+
     for (let i = 1; i < p.length; ++i) { 
         const prevZRow = p[i - 1]
         const curZRow = p[i] 
@@ -68,6 +72,12 @@ export const createFloor01 = (opts: T_f): T_Floor01 => {
 
             v.push(...p0, ...p1, ...p2, ...p3)
             uv.push(0, 0, 1, 0, 1, 1, 0, 1)
+            c.push(
+                ...color.clone().lerp(colorB, 1 - p0[1] / maxH).toArray(),
+                ...color.clone().lerp(colorB, 1 - p1[1] / maxH).toArray(),
+                ...color.clone().lerp(colorB, 1 - p2[1] / maxH).toArray(),
+                ...color.clone().lerp(colorB, 1 - p3[1] / maxH).toArray(),
+            )
             index.push(
                 countIndex, countIndex + 1, countIndex + 3, 
                 countIndex + 1, countIndex + 2, countIndex + 3
@@ -97,5 +107,5 @@ export const createFloor01 = (opts: T_f): T_Floor01 => {
         vCollide.push(v[i])
     }
 
-    return { index, v, uv, vCollide, negZInd, posZInd, posXInd, negXInd }
+    return { index, v, uv, c, vCollide, negZInd, posZInd, posXInd, negXInd }
 }
