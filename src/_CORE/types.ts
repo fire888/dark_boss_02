@@ -48,6 +48,7 @@ export type StudioConf = {
     cameraPos: THREE.Vector3
     cameraFov?: number,
     cameraLookAt: THREE.Vector3
+    cameraFar?: number
     spotLightParams?: SpotLightConf
     ambientLightParams?: { color?: THREE.Color, intensity?: number }
     directionalLightParams?: { color?: THREE.Color, intensity?: number, pos?: THREE.Vector3 }

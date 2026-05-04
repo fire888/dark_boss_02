@@ -322,6 +322,7 @@ export const _M = {
     },
 
     createMesh: (data: {
+        index?: number[],
         v: number[], 
         uv?: number[], 
         uv2?: number[], 
@@ -330,7 +331,8 @@ export const _M = {
         material?: MeshBasicMaterial | MeshPhongMaterial | THREE.MeshPhysicalMaterial | THREE.MeshStandardMaterial,
     }) => {
 
-        const { 
+        const {
+            index = undefined,
             v = [], 
             uv = [],
             uv2 = [], 
@@ -339,21 +341,25 @@ export const _M = {
             material = new MeshBasicMaterial({ color: 0x777777 }) 
         } = data
 
-        const geometry = _M.createBufferGeometry({ v, uv, uv2, c, forceMat })
+        const geometry = _M.createBufferGeometry({ index, v, uv, uv2, c, forceMat })
     
         return new Mesh(geometry, material)
     },
     createBufferGeometry: (data: {
+        index?: number[],
         v: number[], 
         uv?: number[], 
         uv2?: number[], 
         c?: number[],
         forceMat?: number[],
     }): BufferGeometry => {
-        const { v = [], uv = [], uv2 = [], c = [], forceMat = [] } = data
+        const { index = null, v = [], uv = [], uv2 = [], c = [], forceMat = [] } = data
 
         const geometry = new BufferGeometry()
         const vF32 = new Float32Array(v)
+        if (index) {
+            geometry.setIndex(index)
+        }
         geometry.setAttribute('position', new BufferAttribute(vF32, 3))
         geometry.computeVertexNormals()
         if (c.length > 0) {

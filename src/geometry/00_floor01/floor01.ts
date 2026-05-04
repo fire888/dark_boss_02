@@ -2,32 +2,28 @@ import { _M } from "_CORE/_M/_m"
 import { IArrayForBuffers } from "../GeomTypes"
 import * as THREE from "three" 
 
-const S = .3
-
-export type T_Floor = { 
-    p0: THREE.Vector3 
-    p1: THREE.Vector3
-    p2: THREE.Vector3
-    p3: THREE.Vector3
-    d: number
-    w: number
-    isFillStart: boolean
-    isFillEnd: boolean
-}
-
 type T_f = {
     w: number
     d?: number
     wStep: number
     maxH: number
+    posXInd?: number[]
+    negXInd?: number[]
+    posZInd?: number[]
+    negZInd?: number[]
 }
 
-export const createFloor01 = (opts: T_f): IArrayForBuffers => {
+export type T_Floor01 = IArrayForBuffers & {
+    negZInd: number[], posZInd: number[],
+    posXInd: number[], negXInd: number[]
+}
+
+export const createFloor01 = (opts: T_f): T_Floor01 => {
 
     const { w = 100, d = w, wStep = 3, maxH = .3 } = opts
 
     const v: number[] = []
-    const c: number[] = []
+    const index: number[] = []
     const uv: number[] = []
     const vCollide: number[] = []
 
@@ -40,38 +36,60 @@ export const createFloor01 = (opts: T_f): IArrayForBuffers => {
     const stepX = w / countX
     const stepZ = d / countZ
 
-    for (let i = 0; i < countZ; i++) {
+
+
+    for (let i = 0; i < countZ + 1; i++) {
         const z = d * 0.5 - i * stepZ
         const arr = []
-        for (let j = 0; j < countX; j++) { 
-            const x = -w * 0.5 + j * stepX - (i % 2 * stepX * .5)
+        for (let j = 0; j < countX + 1; j++) { 
+            const x = -w * 0.5 + j * stepX + (i % 2 * stepX * .5)
             const h = Math.random() * maxH
             arr.push([x, h, z])
         }
         p.push(arr)
     }
 
+    const negZInd: number[] = []
+    const posZInd: number[] = []
+    const posXInd: number[] = []
+    const negXInd: number[] = []
+
+    let countIndex = 0
 
     for (let i = 1; i < p.length; ++i) { 
-        const curZRow = p[i] 
         const prevZRow = p[i - 1]
+        const curZRow = p[i] 
+
         for (let j = 1; j < curZRow.length; ++j) {
             const p0 = prevZRow[j - 1]
             const p1 = prevZRow[j]
             const p2 = curZRow[j]
+            const p3 = curZRow[j - 1]
 
-            v.push(...p0, ...p1, ...p2)
-            uv.push(0, 0, 1, 0, .5, 1)
-            c.push(1, 1, 1)
+            v.push(...p0, ...p1, ...p2, ...p3)
+            uv.push(0, 0, 1, 0, 1, 1, 0, 1)
+            index.push(
+                countIndex, countIndex + 1, countIndex + 3, 
+                countIndex + 1, countIndex + 2, countIndex + 3
+            )
 
+            if (j === curZRow.length - 1) {
+                posXInd.push(countIndex + 1, countIndex + 2)                    
+            }
 
-            const p3 = prevZRow[j - 1]
-            const p4 = curZRow[j]
-            const p5 = curZRow[j - 1]
-            
-            v.push(...p3, ...p4, ...p5)
-            uv.push(.5, 0, 1, 1, 0, 1)
-            c.push(1, 1, 1)
+            if (j === 1) {
+                negXInd.push(countIndex, countIndex + 3)
+            }
+
+            if (i === 1) {
+                posZInd.push(countIndex, countIndex + 1)
+            }
+
+            if (i === p.length - 1) {
+                negZInd.push(countIndex + 3, countIndex + 2)
+            }
+
+            countIndex += 4
         } 
     }
 
@@ -79,5 +97,5 @@ export const createFloor01 = (opts: T_f): IArrayForBuffers => {
         vCollide.push(v[i])
     }
 
-    return { v, uv, c, vCollide }
+    return { index, v, uv, vCollide, negZInd, posZInd, posXInd, negXInd }
 }

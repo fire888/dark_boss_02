@@ -34,21 +34,21 @@ export type T_ChangeFogOptions = {
 }
 
 export class Studio {
-    containerDom: HTMLElement
-    camera: PerspectiveCamera
-    scene: Scene
-    fog: Fog
-    hemiLight: HemisphereLight
-    dirLight: DirectionalLight
-    renderer: WebGLRenderer
-    envMap: Texture
-    _root: Core
-    spotLight: SpotLight
-    amb: THREE.AmbientLight
-    ssaoPass: SSAOPass
-    saturatePass: ShaderPass
-    renderPass: RenderPass
-    composer: EffectComposer | null
+    containerDom!: HTMLElement
+    camera!: PerspectiveCamera
+    scene!: Scene
+    fog!: Fog
+    hemiLight!: HemisphereLight
+    dirLight!: DirectionalLight
+    renderer!: WebGLRenderer
+    envMap!: Texture
+    _root!: Core
+    spotLight!: SpotLight
+    amb!: THREE.AmbientLight
+    ssaoPass!: SSAOPass
+    saturatePass!: ShaderPass
+    renderPass!: RenderPass
+    composer!: EffectComposer | null
     
     init (root: Core) {
         this._root = root
@@ -59,6 +59,7 @@ export class Studio {
         const { studioConf } = this._root
 
         const fov = studioConf.cameraFov ?? 45
+        const camFar = studioConf.cameraFar ?? 1000
         this.camera = new PerspectiveCamera(fov, window.innerWidth / window.innerHeight, .1, 1000)
         this.camera.position.copy(studioConf.cameraPos)
         this.camera.lookAt(...studioConf.cameraLookAt.toArray())
