@@ -60,7 +60,7 @@ export const STUDIO_CONF: StudioConf = {
     cameraFar: 1000,
     ambientLightParams: { color: new THREE.Color().setStyle(BACK_COLOR), intensity: 5 },
     sceneBackgroundCubeKeyAsset: 'skybox',
-    fogParams: { color: new THREE.Color().setStyle(BACK_COLOR), near: 5, far: 1580 },
+    fogParams: { color: new THREE.Color().setStyle(BACK_COLOR), near: .3, far: 15 },
     saturatePass: true,
 }
 

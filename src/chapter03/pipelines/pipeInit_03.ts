@@ -8,8 +8,6 @@ export const pipeInit_03 = async (root: Root) => {
         studio, controls, ui, ticker,
         loader, phisics, lab,
         audio, materials, particles, 
-        // car, 
-        // body, pers
     } = root
 
     loader.init(root)
@@ -32,8 +30,9 @@ export const pipeInit_03 = async (root: Root) => {
     phisics.init(root)
     ticker.on(phisics.update.bind(phisics))
     phisics.createPlayer()
-    const camera = studio.camera
-    phisics.setPlayerPosition(camera.position.x, camera.position.y, camera.position.z)
+    phisics.setPlayerPosition(studio.camera.position.x, studio.camera.position.y, studio.camera.position.z)
+    //const camera = studio.camera
+    //phisics.setPlayerPosition(camera.position.x, camera.position.y, camera.position.z)
     
     await lab.init(root)
 
@@ -57,8 +56,8 @@ export const pipeInit_03 = async (root: Root) => {
 
     ui.hideBackgroundStartScreen()
 
-    const fogNear = 5
-    const fogFar = 80
+    const fogNear = 50
+    const fogFar = 250
     studio.animateFog({ endFogNear: fogNear, endFogFar: fogFar, time: 3000 })
 
     if (IS_DEV_START_ORBIT) {
@@ -68,7 +67,7 @@ export const pipeInit_03 = async (root: Root) => {
     }
 
     controls.init(root, IS_DEV_START_ORBIT)
-    controls.setRotation(0, Math.PI * .25, 0)
+    //controls.setRotation(0, Math.PI * .25, 0)
     ticker.on(controls.update.bind(controls))
 
     audio.init(root)
