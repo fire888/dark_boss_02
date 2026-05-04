@@ -32,7 +32,6 @@ export const pipeInit_03 = async (root: Root) => {
     phisics.init(root)
     ticker.on(phisics.update.bind(phisics))
     phisics.createPlayer()
-    phisics.createCar()
     const camera = studio.camera
     phisics.setPlayerPosition(camera.position.x, camera.position.y, camera.position.z)
     
