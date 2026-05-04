@@ -19,7 +19,7 @@ export class Labyrinth {
 
         const W = 150
         const STEP = 7
-        const MAX_H = 1
+        const MAX_H = 2
         const MAX_H_2 = 15
 
         const floors: T_Floor01[][] = []
@@ -71,15 +71,23 @@ export class Labyrinth {
                 m.position.z = i * W - W
                 root.studio.add(m)
 
-                if (i === 1 && j === 1) {
+                //if (i === 1 && j === 1) {
                     const geom = m.geometry.clone().toNonIndexed()
                     const mN = new THREE.Mesh(geom, root.materials.floorMatNorm)
                     mN.position.copy(m.position) 
                     phisics.addMeshToCollision(mN, true)
-                }
+                //}
 
             }
         }
+
+        const c = new THREE.Mesh(
+            new THREE.BoxGeometry(5, 140, 5),
+            root.materials.floorMatNorm
+        )
+        c.position.set(0, 15, -10)
+        studio.add(c)
+        phisics.addMeshToCollision(c, true)
 
 
 

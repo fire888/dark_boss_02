@@ -36,7 +36,7 @@ export const IS_DEV_START_ORBIT = false
 
 // ************************************************/ 
 
-export const PLAYER_POS_START = [0, 1, 0]
+export const PLAYER_POS_START = [0, 15, 140]
 
 const BACK_COLOR = '#6373a2'
 export const STUDIO_CONF: StudioConf = {
