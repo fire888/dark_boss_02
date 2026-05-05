@@ -2,13 +2,10 @@ import * as THREE from 'three'
 import { Root } from '../index'
 
 export class Materials {
-    collision: THREE.MeshBasicMaterial
+    collision!: THREE.MeshBasicMaterial
+    floorMatNorm!: THREE.MeshPhongMaterial
+    levelMatNorm!: THREE.MeshBasicMaterial
 
-    floorMatNorm: THREE.MeshPhongMaterial
-    floorMatGreen: THREE.MeshBasicMaterial
-
-    wallsGreen: THREE.MeshBasicMaterial
-    
     init (root: Root) {
         const mapGround = root.assets.mapGround
         mapGround.wrapS = THREE.RepeatWrapping
@@ -26,22 +23,13 @@ export class Materials {
             shininess: .1,
             specular: new THREE.Color().setStyle('#ffffff'),
             vertexColors: true,
-        }) 
-
-        const mapGroundPoints = root.assets.groundPointsMap
-        mapGroundPoints.wrapS = THREE.RepeatWrapping
-        mapGroundPoints.wrapT = THREE.RepeatWrapping
-        mapGroundPoints.repeat.set(5, 5)
-
-        this.floorMatGreen = new THREE.MeshBasicMaterial({
-            color: 0x00ff00,
-            map: mapGroundPoints,
         })
 
-
-        this.wallsGreen = new THREE.MeshBasicMaterial({
-            color: 0xffffff,
-            map: root.assets.wallTexture,
+        this.levelMatNorm = new THREE.MeshBasicMaterial({
+            color: new THREE.Color().setStyle('#ffffff'),
+            //emissive: new THREE.Color().setStyle('#000000'),
+            //shininess: 1,
+            //specular: new THREE.Color().setStyle('#ffffff'),
             vertexColors: true,
         })
 

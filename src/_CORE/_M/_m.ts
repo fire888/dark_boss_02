@@ -11,6 +11,13 @@ import {
 
 export type A3 = [number, number, number]
 export type A2 = [number, number]
+export type IArraysGeom = {
+    index?: number[],
+    v: number[], 
+    uv?: number[], 
+    uv2?: number[], 
+    c?: number[],
+}
 
 let geomLabel: THREE.PlaneGeometry | null = null
 const testObject = new THREE.Object3D() 
@@ -820,6 +827,36 @@ export const _M = {
             a.push(src[i])
         }
         return a
+    },
+
+    mergeIndexedArrays: (arrTarget: IArraysGeom, arrNew: IArraysGeom): IArraysGeom => {
+        if (arrTarget.index && arrNew.index) {
+            let currMax = -1
+            for (let i = 0; i < arrTarget.index.length; i++) {
+                if (currMax < arrTarget.index[i]) {
+                    currMax = arrTarget.index[i]
+                }
+            }
+
+            const add = currMax + 1
+            for (let i = 0; i < arrNew.index.length; i++) {
+                arrTarget.index.push(arrNew.index[i] + add)
+            }
+        }
+        for (let i = 0; i < arrNew.v.length; i++) {
+            arrTarget.v.push(arrNew.v[i])
+        }
+        if (arrNew.c && arrTarget.c) {
+            for (let i = 0; i < arrNew.c.length; i++) {
+                arrTarget.c.push(arrNew.c[i])
+            }
+        }
+        if (arrNew.uv && arrTarget.uv) {
+            for (let i = 0; i < arrNew.uv.length; i++) {
+                arrTarget.uv.push(arrNew.uv[i])
+            }
+        }
+        return arrTarget
     },
 
     computeNormalsV: (v: number[]): number[] => { 

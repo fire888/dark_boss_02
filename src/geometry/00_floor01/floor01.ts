@@ -58,7 +58,7 @@ export const createFloor01 = (opts: T_f): T_Floor01 => {
     let countIndex = 0
 
     const color = new THREE.Color().setStyle('#e9ffff')
-    const colorB = new THREE.Color().setStyle('#420c7c')
+    const colorB = new THREE.Color().setStyle('#9f009f')
 
     for (let i = 1; i < p.length; ++i) { 
         const prevZRow = p[i - 1]

@@ -58,7 +58,8 @@ export const pipeInit_03 = async (root: Root) => {
 
     const fogNear = 50
     const fogFar = 250
-    studio.animateFog({ endFogNear: fogNear, endFogFar: fogFar, time: 3000 })
+    const time = IS_DEV_START_ORBIT ? 0 : 3000
+    studio.animateFog({ endFogNear: fogNear, endFogFar: fogFar, time })
 
     if (IS_DEV_START_ORBIT) {
         await ui.hideStartScreenForce()
