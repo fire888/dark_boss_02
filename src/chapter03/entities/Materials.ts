@@ -4,7 +4,7 @@ import { Root } from '../index'
 export class Materials {
     collision!: THREE.MeshBasicMaterial
     floorMatNorm!: THREE.MeshPhongMaterial
-    levelMatNorm!: THREE.MeshBasicMaterial
+    levelMatNorm!: THREE.MeshPhongMaterial
 
     init (root: Root) {
         const mapGround = root.assets.mapGround
@@ -25,11 +25,8 @@ export class Materials {
             vertexColors: true,
         })
 
-        this.levelMatNorm = new THREE.MeshBasicMaterial({
+        this.levelMatNorm = new THREE.MeshPhongMaterial({
             color: new THREE.Color().setStyle('#ffffff'),
-            //emissive: new THREE.Color().setStyle('#000000'),
-            //shininess: 1,
-            //specular: new THREE.Color().setStyle('#ffffff'),
             vertexColors: true,
         })
 

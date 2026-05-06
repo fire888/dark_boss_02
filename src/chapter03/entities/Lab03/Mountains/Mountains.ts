@@ -23,7 +23,8 @@ export class Mountains {
         for (let i = -1; i < 2; ++i) {
             const arr: T_Floor01[] = []
             for (let j = -1; j < 2; ++j) {
-                const floor = createFloor01({ w: W, wStep: STEP, maxH: (i === 0 && j === 0) ? MAX_H : MAX_H_2 })
+                const maxH = (i === 0 && j === 0) || (i === -1 && j === 0) ? MAX_H : MAX_H_2
+                const floor = createFloor01({ w: W, wStep: STEP, maxH })
                 arr.push(floor)
             }
             floors.push(arr)
@@ -34,7 +35,7 @@ export class Mountains {
                 const f = floors[i][j]
 
                 // из левых дальних сегментов берем индексы передних и правых вершин и 
-                // к к текущим левым и дальним индексам вершин присваиваем их значения,
+                // к текущим левым и дальним индексам вершин присваиваем их значения,
                 // чтобы сшить бесшовное продолжение без отверстий 
 
                 if (floors[i][j - 1]) {

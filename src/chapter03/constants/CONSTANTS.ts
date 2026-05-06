@@ -37,8 +37,8 @@ export const IS_DEV_START_ORBIT = false
 // ************************************************/ 
 
 // хорошая точка
-export const PLAYER_POS_START = [0, 15, 250]
-//export const PLAYER_POS_START = [0, 15, 30]
+//export const PLAYER_POS_START = [0, 15, 250]
+export const PLAYER_POS_START = [0, 15, 30]
 
 
 const BACK_COLOR = '#6373a2'
@@ -55,14 +55,16 @@ export const STUDIO_CONF: StudioConf = {
     },
     directionalLightParams: { 
         color: new THREE.Color().setStyle('#777777'), intensity: 15,
-        pos: new THREE.Vector3(3, 3, 2)
+        //pos: new THREE.Vector3(3, 3, 2)
+        pos: new THREE.Vector3(0, 3, 2)
     },
     cameraPos: new THREE.Vector3().fromArray(PLAYER_POS_START),
     cameraLookAt: new THREE.Vector3(0, 1, 0),
     cameraFov: 55,
     cameraFar: 1000,
     ambientLightParams: { color: new THREE.Color().setStyle(BACK_COLOR), intensity: 5 },
-    sceneBackgroundCubeKeyAsset: 'skybox',
+    //sceneBackgroundCubeKeyAsset: 'skybox',
+    sceneBackground: new THREE.Color().setStyle(BACK_COLOR),
     fogParams: { color: new THREE.Color().setStyle(BACK_COLOR), near: .3, far: 15 },
     saturatePass: true,
 }
