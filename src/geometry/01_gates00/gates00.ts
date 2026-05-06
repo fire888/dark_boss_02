@@ -2,12 +2,6 @@ import { _M } from "_CORE/_M/_m"
 import { IArrayForBuffers } from "../GeomTypes"
 import { box00 } from "geometry/01_box00/box00"
 
-type T_f = {
-    w: number
-    d: number
-    h: number
-}
-
 export const gates00 = (): IArrayForBuffers => {
     const g: IArrayForBuffers = { v: [], c: [], index: [] }
 

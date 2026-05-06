@@ -37,8 +37,8 @@ export const IS_DEV_START_ORBIT = false
 // ************************************************/ 
 
 // хорошая точка
-//export const PLAYER_POS_START = [0, 15, 250]
-export const PLAYER_POS_START = [0, 15, 30]
+export const PLAYER_POS_START = [0, 15, 250]
+//export const PLAYER_POS_START = [0, 15, 30]
 
 
 const BACK_COLOR = '#6373a2'
