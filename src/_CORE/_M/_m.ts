@@ -905,4 +905,16 @@ export const _M = {
         return angle
     },
 
+    vToNonIndexed(v: number[], index: number[]): number[] {
+        const r = []
+        for (let i = 0; i < index.length; ++i) {
+            r.push(
+                v[index[i * 3]],
+                v[index[i * 3 + 1]],
+                v[index[i * 3 + 2]]
+            )
+        }
+        return r
+    }
+
 }

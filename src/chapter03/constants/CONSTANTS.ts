@@ -37,7 +37,7 @@ export const IS_DEV_START_ORBIT = false
 // ************************************************/ 
 
 // хорошая точка
-export const PLAYER_POS_START = [0, 15, 250]
+export const PLAYER_POS_START = [0, 15, 200]
 //export const PLAYER_POS_START = [0, 15, 30]
 
 
@@ -50,7 +50,7 @@ export const STUDIO_CONF: StudioConf = {
         angle: Math.PI * .2,
         penumbra: 1,
         decay: .1,
-        distance: 300,
+        distance: 100,
         targetPos: new THREE.Vector3(0, 0, -50)
     },
     directionalLightParams: { 

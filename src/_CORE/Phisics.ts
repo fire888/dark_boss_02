@@ -115,7 +115,6 @@ export class Phisics {
     }
 
     createCar () {
-        console.log('##$#$ createCar')
         const sphere = new Sphere(2)
         this.carBody = new BodyN({ 
             mass: 100,

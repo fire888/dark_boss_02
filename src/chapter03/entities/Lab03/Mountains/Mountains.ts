@@ -61,19 +61,15 @@ export class Mountains {
                     }
                 }
 
-                const m = _M.createMesh({
-                    index: f.index || undefined,
-                    v: f.v, uv: f.uv, c: f.c,
-                    material: materials.floorMatNorm,
-                })
+                const m = _M.createMesh({ ...f, material: materials.floorMatNorm })
                 m.position.x = j * W - W
                 m.position.y = Y
                 m.position.z = i * W - W
                 studio.add(m)
 
                 const geom = m.geometry.clone().toNonIndexed()
-                const mN = new THREE.Mesh(geom, root.materials.floorMatNorm)
-                mN.position.copy(m.position) 
+                const mN = new THREE.Mesh(geom, root.materials.collision)
+                mN.position.copy(m.position)
                 phisics.addMeshToCollision(mN, true)
             }
         }
