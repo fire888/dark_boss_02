@@ -11,6 +11,7 @@ import { gates00 } from 'geometry/01_gates00/gates00'
 import { box00 } from 'geometry/01_box00/box00'
 import { hole00 } from 'geometry/02_hole00/hole00'
 import { platform00 } from 'geometry/03_platform00/platform00'
+import { tunnel00 } from 'geometry/04_tunnel00/tunnel00'
 
 const ZERO_Y = -2.5 
 
@@ -30,22 +31,32 @@ export class Labyrinth {
 
         const W = 100, H = 100, D = -150
         
-        const g = gates00()
+        const g: IArraysGeom = { v: [], c: [], index: [] } 
+        
+        const gates = gates00()
+        _M.mergeIndexedArrays(g, gates)
 
-        const front = hole00({ w: W, h: H, holeW: 2, holeH: 4, holeOffstX: 0, holeOffstY: 5 })
+        const front = hole00({ w: W, h: H, holeW: 2, holeH: 4, holeOffstX: 0, holeOffstY: 4.5 })
         _M.translateVertices(front.v, 0, 0, D)
         _M.mergeIndexedArrays(g, front)
 
         const bridge = box00({ w: 1, d: 4, h: 80 })
         _M.rotateVerticesY(bridge.v, -Math.PI / 2)
         _M.rotateVerticesX(bridge.v, Math.PI / 2)
-        _M.translateVertices(bridge.v, 0, 4, D - 1)
+        _M.translateVertices(bridge.v, 0, 4, D)
         _M.mergeIndexedArrays(g, bridge)
 
         const toBr = platform00({w0: 4, y0: 0, w1: 4, y1: 4.5, d: 4, h: 1})
-        _M.translateVertices(toBr.v, 0, 0, D + 83)
+        _M.translateVertices(toBr.v, 0, 0, D + 84)
         _M.mergeIndexedArrays(g, toBr)
 
+        const t = tunnel00({
+            w0: 2, h0: 4, 
+            w1: 2, h1: 4, 
+            d: 30 
+        })
+        _M.translateVertices(t.v, 0, 4.5, D)
+        _M.mergeIndexedArrays(g, t)
 
         this._levelOuter = _M.createMesh({ ...g, material: root.materials.levelMatNorm })
         this._levelOuter.position.set(0, ZERO_Y, 0)
@@ -56,6 +67,8 @@ export class Labyrinth {
         const coll1 = new THREE.Mesh(collG1, root.materials.collision)
         coll1.position.set(0, ZERO_Y, 0)
         phisics.addMeshToCollision(coll1, true)
+
+
 
     }
 

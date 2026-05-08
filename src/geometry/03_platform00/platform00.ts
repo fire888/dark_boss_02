@@ -1,17 +1,16 @@
-import { _M } from "_CORE/_M/_m"
-import { IArrayForBuffers } from "../GeomTypes"
+import { _M, IArraysGeom } from "_CORE/_M/_m"
 import * as THREE from "three"
 
 
 type T = {
-    w0: number, y0: number
-    w1: number, y1: number
-    d: number,
-    h: number
+    w0?: number, y0?: number
+    w1?: number, y1?: number
+    d?: number,
+    h?: number
 }
 
 
-const DEFAULT_OPTS: T = {
+const DEFAULT_OPTS: Required<T> = {
     w0: 1, y0: .5,
     w1: 1, y1: .5,
     d: 1,
@@ -21,12 +20,12 @@ const DEFAULT_OPTS: T = {
 const COLOR_OUT = new THREE.Color().setStyle('#000000').toArray()
 const COLOR_IN = new THREE.Color().setStyle('#ffffff').toArray()
 
-export const platform00 = (opts: T = DEFAULT_OPTS): IArrayForBuffers => {
+export const platform00 = (opts: T = DEFAULT_OPTS): IArraysGeom => {
     const { 
-        w0 = DEFAULT_OPTS.w0, y0 = DEFAULT_OPTS.y0, 
-        w1 = DEFAULT_OPTS.w1, y1 = DEFAULT_OPTS.y1, 
-        d = DEFAULT_OPTS.d, h = DEFAULT_OPTS.h 
-    } = opts
+        w0, y0, 
+        w1, y1, 
+        d, h 
+    }: Required<T> = { ...DEFAULT_OPTS, ...opts }
 
 
     const v: number[] = [
@@ -62,9 +61,6 @@ export const platform00 = (opts: T = DEFAULT_OPTS): IArrayForBuffers => {
 
     const c: number[] = [
         ...COLOR_IN, ...COLOR_IN, ...COLOR_IN, ...COLOR_IN,
-        ...COLOR_OUT, ...COLOR_OUT, ...COLOR_OUT, ...COLOR_OUT,
-        ...COLOR_OUT, ...COLOR_OUT, ...COLOR_OUT, ...COLOR_OUT,
-        ...COLOR_OUT, ...COLOR_OUT, ...COLOR_OUT, ...COLOR_OUT,
         ...COLOR_OUT, ...COLOR_OUT, ...COLOR_OUT, ...COLOR_OUT,
         ...COLOR_OUT, ...COLOR_OUT, ...COLOR_OUT, ...COLOR_OUT,
     ]

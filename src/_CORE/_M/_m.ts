@@ -915,6 +915,55 @@ export const _M = {
             )
         }
         return r
+    },
+
+    debugArrays: (g: IArraysGeom, message: string = 'result') => {
+        const mess = (m: string, l?: number, need?: number) => {
+            if (l === undefined)  {
+                console.log(`${m}`)
+            } else {
+                console.log(`${m}: ${l === need}, curr: ${need?.toFixed(2)}, need: ${l}`)
+            }
+        }
+
+        mess('---- start: ' + message)
+
+        let l = g.v.length / 3
+        let isMisteke = false
+
+        if (g.index) {
+            let isIndMiss = false
+            let arr = []
+            for (let i = 0; i < g.index.length; i++) {
+                if (!g.v[g.index[i] * 3]) {
+                    isIndMiss = true
+                    if (arr.length < 10) arr.push(g.index[i])
+                }
+            }
+            if (isIndMiss) { 
+                mess(`index value not in v: ${JSON.stringify(arr)}, max ${g.v.length / 3 - 1} }`) 
+                isMisteke = true
+            }
+        }
+
+        if (l % 1 !== 0) { 
+           isMisteke = true
+           mess('v need step 3')
+        }
+
+        if (g.c && g.c.length / 3 !== l) { 
+            isMisteke = true
+            mess('c', l, g.c.length / 3)
+        }
+        if (g.uv && g.uv.length / 2 !== l) { 
+            isMisteke = true
+            mess('uv', l, g.uv.length / 2)
+        }
+        if (g.uv2 && g.uv2.length / 2 !== 0) { 
+            isMisteke = true
+            mess('uv2', l, g.uv2.length / 2)
+        }
+        mess(`---- complete: ${message}: ${isMisteke ? 'error' : 'ok'}`)
     }
 
 }

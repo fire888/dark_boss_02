@@ -20,6 +20,8 @@ import { pipePlay_03 } from "./pipelines/pipePlay_03"
 import { pipeEnd_03 } from "./pipelines/pipeEnd_03"
 import { Core } from '_CORE/types'
 
+import { Debug } from "_CORE/Debug"
+
 import { StudioCustom } from "./entities/StudioCustom"
 
 export interface Root extends Core {
@@ -38,6 +40,7 @@ export interface Root extends Core {
     assets: {
         [key: string]: any
     }
+    debug: Debug
 }
 
 
@@ -72,6 +75,7 @@ window.addEventListener("DOMContentLoaded", async () => {
         audio: new AudioManagerCustom(),
         
         materials: new Materials(),
+        debug: new Debug()
     }
 
     await pipeInit_03(root)

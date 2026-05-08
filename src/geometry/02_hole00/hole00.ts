@@ -1,27 +1,26 @@
-import { _M } from "_CORE/_M/_m"
-import { IArrayForBuffers } from "../GeomTypes"
+import { _M, IArraysGeom } from "_CORE/_M/_m"
 import * as THREE from "three"
 
-type I_hole00_opts = {
-    w: number, h: number,
-    holeOffstX: number, holeOffstY: number,
-    holeW: number, holeH: number
+const COLOR_OUT = new THREE.Color().setStyle('#e1e1e1').toArray()
+
+type T = {
+    w?: number, h?: number,
+    holeOffstX?: number, holeOffstY?: number,
+    holeW?: number, holeH?: number
 }
 
-const DEFAULT_HOLE_OPTS: I_hole00_opts = {
+const DEFAULT_OPTS: Required<T> = {
     w: 5, h: 10,
     holeOffstX: 0, holeOffstY: 1,
     holeW: .5, holeH: 1,
 }
 
-const COLOR_OUT = new THREE.Color().setStyle('#e1e1e1').toArray()
-
-export const hole00 = (opts: I_hole00_opts = DEFAULT_HOLE_OPTS): IArrayForBuffers => {
+export const hole00 = (opts: T = DEFAULT_OPTS): IArraysGeom => {
     const { 
-        w = DEFAULT_HOLE_OPTS.w, h = DEFAULT_HOLE_OPTS.h,
-        holeOffstX = DEFAULT_HOLE_OPTS.holeOffstX, holeOffstY = DEFAULT_HOLE_OPTS.holeOffstY,
-        holeW = DEFAULT_HOLE_OPTS.holeW, holeH = DEFAULT_HOLE_OPTS.holeH
-    } = opts
+        w, h,
+        holeOffstX, holeOffstY,
+        holeW, holeH
+    }:Required<T> = { ...DEFAULT_OPTS, ...opts }
 
     const hW = w * .5
     const hHoleW = holeW * .5
@@ -48,7 +47,7 @@ export const hole00 = (opts: I_hole00_opts = DEFAULT_HOLE_OPTS): IArrayForBuffer
         3, 0, 4, 3, 4, 7
     ]
 
-    const g: IArrayForBuffers = { v, c, index }
+    const g: IArraysGeom = { v, c, index }
 
     return g
 }

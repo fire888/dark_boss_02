@@ -37,7 +37,9 @@ export const IS_DEV_START_ORBIT = false
 // ************************************************/ 
 
 // хорошая точка
-export const PLAYER_POS_START = [0, 15, 200]
+//export const PLAYER_POS_START = [0, 15, 200]
+// enter
+export const PLAYER_POS_START = [0.002752454173722952,2.499545942749127 + 1,-147.37024320829372]
 //export const PLAYER_POS_START = [0, 15, 30]
 
 

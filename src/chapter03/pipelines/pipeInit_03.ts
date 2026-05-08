@@ -8,7 +8,10 @@ export const pipeInit_03 = async (root: Root) => {
         studio, controls, ui, ticker,
         loader, phisics, lab,
         audio, materials, particles, 
+        debug
     } = root
+
+    debug.init(root)
 
     loader.init(root)
     await loader.loadAssets(LOAD_ASSETS)

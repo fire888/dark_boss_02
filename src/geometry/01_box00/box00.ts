@@ -1,23 +1,24 @@
-import { _M } from "_CORE/_M/_m"
-import { IArrayForBuffers } from "../GeomTypes"
+import { _M, IArraysGeom } from "_CORE/_M/_m"
 import * as THREE from "three"
-
-type T_f = {
-    w: number
-    d: number
-    h: number
-}
 
 const COLOR_OUT = new THREE.Color().setStyle('#000000').toArray()
 const COLOR_IN = new THREE.Color().setStyle('#ffffff').toArray()
 
-export const box00 = (opts: T_f): IArrayForBuffers => {
+type T = {
+    w?: number
+    d?: number
+    h?: number
+}
 
-    const { w = 1, d = 1, h = 3 } = opts
+const DEFAULT_OPTS: Required<T> = { w: 1, d: 1, h: 3 }
+
+export const box00 = (opts: T = DEFAULT_OPTS): IArraysGeom => {
+    const {
+        w, d, h
+    }: Required<T> = { ...DEFAULT_OPTS, ...opts }
 
     const v: number[] = []
     const index: number[] = []
-    const uv: number[] = []
     const c: number[] = []
 
     // front
@@ -62,5 +63,5 @@ export const box00 = (opts: T_f): IArrayForBuffers => {
     index.push(20, 21, 22, 20, 22, 23)
     c.push(...COLOR_IN, ...COLOR_IN, ...COLOR_IN, ...COLOR_IN)
 
-    return { index, v, uv, c }
+    return { index, v, c }
 }

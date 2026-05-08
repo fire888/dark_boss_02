@@ -1,9 +1,8 @@
-import { _M } from "_CORE/_M/_m"
-import { IArrayForBuffers } from "../GeomTypes"
+import { _M, IArraysGeom } from "_CORE/_M/_m"
 import { box00 } from "geometry/01_box00/box00"
 
-export const gates00 = (): IArrayForBuffers => {
-    const g: IArrayForBuffers = { v: [], c: [], index: [] }
+export const gates00 = (): IArraysGeom => {
+    const g: IArraysGeom = { v: [], c: [], index: [] }
 
     const stepZ = 10
     const offstX = 5
