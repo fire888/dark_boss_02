@@ -47,7 +47,7 @@ const BACK_COLOR = '#6373a2'
 export const STUDIO_CONF: StudioConf = {
     spotLightParams: {
         color: new THREE.Color().setHex(0xffffff),
-        intensity: 3,
+        intensity: 1,
         pos: new THREE.Vector3(0, 3, 5),
         angle: Math.PI * .2,
         penumbra: 1,

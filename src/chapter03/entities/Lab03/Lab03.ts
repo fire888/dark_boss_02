@@ -12,6 +12,7 @@ import { box00 } from 'geometry/01_box00/box00'
 import { hole00 } from 'geometry/02_hole00/hole00'
 import { platform00 } from 'geometry/03_platform00/platform00'
 import { tunnel00 } from 'geometry/04_tunnel00/tunnel00'
+import { room00 } from 'geometry/05_room00/room_00'
 
 const ZERO_Y = -2.5 
 
@@ -57,6 +58,11 @@ export class Labyrinth {
         })
         _M.translateVertices(t.v, 0, 4.5, D)
         _M.mergeIndexedArrays(g, t)
+
+        const r = room00()
+        _M.translateVertices(r.v, 0, 4, D - 30 - 15)
+        //_M.translateVertices(r.v, 0, 4, 0)
+        _M.mergeIndexedArrays(g, r)
 
         this._levelOuter = _M.createMesh({ ...g, material: root.materials.levelMatNorm })
         this._levelOuter.position.set(0, ZERO_Y, 0)

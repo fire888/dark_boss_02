@@ -829,34 +829,34 @@ export const _M = {
         return a
     },
 
-    mergeIndexedArrays: (arrTarget: IArraysGeom, arrNew: IArraysGeom): IArraysGeom => {
-        if (arrTarget.index && arrNew.index) {
+    mergeIndexedArrays: (arrsTarget: IArraysGeom, arrsNew: IArraysGeom): IArraysGeom => {
+        if (arrsTarget.index && arrsNew.index) {
             let currMax = -1
-            for (let i = 0; i < arrTarget.index.length; i++) {
-                if (currMax < arrTarget.index[i]) {
-                    currMax = arrTarget.index[i]
+            for (let i = 0; i < arrsTarget.index.length; i++) {
+                if (currMax < arrsTarget.index[i]) {
+                    currMax = arrsTarget.index[i]
                 }
             }
 
             const add = currMax + 1
-            for (let i = 0; i < arrNew.index.length; i++) {
-                arrTarget.index.push(arrNew.index[i] + add)
+            for (let i = 0; i < arrsNew.index.length; i++) {
+                arrsTarget.index.push(arrsNew.index[i] + add)
             }
         }
-        for (let i = 0; i < arrNew.v.length; i++) {
-            arrTarget.v.push(arrNew.v[i])
+        for (let i = 0; i < arrsNew.v.length; i++) {
+            arrsTarget.v.push(arrsNew.v[i])
         }
-        if (arrNew.c && arrTarget.c) {
-            for (let i = 0; i < arrNew.c.length; i++) {
-                arrTarget.c.push(arrNew.c[i])
+        if (arrsNew.c && arrsTarget.c) {
+            for (let i = 0; i < arrsNew.c.length; i++) {
+                arrsTarget.c.push(arrsNew.c[i])
             }
         }
-        if (arrNew.uv && arrTarget.uv) {
-            for (let i = 0; i < arrNew.uv.length; i++) {
-                arrTarget.uv.push(arrNew.uv[i])
+        if (arrsNew.uv && arrsTarget.uv) {
+            for (let i = 0; i < arrsNew.uv.length; i++) {
+                arrsTarget.uv.push(arrsNew.uv[i])
             }
         }
-        return arrTarget
+        return arrsTarget
     },
 
     computeNormalsV: (v: number[]): number[] => { 
@@ -931,7 +931,8 @@ export const _M = {
         let l = g.v.length / 3
         let isMisteke = false
 
-        if (g.index) {
+        if (g.index) {            
+            // проверяем что в v есть вершина на которую ссылается index
             let isIndMiss = false
             let arr = []
             for (let i = 0; i < g.index.length; i++) {
@@ -944,21 +945,55 @@ export const _M = {
                 mess(`index value not in v: ${JSON.stringify(arr)}, max ${g.v.length / 3 - 1} }`) 
                 isMisteke = true
             }
+
+           
+            // проверяем что нет пропущенных индексов 1, 2, 4: пропущен 3
+            const uniqueSortedIndexes = [...new Set(g.index)].sort((a, b) => a - b)
+            let isNotPrevPlusOne = false
+            for (let i = 1; i < uniqueSortedIndexes.length; i++) {
+                if (uniqueSortedIndexes[i - 1] + 1 !== uniqueSortedIndexes[i]) {
+                    isNotPrevPlusOne = true
+                }
+            }
+            if (isNotPrevPlusOne) {
+                mess('index not used contiguously values v')
+                isMisteke = true
+            }
+
+            // проверяем что нет неиспользуемых вершин в v на которых нет ссылки в index
+            const maxInd = uniqueSortedIndexes[uniqueSortedIndexes.length - 1]
+            if (g.v.length !== 0 && g.index.length !== 0 && g.v.length / 3 - 1 !== maxInd) {
+                mess('v has values more than used in index')
+                isMisteke = true
+            }
+
+            if (g.index.length === 0) {
+                mess('index length is 0')
+                isMisteke = true
+            }
+            if (g.v.length === 0) {
+                mess('v length is 0')
+                isMisteke = true
+            }
         }
 
+        // проверяем что v кратно 3
         if (l % 1 !== 0) { 
            isMisteke = true
            mess('v need step 3')
         }
 
+        // проверяем что c кратно соответствует v
         if (g.c && g.c.length / 3 !== l) { 
             isMisteke = true
             mess('c', l, g.c.length / 3)
         }
+        // проверяем что uv кратно соответствует v
         if (g.uv && g.uv.length / 2 !== l) { 
             isMisteke = true
             mess('uv', l, g.uv.length / 2)
         }
+        // проверяем что uv2 кратно соответствует v
         if (g.uv2 && g.uv2.length / 2 !== 0) { 
             isMisteke = true
             mess('uv2', l, g.uv2.length / 2)
