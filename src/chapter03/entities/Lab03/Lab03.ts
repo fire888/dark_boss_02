@@ -11,8 +11,7 @@ import { gates00 } from 'geometry/01_gates00/gates00'
 import { box00 } from 'geometry/01_box00/box00'
 import { hole00 } from 'geometry/02_hole00/hole00'
 import { platform00 } from 'geometry/03_platform00/platform00'
-import { tunnel00 } from 'geometry/04_tunnel00/tunnel00'
-import { room00 } from 'geometry/05_room00/room_00'
+import { InnerLab } from './InnerLab/InnerLab'
 
 const ZERO_Y = -2.5 
 
@@ -27,8 +26,6 @@ export class Labyrinth {
 
         this._mountains = new Mountains()
         await this._mountains.init(root)
-
-        ////////////////////////////////////////////////
 
         const W = 100, H = 100, D = -150
         
@@ -51,18 +48,7 @@ export class Labyrinth {
         _M.translateVertices(toBr.v, 0, 0, D + 84)
         _M.mergeIndexedArrays(g, toBr)
 
-        const t = tunnel00({
-            w0: 2, h0: 4, 
-            w1: 2, h1: 4, 
-            d: 30 
-        })
-        _M.translateVertices(t.v, 0, 4.5, D)
-        _M.mergeIndexedArrays(g, t)
 
-        const r = room00()
-        _M.translateVertices(r.v, 0, 4, D - 30 - 15)
-        //_M.translateVertices(r.v, 0, 4, 0)
-        _M.mergeIndexedArrays(g, r)
 
         this._levelOuter = _M.createMesh({ ...g, material: root.materials.levelMatNorm })
         this._levelOuter.position.set(0, ZERO_Y, 0)
@@ -74,7 +60,9 @@ export class Labyrinth {
         coll1.position.set(0, ZERO_Y, 0)
         phisics.addMeshToCollision(coll1, true)
 
+        /////////////////////////////////////////
 
+        const inner = new InnerLab(root)
 
     }
 
