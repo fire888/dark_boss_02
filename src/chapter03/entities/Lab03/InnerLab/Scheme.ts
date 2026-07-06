@@ -20,8 +20,8 @@ export class Scheme {
     scheme: IPoint
     constructor() {
         const BOUNDS = new THREE.Box3(
-            new THREE.Vector3(-50, -50, -50), 
-            new THREE.Vector3(50, 50, 50)
+            new THREE.Vector3(-50, 0, -50), 
+            new THREE.Vector3(50, 100, 50)
         )
 
         const agent = {
@@ -39,9 +39,6 @@ export class Scheme {
             }, 
             lines: {} 
         }
-
-        let MAX_POINTS = 400
-        let count = 0
 
         const agentTryFindNewPoint = (maxAngle: number = Math.PI * .5) => {
             const dist = Math.random() * 5 + 5
@@ -103,7 +100,7 @@ export class Scheme {
 
                     if (!SH.points[newPointId]) {
                         SH.points[newPointId] = { 
-                            pos:newPos.clone(),
+                            pos: newPos.clone(),
                             neighbors: [] 
                         }
                     }
@@ -115,6 +112,8 @@ export class Scheme {
                 } else {
                     count = MAX_POINTS + 1
                 }
+
+                console.log('CC_ID:', CC_ID)
             }
 
             // fill neighbors
@@ -144,27 +143,49 @@ export class Scheme {
 
         fillBranch(20)
 
-        //let cc = 0
-        for (let key in SH.points) { 
-            if (Math.random() < 1.1 && SH.points[key].neighbors?.length === 2) {
-                // if (cc !== 0) {
-                //     break
-                // }
-                // ++cc
+        let N = 0
+        for (let key in SH.points) {
+            console.log(N)
+            ++N 
+            if (Math.random() < .3 && SH.points[key].neighbors?.length === 2) {
+            //     if (cc !== 0) {
+            //         break
+            //     }
+            //     ++cc
 
-                console.log('branch')
-                const posP1 = SH.points[SH.points[key].neighbors![0]].pos.clone()
+            //     console.log('branch')
+            //     const posP1 = SH.points[SH.points[key].neighbors![0]].pos.clone()
+            //     const posP2 = SH.points[SH.points[key].neighbors![1]].pos.clone()
+
+            //     posP2.sub(posP1).normalize().applyAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI * .5)
+            //     const dir = posP2.clone()
+            //     console.log('dir:', dir)
+
+            //     agent.pos.copy(SH.points[key].pos.clone())
+            //     agent.dir.copy(dir)
+
+            //     fillBranch(10)
+            // }
+
+            //if (key === 'p1') { 
+                console.log(SH.points[key])
+                const posP1 = SH.points[key].pos.clone()
+
+                const posP0 = SH.points[SH.points[key].neighbors![0]].pos.clone()
                 const posP2 = SH.points[SH.points[key].neighbors![1]].pos.clone()
-
-                posP2.sub(posP1).normalize().applyAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI * .5)
-                const dir = posP2.clone()
+                console.log('posP0:', posP0, 'posP2:', posP2)
+                console.log('ASSAS', posP0.distanceTo(posP1), posP2.distanceTo(posP1))
+                const dir = posP2.clone().sub(posP0).normalize()
                 console.log('dir:', dir)
 
+                dir.applyAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI * .5)
                 agent.pos.copy(SH.points[key].pos.clone())
                 agent.dir.copy(dir)
+                agent.currentPointId = key
 
-                fillBranch(10)
+                fillBranch(40)
             }
+
         }
 
         console.log('Scheme generated:', SH)
