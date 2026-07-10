@@ -1,234 +1,344 @@
 import * as THREE from 'three'
+import { _M, IArraysGeom } from '_CORE/_M/_m'
+import { Root } from '../../../index'
 
-type IPoint = { 
+import { distanceBetweenSegments3D } from './distLines'
+
+export class Scheme {
+    #pointCount = -1
+    #lineCount = -1
+    #materialBox: THREE.MeshBasicMaterial | null = null
+
+    _root: Root
+
     points: { 
         [key: string]: { 
             pos: THREE.Vector3,
-            neighbors?: string[]
+            neighbors: string[]
         }
-    },
+    } = {}
+
     lines: { 
         [key: string]: {
             p0: string, 
             p1: string, 
             dist: number 
         } 
-    } 
-}
+    } = {}
 
-export class Scheme {
-    scheme: IPoint
-    constructor() {
-        const BOUNDS = new THREE.Box3(
-            new THREE.Vector3(-50, 0, -50), 
-            new THREE.Vector3(50, 100, 50)
-        )
+    bounds: THREE.Box3 = new THREE.Box3(
+        new THREE.Vector3(-50, -100, -50), 
+        new THREE.Vector3(50, 0, 50)
+    )
 
-        const agent = {
-            pos: new THREE.Vector3(0, 0, 0),
-            dir: new THREE.Vector3(0, 0, -1),
-            currentPointId: 'p0'
+    agent = {
+        pos: new THREE.Vector3(0, 0, 50),
+        dir: new THREE.Vector3(0, 0, -1),
+        currentPointId: this.#calkPointId()
+    }
+
+    constructor(root: Root) {
+        this._root = root
+    }
+
+    async create() {
+        this.points[this.agent.currentPointId] = { 
+            pos: this.agent.pos.clone(), 
+            neighbors: [] 
         }
 
-        const SH: IPoint = { 
-            points: {
-                p0: { 
-                    pos: agent.pos.clone(), 
-                    neighbors: [] 
-                },
-            }, 
-            lines: {} 
+        await this.#createBranch(20)
+
+        for (let key in this.points) {
+            if (Math.random() < .3 && this.points[key].neighbors?.length === 2) {
+                const posP0 = this.points[this.points[key].neighbors![0]].pos.clone()
+                const posP2 = this.points[this.points[key].neighbors![1]].pos.clone()
+                const dir = posP2.clone().sub(posP0).normalize()
+
+                dir.applyAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI * .5)
+                this.agent.pos.copy(this.points[key].pos.clone())
+                this.agent.dir.copy(dir)
+                this.agent.currentPointId = key
+
+                await this.#createBranch(5 + Math.floor(Math.random() * 60))
+            }
         }
 
-        const agentTryFindNewPoint = (maxAngle: number = Math.PI * .5) => {
-            const dist = Math.random() * 5 + 5
-            const h = Math.random() * dist * .5 * (Math.random() < .5 ? 1 : -1)
+        for (let key in this.points) {
+            if (Math.random() < .3 && this.points[key].neighbors.length === 2) {
+                const posP0 = this.points[this.points[key].neighbors![0]].pos.clone()
+                const posP2 = this.points[this.points[key].neighbors![1]].pos.clone()
+                const dir = posP2.clone().sub(posP0).normalize()
 
-            const dir = 
-                agent.dir.clone()
-                    .applyAxisAngle(
-                        new THREE.Vector3(0, 1, 0), 
-                        Math.random() * maxAngle * (Math.random() < .5 ? 1 : -1)
-                    )
-            const newPos = agent.pos.clone()
+                dir.applyAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI * .5)
+                this.agent.pos.copy(this.points[key].pos.clone())
+                this.agent.dir.copy(dir)
+                this.agent.currentPointId = key
+
+                await this.#createBranch(1)
+            }
+        }
+    }
+
+    #calkPointId() { 
+        return `p${++this.#pointCount}` 
+    }
+
+    #calkLineId() { 
+        return `l${++this.#lineCount}` 
+    }
+
+    #calcNewPoint(maxAngle: number = Math.PI * .5) {
+        const dist = Math.random() * 5 + 5
+        const h = Math.random() * dist * .5 * (Math.random() < .5 ? 1 : -1)
+
+        const dir = 
+            this.agent.dir.clone()
+                .applyAxisAngle(
+                    new THREE.Vector3(0, 1, 0), 
+                    Math.random() * maxAngle * .5 * (Math.random() < .5 ? 1 : -1)
+                )
+
+        const newPos = 
+            this.agent.pos.clone()
                 .add(dir.clone().multiplyScalar(dist))
                 .add(new THREE.Vector3(0, h, 0))
 
-            return { newPos, dir, dist }
-        }
-
-        const calkNextPoint = () => {
-            const maxAttempts = 10
-
-            let count = 0
-            while (count < maxAttempts) { 
-                ++count
-
-                let { newPos, dir, dist } = agentTryFindNewPoint(count / maxAttempts * Math.PI * 4)
-
-                if (BOUNDS.containsPoint(newPos)) {
-                    return { newPos, dir, dist }
-                } else {
-                    //  console.log('try findPoint: count:', count, 'newPos:', newPos)
-                }
-            }
-
-            return null
-        }
-
-        let CC_ID = 0
-        const fillBranch = (MAX_POINTS: number) => {
-            let count = 0
-            while (count < MAX_POINTS) {
-                ++count
-                ++CC_ID
-
-                const nextPoint = calkNextPoint()
-                if (nextPoint) { 
-                    let { newPos, dir, dist } = nextPoint
-                    let newPointId = `p${CC_ID}`
-
-                    // 
-                    for (let key in SH.points) {
-                        const p = SH.points[key]
-                        if (newPos.distanceTo(p.pos) < 3) { 
-                            newPointId = key
-                            newPos = p.pos.clone()
-                            break
-                        }
-                    }
-
-                    if (!SH.points[newPointId]) {
-                        SH.points[newPointId] = { 
-                            pos: newPos.clone(),
-                            neighbors: [] 
-                        }
-                    }
-                    SH.lines[`l${CC_ID}`] = { p0: agent.currentPointId, p1: newPointId, dist }
-
-                    agent.pos.copy(newPos)
-                    agent.dir.copy(dir)
-                    agent.currentPointId = newPointId
-                } else {
-                    count = MAX_POINTS + 1
-                }
-
-                console.log('CC_ID:', CC_ID)
-            }
-
-            // fill neighbors
-            const lines = SH.lines
-            for (let key in lines) {
-                const l = lines[key]
-                if (l) {
-                    const { p0, p1 } = l
-                    if (
-                        SH.points[p0] && 
-                        SH.points[p0].neighbors && 
-                        !SH.points[p0].neighbors.includes(p1)
-                    ) { 
-                        SH.points[p0].neighbors?.push(p1) 
-                    }
-
-                    if (
-                        SH.points[p1] && 
-                        SH.points[p1].neighbors && 
-                        !SH.points[p1].neighbors.includes(p0)
-                    ) { 
-                        SH.points[p1].neighbors?.push(p0) 
-                    }
-                }
-            }
-        }
-
-        fillBranch(20)
-
-        let N = 0
-        for (let key in SH.points) {
-            console.log(N)
-            ++N 
-            if (Math.random() < .3 && SH.points[key].neighbors?.length === 2) {
-            //     if (cc !== 0) {
-            //         break
-            //     }
-            //     ++cc
-
-            //     console.log('branch')
-            //     const posP1 = SH.points[SH.points[key].neighbors![0]].pos.clone()
-            //     const posP2 = SH.points[SH.points[key].neighbors![1]].pos.clone()
-
-            //     posP2.sub(posP1).normalize().applyAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI * .5)
-            //     const dir = posP2.clone()
-            //     console.log('dir:', dir)
-
-            //     agent.pos.copy(SH.points[key].pos.clone())
-            //     agent.dir.copy(dir)
-
-            //     fillBranch(10)
-            // }
-
-            //if (key === 'p1') { 
-                console.log(SH.points[key])
-                const posP1 = SH.points[key].pos.clone()
-
-                const posP0 = SH.points[SH.points[key].neighbors![0]].pos.clone()
-                const posP2 = SH.points[SH.points[key].neighbors![1]].pos.clone()
-                console.log('posP0:', posP0, 'posP2:', posP2)
-                console.log('ASSAS', posP0.distanceTo(posP1), posP2.distanceTo(posP1))
-                const dir = posP2.clone().sub(posP0).normalize()
-                console.log('dir:', dir)
-
-                dir.applyAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI * .5)
-                agent.pos.copy(SH.points[key].pos.clone())
-                agent.dir.copy(dir)
-                agent.currentPointId = key
-
-                fillBranch(40)
-            }
-
-        }
-
-        console.log('Scheme generated:', SH)
-
-        this.scheme = SH
-
-        // const makeBranch = (v3Start: THREE.Vector3, v3Dir: THREE.Vector3, num: number) => {
-        //     MAX_BRANCHES--
-        //     if (MAX_BRANCHES < 0) return
-
-        //     const v3 = v3Start.clone()
-        //     const v3CurrDir = v3Dir.clone() 
-
-        //     const branch: THREE.Vector3[] = [ v3.clone() ]
-
-        //     for (let i = 0; i < num; i++) {
-        //         const addDir = new THREE.Vector3(Math.random() -.5, Math.random() * .1 - .05, Math.random() -.5)
-        //         v3CurrDir.add(addDir)
-
-        //         const d = Math.random() * 5 + 5
-        //         v3.add(v3CurrDir.clone().multiplyScalar(d))
-        //         branch.push(v3.clone())
-
-        //         if (Math.random() < .3) {
-        //             const dir = v3CurrDir
-        //                 .clone()
-        //                 .applyAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI * .5 * Math.random() < .5 ? 1 : -1)
-
-        //             makeBranch(v3, dir, Math.floor(Math.random() * 10) + 2)
-        //         }
-        //     }
-
-        //     this.scheme.push(branch)
-
-        //     //return branch
-        // }
-
-
-
-        // const v3 = new THREE.Vector3(0, 0, 0)
-        // const currDir = new THREE.Vector3(0, 0, -1)
-
-        // makeBranch(v3, currDir, 20)
-
+        return { newPos, dir, dist }
     }
+
+    #checkIsPointInBounds(newPos: THREE.Vector3) { 
+        return this.bounds.containsPoint(newPos)
+    }
+
+    #checkIsPointNearAnotherPoints(newPos: THREE.Vector3) {
+        for (let pointId in this.points) {
+            const p = this.points[pointId]
+            if (newPos.distanceTo(p.pos) < 3) { 
+                return pointId
+            }
+        }
+        return false
+    }
+
+    #checkLineNearLine(newlp0: THREE.Vector3, newlp1: THREE.Vector3): string | false {
+        // проверяем новую гипотетическую линию на пересечение с новой линией
+        const tryNewLinePoints = { p1: newlp0, p2: newlp1 }
+
+        // TODO: может быть несколько пересечений
+        for (let key in this.lines) {
+            const { p0, p1 } = this.lines[key]
+
+            const distToExistsLine = distanceBetweenSegments3D(
+                tryNewLinePoints, 
+                { p1: this.points[p0].pos, p2: this.points[p1].pos }
+            )
+
+            if (distToExistsLine > 0.01 && distToExistsLine < 3) {
+                let pId
+
+                const d_lp0_newlp0 = this.points[p0].pos.clone().distanceTo(newlp0)
+                const d_lp1_newlp0 = this.points[p1].pos.clone().distanceTo(newlp0)
+                const d_lp0_newlp1 = this.points[p0].pos.clone().distanceTo(newlp1)
+                const d_lp1_newlp1 = this.points[p1].pos.clone().distanceTo(newlp1)
+
+                if (d_lp0_newlp0 < 2 || d_lp0_newlp1 < 2) {
+                    pId = p0                    
+                }
+
+                if (d_lp1_newlp0 < 2 || d_lp1_newlp1 < 2) {
+                    pId = p1
+                }
+
+                if (pId) {
+                    return pId
+                }
+            }
+        }
+        
+        return false
+    }
+
+    #makePoint() {
+        const maxAttempts = 10
+
+        let count = 0
+        while (count < maxAttempts) { 
+            ++count
+
+            let { newPos, dir, dist } = this.#calcNewPoint(count / maxAttempts * Math.PI * 4)
+
+            if (!this.#checkIsPointInBounds(newPos)) { 
+                continue
+            }
+
+            let pointId = this.#checkIsPointNearAnotherPoints(newPos) 
+            
+            if (!pointId) { 
+                pointId = this.#checkLineNearLine(this.agent.pos, newPos)
+                console.log('nearLine', pointId)
+            }
+
+            // если точка существует перезаписываем зщзицию и длинну
+            if (pointId) {
+                newPos = this.points[pointId].pos.clone()
+                dist = newPos.distanceTo(this.agent.pos)
+            }
+
+            if (!pointId) {
+                pointId = this.#calkPointId()   
+            }
+
+            return { newPos, dir, dist, pointId }
+        }
+
+        return null
+    }
+
+    async #createPointAndLine() {
+        const nextPoint = this.#makePoint()
+        if (nextPoint) { 
+            let { newPos, dir, dist, pointId } = nextPoint
+            
+            if (!this.points[pointId]) {
+                this.points[pointId] = { 
+                    pos: newPos.clone(),
+                    neighbors: [] 
+                }
+            }
+
+            // проверяем что новой линии нет в сохраненных (возможно по точкам возвращение назад)
+            if (this.#checkIsLineNoExists(this.agent.currentPointId, pointId)) {
+                this.lines[this.#calkLineId()] = { p0: this.agent.currentPointId, p1: pointId, dist }
+            }
+
+            this.#addMeshLineAndPoint({ label: pointId, p0: this.agent.pos.clone(), p1: newPos.clone(),  })
+
+            this.agent.pos.copy(newPos)
+            this.agent.dir.copy(dir)
+            this.agent.currentPointId = pointId
+
+            this.#updatePointsNeighbors()
+
+            await _M.waitClickNext('next')
+            console.log('next')
+        } 
+
+        return !!nextPoint
+    }
+
+    async #createBranch(MAX_POINTS: number = 20) {
+        let count = 0
+        while (count < MAX_POINTS) {
+            ++count
+
+            const isCreated = await this.#createPointAndLine()
+            
+            if (!isCreated) break
+        }
+    }
+
+    #updatePointsNeighbors() {
+        for (let key in this.lines) {
+            const { p0, p1 } = this.lines[key]
+
+            if (this.points[p0] && !this.points[p0].neighbors.includes(p1)) { 
+                this.points[p0].neighbors.push(p1) 
+            }
+
+            if (this.points[p1] && !this.points[p1].neighbors.includes(p0)) { 
+                this.points[p1].neighbors.push(p0) 
+            }
+        }
+    }
+
+    #checkIsLineNoExists(p1Id: string, p2Id: string) { 
+        for (let key in this.lines) {
+            if (
+                (p1Id === this.lines[key].p0 && p2Id === this.lines[key].p1) ||
+                (p1Id === this.lines[key].p1 && p2Id === this.lines[key].p0)
+            ) {
+                return false
+            }
+        }
+        return true
+    }
+
+    // #region view
+
+    makeSchemeMesh() {
+        const group = new THREE.Group()
+
+        const v: number[] = []
+
+        const mat = this.#getMaterialBox()
+
+        for (let key in this.lines) {
+            const { p0, p1 } = this.lines[key]
+
+            const vPrev = this.points[p0]
+            const vCurr = this.points[p1]
+
+            if (!vPrev || !vCurr) {
+                console.warn('Invalid line:', key, this.lines[key])
+                continue
+            }
+
+            const l = _M.createLabel(p1, [1, 0, 0], 10)
+            l.position.copy(vCurr.pos)
+            group.add(l)
+            
+            const dir = new THREE.Vector3().copy(vCurr.pos).sub(vPrev.pos).normalize()
+            const w = .1
+            const vp0 = dir.clone().applyAxisAngle(new THREE.Vector3(0, 1, 0), -Math.PI * .5).multiplyScalar(w).add(vPrev.pos) 
+            const vp1 = dir.clone().applyAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI * .5).multiplyScalar(w).add(vPrev.pos) 
+            const vp2 = dir.clone().applyAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI * .5).multiplyScalar(w).add(vCurr.pos) 
+            const vp3 = dir.clone().applyAxisAngle(new THREE.Vector3(0, 1, 0), -Math.PI * .5).multiplyScalar(w).add(vCurr.pos)
+
+            const _v = _M.createPolygonV(vp0, vp1, vp2, vp3)
+            _M.fill(_v, v)
+        }
+
+        const mesh = _M.createMesh({ v, material: mat })
+        group.add(mesh)
+
+        return group
+    }
+
+    #addMeshLineAndPoint({ label, p0, p1 }: { label: string, p0: THREE.Vector3, p1: THREE.Vector3 }) {
+        const l = _M.createLabel(label, [1, 0, 0], 10)
+        l.position.copy(p1)
+        this._root.studio.add(l)
+
+        const dir = new THREE.Vector3().copy(p1).sub(p0).normalize()
+        const w = .1
+        const vp0 = dir.clone().applyAxisAngle(new THREE.Vector3(0, 1, 0), -Math.PI * .5).multiplyScalar(w).add(p0) 
+        const vp1 = dir.clone().applyAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI * .5).multiplyScalar(w).add(p0) 
+        const vp2 = dir.clone().applyAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI * .5).multiplyScalar(w).add(p1) 
+        const vp3 = dir.clone().applyAxisAngle(new THREE.Vector3(0, 1, 0), -Math.PI * .5).multiplyScalar(w).add(p1)
+
+        const _v = _M.createPolygonV(vp0, vp1, vp2, vp3)
+        const mesh = _M.createMesh({ v: _v, material: this.#getMaterialBox() })
+
+        this._root.studio.add(mesh)
+    }
+
+    #getMaterialBox() {
+        if (!this.#materialBox) {
+            this.#materialBox = new THREE.MeshBasicMaterial({ color: 0xffffff, side: 2 })
+        }
+        return this.#materialBox
+    }
+
+    #addYellowBox(p: THREE.Vector3) {
+        const g = new THREE.BoxGeometry(1, 1, 1)
+        const m = new THREE.MeshBasicMaterial({ color: 0xffff00 })
+        const mesh = new THREE.Mesh(g, m)
+
+        mesh.position.copy(p)
+        this._root.studio.add(mesh)
+    }
+
+    // #endregion
+
 }   
