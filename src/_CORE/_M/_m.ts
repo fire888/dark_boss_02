@@ -99,6 +99,11 @@ export const _M = {
         rad = rad % (Math.PI * 2)
         return rad
     },
+    angleFromCoords2 (x: number, z: number) {
+        let angle = Math.atan2(-z, x)
+        if (angle < 0) angle += 2 * Math.PI
+        return angle
+    },
     mirrorZ: (arr: number[]) => {
         const arr2 = []
 
@@ -345,7 +350,7 @@ export const _M = {
             uv2 = [], 
             c = [],
             forceMat = [],
-            material = new MeshBasicMaterial({ color: 0x777777 }) 
+            material = new MeshBasicMaterial({ color: 0x777777, vertexColors: !!(c && c.length > 0) }), 
         } = data
 
         const geometry = _M.createBufferGeometry({ index, v, uv, uv2, c, forceMat })

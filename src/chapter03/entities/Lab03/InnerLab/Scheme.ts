@@ -8,6 +8,7 @@ export class Scheme {
     #pointCount = -1
     #lineCount = -1
     #materialBox: THREE.MeshBasicMaterial | null = null
+    #MAX_POINTS = 30
 
     _root: Root
 
@@ -42,6 +43,7 @@ export class Scheme {
     }
 
     async create() {
+        // вставляем стартовую точку
         this.points[this.agent.currentPointId] = { 
             pos: this.agent.pos.clone(), 
             neighbors: [] 
@@ -107,7 +109,7 @@ export class Scheme {
         return { newPos, dir, dist }
     }
 
-    #checkIsPointInBounds(newPos: THREE.Vector3) { 
+    #checkIsPointInLabirinthBounds(newPos: THREE.Vector3) { 
         return this.bounds.containsPoint(newPos)
     }
 
@@ -160,36 +162,34 @@ export class Scheme {
     }
 
     #makePoint() {
-        const maxAttempts = 10
+        if (Object.keys(this.points).length > this.#MAX_POINTS) {
+            return null
+        }
 
+        const maxAttempts = 10
         let count = 0
+
         while (count < maxAttempts) { 
             ++count
 
             let { newPos, dir, dist } = this.#calcNewPoint(count / maxAttempts * Math.PI * 4)
 
-            if (!this.#checkIsPointInBounds(newPos)) { 
-                continue
-            }
-
-            let pointId = this.#checkIsPointNearAnotherPoints(newPos) 
+            if (this.#checkIsPointInLabirinthBounds(newPos)) { 
+                let pointId = this.#checkIsPointNearAnotherPoints(newPos) 
             
-            if (!pointId) { 
-                pointId = this.#checkLineNearLine(this.agent.pos, newPos)
-                console.log('nearLine', pointId)
-            }
+                if (!pointId) { 
+                    pointId = this.#checkLineNearLine(this.agent.pos, newPos)
+                }
 
-            // если точка существует перезаписываем зщзицию и длинну
-            if (pointId) {
-                newPos = this.points[pointId].pos.clone()
-                dist = newPos.distanceTo(this.agent.pos)
-            }
+                if (!pointId) {
+                    pointId = this.#calkPointId()   
+                } else { 
+                    newPos = this.points[pointId].pos.clone()
+                    dist = newPos.distanceTo(this.agent.pos)
+                }
 
-            if (!pointId) {
-                pointId = this.#calkPointId()   
+                return { newPos, dir, dist, pointId }
             }
-
-            return { newPos, dir, dist, pointId }
         }
 
         return null
@@ -212,7 +212,7 @@ export class Scheme {
                 this.lines[this.#calkLineId()] = { p0: this.agent.currentPointId, p1: pointId, dist }
             }
 
-            this.#addMeshLineAndPoint({ label: pointId, p0: this.agent.pos.clone(), p1: newPos.clone(),  })
+            this.#addMeshLineAndPoint({ label: pointId, p0: this.agent.pos.clone(), p1: newPos.clone() })
 
             this.agent.pos.copy(newPos)
             this.agent.dir.copy(dir)
@@ -220,8 +220,8 @@ export class Scheme {
 
             this.#updatePointsNeighbors()
 
-            await _M.waitClickNext('next')
-            console.log('next')
+            //await _M.waitClickNext('next')
+            //console.log('next')
         } 
 
         return !!nextPoint
@@ -328,15 +328,6 @@ export class Scheme {
             this.#materialBox = new THREE.MeshBasicMaterial({ color: 0xffffff, side: 2 })
         }
         return this.#materialBox
-    }
-
-    #addYellowBox(p: THREE.Vector3) {
-        const g = new THREE.BoxGeometry(1, 1, 1)
-        const m = new THREE.MeshBasicMaterial({ color: 0xffff00 })
-        const mesh = new THREE.Mesh(g, m)
-
-        mesh.position.copy(p)
-        this._root.studio.add(mesh)
     }
 
     // #endregion

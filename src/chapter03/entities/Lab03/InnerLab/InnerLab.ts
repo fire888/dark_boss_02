@@ -7,19 +7,6 @@ import { Scheme } from './Scheme'
 
 const ZERO_Y = -2.5
 
-
-
-
-
-
-
-
-
-
-
-
-
-
 export class InnerLab {
     _root: Root
     mesh: THREE.Mesh
@@ -66,9 +53,178 @@ export class InnerLab {
         const sh = new Scheme(this._root)
         await sh.create()
         
-        console.log('sh', sh)
+        console.log('sh !!!!', sh)
+
+
+        // MAKE NODE PLATFORMS
+        const RADIUS_NODE = 2
+        const W_SIDE = .5
+
+        const v: number[] = []
+        const c: number[] = [] 
+
+        for (let key in sh.points) {
+            const p = sh.points[key]
+
+            const nData = []
+
+            // добавляем направления к соседям
+            for (let i = 0; i < p.neighbors.length; ++i) {
+                const nId = p.neighbors[i]
+                const n = sh.points[nId]
+                
+                const directToNeighbor = n.pos.clone().sub(p.pos).setY(0).normalize()
+
+                const perp = directToNeighbor.clone().applyAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI * .5).multiplyScalar(W_SIDE)
+                const leftPLocal = directToNeighbor.clone().multiplyScalar(RADIUS_NODE).add(perp)
+                const rightPLocal = directToNeighbor.clone().multiplyScalar(RADIUS_NODE).sub(perp)
+                const angle = _M.angleFromCoords2(directToNeighbor.x, directToNeighbor.z)
+                const angleLeft = _M.angleFromCoords2(leftPLocal.x, leftPLocal.z)
+                const angleRight = _M.angleFromCoords2(rightPLocal.x, rightPLocal.z)
+                nData.push({
+                    nId,
+                    directToNeighbor,
+                    angle,
+                    leftPLocal, angleLeft,
+                    rightPLocal, angleRight
+                })
+
+
+
+                const yL = _M.createLabel('left', [1, 0, 0], 5)
+                const yLP = new THREE.Vector3(2, 1.5, 0).applyAxisAngle(new THREE.Vector3(0, 1, 0), angleLeft).add(p.pos)
+                yL.position.copy(yLP)
+                this._root.studio.add(yL)
+            }
+
+            nData.sort((a, b) => a.angle - b.angle)
+
+ 
+
+            console.log('key', key, 'nData', nData)
+            let isClose = false
+
+            for (let i = 0; i < nData.length; ++i) {
+                const curr = nData[i]
+
+                //в сторону соседа
+                v.push(
+                    ...p.pos.toArray(),
+                    ...curr.rightPLocal.clone().add(p.pos).toArray(),
+                    ...curr.leftPLocal.clone().add(p.pos).toArray()
+                )
+                c.push(
+                    1, 1, 0,
+                    1, 1, 0,
+                    1, 1, 0
+                )
+
+                if (!isClose) {
+                    isClose = true
+
+                    // закрыть пустоту
+                    let next = nData[i + 1] 
+                    //if (!next) next = nData[0]
+
+                    if (next) {
+                        console.log('!!!!')
+                        let nextAngleRight = next.angleRight
+                        if (nextAngleRight > curr.angleLeft) {
+                            console.log('!!!!---') 
+                            const angleToNext = next.angleRight - curr.angleLeft
+                            console.log(angleToNext)
+
+                            if (angleToNext > Math.PI * .5) {
+
+                            } else {
+                                v.push(
+                                    ...p.pos.toArray(),
+                                    ...curr.leftPLocal.clone().add(p.pos).toArray(),
+                                    ...next.rightPLocal.clone().add(p.pos).toArray()
+                                )
+                                c.push(
+                                    0, 0, 1,
+                                    0, 0, 1,
+                                    0, 0, 1,
+                                )
+                            }
+                        }    
+                    }
+                }
+
+
+
+                // const g = new THREE.BoxGeometry(.3, .3, .3)
+                // const mat = new THREE.MeshNormalMaterial()
+                // const mesh = new THREE.Mesh(g, mat)
+                // mesh.position.copy(p.pos).add(directToNeighbor)
+                // this._root.studio.add(mesh)
+
+                // const matL = new THREE.MeshBasicMaterial({ color: 0x00ff00 })
+                // const meshL = new THREE.Mesh(g, matL)
+                // meshL.position.copy(p.pos).add(leftPLocal)
+                // this._root.studio.add(meshL)
+
+                // const matR = new THREE.MeshBasicMaterial({ color: 0x00ffff })
+                // const meshR = new THREE.Mesh(g, matR)
+                // meshR.position.copy(p.pos).add(rightPLocal)
+                // this._root.studio.add(meshR)
+            }
+
+            // заливаем круг полигонами
+            //const agent = new THREE.Vector3(0, 0, -RADIUS_NODE)
+
+
+
+
+
+        }
+
+
+        const m = _M.createMesh({ 
+            v, c, 
+            material: new THREE.MeshBasicMaterial({ color: 0xffffff, vertexColors: true }) 
+        })
+        this._root.studio.add(m)
+
+
+        //for ()
+
+
 
         //const viewScheme = sh.makeSchemeMesh()
         //this._root.studio.add(viewScheme)
+
+        this.#testRotate()
     }
+
+
+    #testRotate() {
+        const m = new THREE.Mesh(
+            new THREE.BoxGeometry(1, 1, 1),
+            new THREE.MeshNormalMaterial()
+        )
+        this._root.studio.add(m)
+
+        const v = new THREE.Vector3(0, 0, -5)
+
+        const animate = () => {
+            v.applyAxisAngle(new THREE.Vector3(0, 1, 0), .01)
+            m.position.copy(v)
+            console.log(m.rotation.y)
+
+            requestAnimationFrame(animate)
+        }
+
+        animate()
+
+        // {
+        //     const v = new THREE.Vector3(1, 0, -.01).normalize()
+        //     let angle = Math.atan2(-v.z, v.x);
+        //     if (angle < 0) angle += 2 * Math.PI; // привести к [0, 2π)
+        // }
+
+
+
+    } 
 }

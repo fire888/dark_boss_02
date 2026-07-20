@@ -31,15 +31,16 @@ import wallTexture from '../assets/txt1.jpg'
 
 
 // DEBUG FLAGS ************************************* / 
-export const IS_DEV_START_ORBIT = false
-//export const IS_DEV_START_ORBIT = true
+//export const IS_DEV_START_ORBIT = false
+export const IS_DEV_START_ORBIT = true
 
 // ************************************************/ 
 
 // хорошая точка
 //export const PLAYER_POS_START = [0, 15, 200]
 // enter
-export const PLAYER_POS_START = [0.002752454173722952,2.499545942749127 + 1,-147.37024320829372]
+//export const PLAYER_POS_START = [0.002752454173722952,2.499545942749127 + 1,-147.37024320829372] // enter lab
+export const PLAYER_POS_START = [27.645168577548482,39.980914498078064,67.89888656069627]
 //export const PLAYER_POS_START = [0, 15, 30]
 
 
