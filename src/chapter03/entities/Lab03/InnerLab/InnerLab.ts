@@ -100,10 +100,6 @@ export class InnerLab {
             nData.sort((a, b) => a.angle - b.angle)
 
  
-
-            console.log('key', key, 'nData', nData)
-            let isClose = false
-
             for (let i = 0; i < nData.length; ++i) {
                 const curr = nData[i]
 
@@ -119,82 +115,41 @@ export class InnerLab {
                     1, 1, 0
                 )
 
-                if (!isClose) {
-                    isClose = true
+                // закрыть пустоту
+                let next = nData[i + 1] 
+                if (!next) next = nData[0]
 
-                    // закрыть пустоту
-                    let next = nData[i + 1] 
-                    //if (!next) next = nData[0]
+                let currAngleLeft = curr.angleLeft
+                let nextAngleRight = next.angleRight
+                if (nextAngleRight < currAngleLeft) nextAngleRight += Math.PI * 2
+                
+                while (currAngleLeft < nextAngleRight) {
+                    let localRightAngle = currAngleLeft + .3
+                    if (localRightAngle > nextAngleRight) localRightAngle = nextAngleRight
 
-                    if (next) {
-                        console.log('!!!!')
-                        let nextAngleRight = next.angleRight
-                        if (nextAngleRight > curr.angleLeft) {
-                            console.log('!!!!---') 
-                            const angleToNext = next.angleRight - curr.angleLeft
-                            console.log(angleToNext)
+                    const lP = currAngleLeft === curr.angleLeft 
+                        ? curr.leftPLocal.clone().add(p.pos) 
+                        : new THREE.Vector3(RADIUS_NODE, 0, 0).applyAxisAngle(new THREE.Vector3(0, 1, 0), currAngleLeft).add(p.pos)
+                    const rP = localRightAngle === nextAngleRight 
+                        ? next.rightPLocal.clone().add(p.pos)
+                        : new THREE.Vector3(RADIUS_NODE, 0, 0).applyAxisAngle(new THREE.Vector3(0, 1, 0), localRightAngle).add(p.pos)
 
-                            if (angleToNext > Math.PI * .5) {
-
-                            } else {
-                                v.push(
-                                    ...p.pos.toArray(),
-                                    ...curr.leftPLocal.clone().add(p.pos).toArray(),
-                                    ...next.rightPLocal.clone().add(p.pos).toArray()
-                                )
-                                c.push(
-                                    0, 0, 1,
-                                    0, 0, 1,
-                                    0, 0, 1,
-                                )
-                            }
-                        }    
-                    }
+                    v.push(...rP.toArray(), ...p.pos.toArray(), ...lP.toArray())
+                    c.push(
+                        0, 1, 1,
+                        0, 1, 1,
+                        0, 1, 1,
+                    )
+                    currAngleLeft = localRightAngle
                 }
-
-
-
-                // const g = new THREE.BoxGeometry(.3, .3, .3)
-                // const mat = new THREE.MeshNormalMaterial()
-                // const mesh = new THREE.Mesh(g, mat)
-                // mesh.position.copy(p.pos).add(directToNeighbor)
-                // this._root.studio.add(mesh)
-
-                // const matL = new THREE.MeshBasicMaterial({ color: 0x00ff00 })
-                // const meshL = new THREE.Mesh(g, matL)
-                // meshL.position.copy(p.pos).add(leftPLocal)
-                // this._root.studio.add(meshL)
-
-                // const matR = new THREE.MeshBasicMaterial({ color: 0x00ffff })
-                // const meshR = new THREE.Mesh(g, matR)
-                // meshR.position.copy(p.pos).add(rightPLocal)
-                // this._root.studio.add(meshR)
             }
-
-            // заливаем круг полигонами
-            //const agent = new THREE.Vector3(0, 0, -RADIUS_NODE)
-
-
-
-
-
         }
-
 
         const m = _M.createMesh({ 
             v, c, 
             material: new THREE.MeshBasicMaterial({ color: 0xffffff, vertexColors: true }) 
         })
         this._root.studio.add(m)
-
-
-        //for ()
-
-
-
-        //const viewScheme = sh.makeSchemeMesh()
-        //this._root.studio.add(viewScheme)
-
         this.#testRotate()
     }
 
