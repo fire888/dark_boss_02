@@ -4,19 +4,21 @@ import { Root } from '../../../index'
 
 import { distanceBetweenSegments3D } from './distLines'
 
+export type TSchemePoint = {
+    pos: THREE.Vector3,
+    neighbors: string[]
+}
+
 export class Scheme {
     #pointCount = -1
     #lineCount = -1
     #materialBox: THREE.MeshBasicMaterial | null = null
-    #MAX_POINTS = 30
+    #MAX_POINTS = 200
 
     _root: Root
 
     points: { 
-        [key: string]: { 
-            pos: THREE.Vector3,
-            neighbors: string[]
-        }
+        [key: string]: TSchemePoint
     } = {}
 
     lines: { 
