@@ -5,22 +5,15 @@ import { Root } from '../../../index'
 import { distanceBetweenSegments3D } from './distLines'
 
 export type TSchemePoint = {
+    id: string
     pos: THREE.Vector3,
     neighbors: string[]
 }
 
 export class Scheme {
-    #pointCount = -1
-    #lineCount = -1
-    #materialBox: THREE.MeshBasicMaterial | null = null
-    #MAX_POINTS = 200
-
-    _root: Root
-
     points: { 
         [key: string]: TSchemePoint
     } = {}
-
     lines: { 
         [key: string]: {
             p0: string, 
@@ -28,29 +21,80 @@ export class Scheme {
             dist: number 
         } 
     } = {}
-
     bounds: THREE.Box3 = new THREE.Box3(
-        new THREE.Vector3(-50, -100, -50), 
-        new THREE.Vector3(50, 0, 50)
+        new THREE.Vector3(-50, -100, -150), 
+        new THREE.Vector3(50, 0, 0)
     )
 
-    agent = {
-        pos: new THREE.Vector3(0, 0, 50),
+    #root: Root
+    #pointCount = -1
+    #lineCount = -1
+    #materialBox: THREE.MeshBasicMaterial | null = null
+    #MAX_POINTS = 200
+    #agent = {
+        pos: new THREE.Vector3(0, 0, 0),
         dir: new THREE.Vector3(0, 0, -1),
         currentPointId: this.#calkPointId()
     }
 
-    constructor(root: Root) {
-        this._root = root
+    constructor(root: Root, startData: THREE.Vector3[] = []) {
+        this.#root = root
+
+        // if (startData.length > 0) {
+        //     let points: TSchemePoint[] = []
+        //     for (let i = 0; i < startData.length; ++i) {
+        //         const p: TSchemePoint = {
+        //             id: this.#calkPointId(),
+        //             pos: startData[i].clone(),
+        //             neighbors: []
+        //         }
+        //         points.push(p)
+        //     }
+
+        //     for (let i = 0; i < points.length; ++i) {
+        //         const p = points[i]
+        //         this.points[p.id] = p
+        //         if (points[i - 1]) {
+        //             this.points[p.id].neighbors.push(points[i - 1].id)
+        //             this.points[points[i - 1].id].neighbors.push(p.id)
+        //             this.#addLine(points[i - 1].id, p.id)
+        //         }
+        //     }
+
+        //     const lastP = points[points.length - 1]
+        //     this.#agent.currentPointId = lastP.id
+        //     this.#agent.pos.copy(this.points[this.#agent.currentPointId].pos.clone())
+        //     let agentDir = new THREE.Vector3(0, 0, -1)
+        //     if (startData.length === 1) {
+        //         agentDir.x = startData[0].x
+        //         agentDir.z = startData[0].z
+        //         agentDir.normalize()
+        //     } else if (startData.length > 1) {
+        //         const posLast = this.points[lastP.id].pos.clone()
+        //         const posPrev = this.points[points[points.length - 2].id].pos.clone()
+        //         const dir = posLast.clone().sub(posPrev).normalize()
+        //         agentDir = dir        
+        //     }
+        //     this.#agent.dir.copy(agentDir)
+        // } else {
+        //     this.#agent = {
+        //         pos: new THREE.Vector3(0, 0, 0),
+        //         dir: new THREE.Vector3(0, 0, -1),
+        //         currentPointId: this.#calkPointId()
+        //     }
+        // }
     }
 
     async create() {
         // вставляем стартовую точку
-        this.points[this.agent.currentPointId] = { 
-            pos: this.agent.pos.clone(), 
-            neighbors: [] 
-        }
-
+        //if (Object.keys(this.points).length === 0) {
+            this.points[this.#agent.currentPointId] = { 
+                id: this.#agent.currentPointId,
+                pos: this.#agent.pos.clone(), 
+                neighbors: [] 
+            }
+        //}
+        
         await this.#createBranch(20)
 
         for (let key in this.points) {
@@ -60,9 +104,9 @@ export class Scheme {
                 const dir = posP2.clone().sub(posP0).normalize()
 
                 dir.applyAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI * .5)
-                this.agent.pos.copy(this.points[key].pos.clone())
-                this.agent.dir.copy(dir)
-                this.agent.currentPointId = key
+                this.#agent.pos.copy(this.points[key].pos.clone())
+                this.#agent.dir.copy(dir)
+                this.#agent.currentPointId = key
 
                 await this.#createBranch(5 + Math.floor(Math.random() * 60))
             }
@@ -75,9 +119,9 @@ export class Scheme {
                 const dir = posP2.clone().sub(posP0).normalize()
 
                 dir.applyAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI * .5)
-                this.agent.pos.copy(this.points[key].pos.clone())
-                this.agent.dir.copy(dir)
-                this.agent.currentPointId = key
+                this.#agent.pos.copy(this.points[key].pos.clone())
+                this.#agent.dir.copy(dir)
+                this.#agent.currentPointId = key
 
                 await this.#createBranch(1)
             }
@@ -97,14 +141,14 @@ export class Scheme {
         const h = Math.random() * dist * .5 * (Math.random() < .5 ? 1 : -1)
 
         const dir = 
-            this.agent.dir.clone()
+            this.#agent.dir.clone()
                 .applyAxisAngle(
                     new THREE.Vector3(0, 1, 0), 
                     Math.random() * maxAngle * .5 * (Math.random() < .5 ? 1 : -1)
                 )
 
         const newPos = 
-            this.agent.pos.clone()
+            this.#agent.pos.clone()
                 .add(dir.clone().multiplyScalar(dist))
                 .add(new THREE.Vector3(0, h, 0))
 
@@ -180,14 +224,14 @@ export class Scheme {
                 let pointId = this.#checkIsPointNearAnotherPoints(newPos) 
             
                 if (!pointId) { 
-                    pointId = this.#checkLineNearLine(this.agent.pos, newPos)
+                    pointId = this.#checkLineNearLine(this.#agent.pos, newPos)
                 }
 
                 if (!pointId) {
                     pointId = this.#calkPointId()   
                 } else { 
                     newPos = this.points[pointId].pos.clone()
-                    dist = newPos.distanceTo(this.agent.pos)
+                    dist = newPos.distanceTo(this.#agent.pos)
                 }
 
                 return { newPos, dir, dist, pointId }
@@ -203,22 +247,19 @@ export class Scheme {
             let { newPos, dir, dist, pointId } = nextPoint
             
             if (!this.points[pointId]) {
-                this.points[pointId] = { 
+                this.points[pointId] = {
+                    id: pointId,
                     pos: newPos.clone(),
                     neighbors: [] 
                 }
             }
+            this.#addLine(this.#agent.currentPointId, pointId)
 
-            // проверяем что новой линии нет в сохраненных (возможно по точкам возвращение назад)
-            if (this.#checkIsLineNoExists(this.agent.currentPointId, pointId)) {
-                this.lines[this.#calkLineId()] = { p0: this.agent.currentPointId, p1: pointId, dist }
-            }
+            //this.#addMeshLineAndPoint({ label: pointId, p0: this.#agent.pos.clone(), p1: newPos.clone() })
 
-            this.#addMeshLineAndPoint({ label: pointId, p0: this.agent.pos.clone(), p1: newPos.clone() })
-
-            this.agent.pos.copy(newPos)
-            this.agent.dir.copy(dir)
-            this.agent.currentPointId = pointId
+            this.#agent.pos.copy(newPos)
+            this.#agent.dir.copy(dir)
+            this.#agent.currentPointId = pointId
 
             this.#updatePointsNeighbors()
 
@@ -254,16 +295,24 @@ export class Scheme {
         }
     }
 
-    #checkIsLineNoExists(p1Id: string, p2Id: string) { 
+    #addLine(p1Id: string, p2Id: string) {
+        let isLineExists = false
         for (let key in this.lines) {
             if (
                 (p1Id === this.lines[key].p0 && p2Id === this.lines[key].p1) ||
                 (p1Id === this.lines[key].p1 && p2Id === this.lines[key].p0)
             ) {
-                return false
+                isLineExists = true
+                break
             }
         }
-        return true
+
+        if (!isLineExists) {
+            const dist = this.points[p1Id].pos.distanceTo(this.points[p2Id].pos)
+
+            this.lines[this.#calkLineId()] = { p0: p1Id, p1: p2Id, dist }
+        }
+       
     }
 
     // #region view
@@ -310,7 +359,7 @@ export class Scheme {
     #addMeshLineAndPoint({ label, p0, p1 }: { label: string, p0: THREE.Vector3, p1: THREE.Vector3 }) {
         const l = _M.createLabel(label, [1, 0, 0], 10)
         l.position.copy(p1)
-        this._root.studio.add(l)
+        this.#root.studio.add(l)
 
         const dir = new THREE.Vector3().copy(p1).sub(p0).normalize()
         const w = .1
@@ -322,7 +371,7 @@ export class Scheme {
         const _v = _M.createPolygonV(vp0, vp1, vp2, vp3)
         const mesh = _M.createMesh({ v: _v, material: this.#getMaterialBox() })
 
-        this._root.studio.add(mesh)
+        this.#root.studio.add(mesh)
     }
 
     #getMaterialBox() {

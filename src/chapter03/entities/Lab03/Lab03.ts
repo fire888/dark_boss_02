@@ -24,8 +24,8 @@ export class Labyrinth {
         this._root = root
         const { studio, phisics } = root
 
-        //this._mountains = new Mountains()
-        //await this._mountains.init(root)
+        this._mountains = new Mountains()
+        await this._mountains.init(root)
 
         const W = 100, H = 100, D = -150
         

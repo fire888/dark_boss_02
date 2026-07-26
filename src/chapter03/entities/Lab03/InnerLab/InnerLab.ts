@@ -1,6 +1,6 @@
 import * as THREE from 'three'
 import { tunnel00 } from 'geometry/04_tunnel00/tunnel00'
-import { room00 } from 'geometry/05_room00/room_00'
+// import { room00 } from 'geometry/05_room00/room_00'
 import { _M, IArraysGeom } from '_CORE/_M/_m'
 import { Root } from '../../../index'
 import { Scheme } from './Scheme'
@@ -31,7 +31,7 @@ export class InnerLab {
 
         ////////////////////////////////
 
-        const W = 100, H = 100, D = -150
+        const D = -150
         
         const g: IArraysGeom = { v: [], c: [], index: [] } 
 
@@ -43,9 +43,9 @@ export class InnerLab {
         _M.translateVertices(t.v, 0, 4.5, D)
         _M.mergeIndexedArrays(g, t)
 
-        const r = room00()
-        _M.translateVertices(r.v, 0, 4, D - 30 - 15)
-        _M.mergeIndexedArrays(g, r)
+        //const r = room00()
+        //_M.translateVertices(r.v, 0, 4, D - 30 - 15)
+        //_M.mergeIndexedArrays(g, r)
 
         this.mesh = _M.createMesh({ ...g, material: materials.levelMatNorm })
         this.mesh.position.set(0, ZERO_Y, 0)
@@ -59,7 +59,16 @@ export class InnerLab {
     }
 
     async #calcLevel() {
-        const sch = new Scheme(this._root)
+        const { studio, phisics } = this._root
+
+
+        //const POS = new THREE.Vector3(0, 2, -180)
+        const POS = new THREE.Vector3(0, -7, -195)
+
+        const sch = new Scheme(this._root, [
+            // new THREE.Vector3(0, -15, 15),
+            // new THREE.Vector3(0, 0, 0),   
+        ])
         await sch.create()
         
         console.log('sh !!!!', sch)
@@ -82,43 +91,14 @@ export class InnerLab {
             _M.mergeIndexedArrays({ v, c }, attr)
         }
 
-        // console.log('v', v.length, 'c', c.length)
-
         const m = _M.createMesh({ 
             v, c, 
             material: new THREE.MeshBasicMaterial({ color: 0xffffff, vertexColors: true }) 
         })
-        this._root.studio.add(m)
-        this.#testRotate()
+        m.position.copy(POS)
+
+        studio.add(m)
+        phisics.addMeshToCollision(m, true)
     }
 
-
-    #testRotate() {
-        const m = new THREE.Mesh(
-            new THREE.BoxGeometry(1, 1, 1),
-            new THREE.MeshNormalMaterial()
-        )
-        this._root.studio.add(m)
-
-        const v = new THREE.Vector3(0, 0, -5)
-
-        const animate = () => {
-            v.applyAxisAngle(new THREE.Vector3(0, 1, 0), .01)
-            m.position.copy(v)
-            console.log(m.rotation.y)
-
-            requestAnimationFrame(animate)
-        }
-
-        animate()
-
-        // {
-        //     const v = new THREE.Vector3(1, 0, -.01).normalize()
-        //     let angle = Math.atan2(-v.z, v.x);
-        //     if (angle < 0) angle += 2 * Math.PI; // привести к [0, 2π)
-        // }
-
-
-
-    } 
 }

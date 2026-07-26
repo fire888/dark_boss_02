@@ -11,6 +11,7 @@ type T_f = {
     negXInd?: number[]
     posZInd?: number[]
     negZInd?: number[]
+    isHole?: boolean
 }
 
 export type T_Floor01 = IArrayForBuffers & {
@@ -20,7 +21,7 @@ export type T_Floor01 = IArrayForBuffers & {
 
 export const createFloor01 = (opts: T_f): T_Floor01 => {
 
-    const { w = 100, d = w, wStep = 3, maxH = .3 } = opts
+    const { w = 100, d = w, wStep = 3, maxH = .3, isHole = false } = opts
 
     const v: number[] = []
     const index: number[] = []
@@ -36,8 +37,6 @@ export const createFloor01 = (opts: T_f): T_Floor01 => {
 
     const stepX = w / countX
     const stepZ = d / countZ
-
-
 
     for (let i = 0; i < countZ + 1; i++) {
         const z = d * 0.5 - i * stepZ
@@ -65,6 +64,20 @@ export const createFloor01 = (opts: T_f): T_Floor01 => {
         const curZRow = p[i] 
 
         for (let j = 1; j < curZRow.length; ++j) {
+
+            // CRUTCH ~ hole must be parametric 
+            if (isHole) {
+                if (
+                    i > 2 && 
+                    i < 10 && 
+                    j > prevZRow.length / 2 - 3 && 
+                    j < prevZRow.length / 2 + 3
+                ) {
+                    continue   
+                }
+            }
+            // 
+            
             const p0 = prevZRow[j - 1]
             const p1 = prevZRow[j]
             const p2 = curZRow[j]

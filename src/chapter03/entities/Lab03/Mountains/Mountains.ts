@@ -24,7 +24,9 @@ export class Mountains {
             const arr: T_Floor01[] = []
             for (let j = -1; j < 2; ++j) {
                 const maxH = (i === 0 && j === 0) || (i === -1 && j === 0) ? MAX_H : MAX_H_2
-                const floor = createFloor01({ w: W, wStep: STEP, maxH })
+                
+                const isHole = i === -1 && j === 0
+                const floor = createFloor01({ w: W, wStep: STEP, maxH, isHole })
                 arr.push(floor)
             }
             floors.push(arr)
