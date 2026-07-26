@@ -66,8 +66,8 @@ export class InnerLab {
         const POS = new THREE.Vector3(0, -7, -195)
 
         const sch = new Scheme(this._root, [
-            // new THREE.Vector3(0, -15, 15),
-            // new THREE.Vector3(0, 0, 0),   
+            new THREE.Vector3(0, 9, 15),
+            new THREE.Vector3(0, 0, 0),   
         ])
         await sch.create()
         

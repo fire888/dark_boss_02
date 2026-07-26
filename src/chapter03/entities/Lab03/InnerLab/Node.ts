@@ -65,9 +65,6 @@ export class Node {
         const v = []
         const c = []
 
-        console.log('this.neighbors', this.neighbors)
-
-
         const neighbors: Neighbor[] = []//Object.values(this.neighbors)
         for (let key in this.neighbors) {
             neighbors.push(this.neighbors[key])
