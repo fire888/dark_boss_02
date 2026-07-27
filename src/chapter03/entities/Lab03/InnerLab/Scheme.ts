@@ -13,7 +13,8 @@ export type TSchemePoint = {
 const RANDOM_DIST_NEW_POINT = 20
 const MIN_DIST_NEW_POINT = 15
 const DIST_MERGE_POINTS = 7
-const RANDOM_H_BY_DIST = .15
+const DIST_LINE_MERGE_POINTS = 10 
+const RANDOM_H_BY_DIST = .2
 
 export class Scheme {
     points: { 
@@ -27,8 +28,8 @@ export class Scheme {
         } 
     } = {}
     bounds: THREE.Box3 = new THREE.Box3(
-        new THREE.Vector3(-50, -100, -150), 
-        new THREE.Vector3(50, 0, 0)
+        new THREE.Vector3(-70, -100, -300), 
+        new THREE.Vector3(70, 0, 0)
     )
 
     #root: Root
@@ -185,7 +186,7 @@ export class Scheme {
                 { p1: this.points[p0].pos, p2: this.points[p1].pos }
             )
 
-            if (distToExistsLine > 0.01 && distToExistsLine < DIST_MERGE_POINTS) {
+            if (distToExistsLine > 0.01 && distToExistsLine < DIST_LINE_MERGE_POINTS) {
                 let pId
 
                 const d_lp0_newlp0 = this.points[p0].pos.clone().distanceTo(newlp0)

@@ -12,8 +12,8 @@ type Neighbor = {
 }
 
 // MAKE NODE PLATFORMS
-const RADIUS_NODE = 2
-const W_SIDE = .5
+const RADIUS_NODE = 4
+const W_SIDE = 1.3
 
 export class Node {
     id: string
@@ -30,8 +30,6 @@ export class Node {
         this.pos = sh.points[key].pos
 
         const neighbors = sh.points[key].neighbors
-
-        //const p = sh.points[key]
 
         // добавляем направления к соседям
         for (let i = 0; i < neighbors.length; ++i) {
@@ -65,7 +63,7 @@ export class Node {
         const v = []
         const c = []
 
-        const neighbors: Neighbor[] = []//Object.values(this.neighbors)
+        const neighbors: Neighbor[] = []
         for (let key in this.neighbors) {
             neighbors.push(this.neighbors[key])
         }
