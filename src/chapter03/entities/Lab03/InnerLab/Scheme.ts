@@ -16,6 +16,8 @@ const DIST_MERGE_POINTS = 7
 const DIST_LINE_MERGE_POINTS = 10 
 const RANDOM_H_BY_DIST = .2
 
+const MAX_POINTS = 32
+
 export class Scheme {
     points: { 
         [key: string]: TSchemePoint
@@ -36,7 +38,6 @@ export class Scheme {
     #pointCount = -1
     #lineCount = -1
     #materialBox: THREE.MeshBasicMaterial | null = null
-    #MAX_POINTS = 200
     #agent = {
         pos: new THREE.Vector3(0, 0, 0),
         dir: new THREE.Vector3(0, 0, -1),
@@ -212,7 +213,7 @@ export class Scheme {
     }
 
     #makePoint() {
-        if (Object.keys(this.points).length > this.#MAX_POINTS) {
+        if (Object.keys(this.points).length > MAX_POINTS) {
             return null
         }
 

@@ -62,7 +62,6 @@ export class InnerLab {
         const { studio, phisics } = this._root
 
 
-        //const POS = new THREE.Vector3(0, 2, -180)
         const POS = new THREE.Vector3(0, -7, -195)
 
         const sch = new Scheme(this._root, [
@@ -75,12 +74,13 @@ export class InnerLab {
 
 
         const v: number[] = []
-        const c: number[] = [] 
+        const c: number[] = []
+        const index: number[] = []
 
         for (let key in sch.points) {
             const node = new Node(key, sch, this._root)
             const attr = node.getAttr()
-            _M.mergeIndexedArrays({ v, c }, attr)
+            _M.mergeIndexedArrays({ v, c, index }, attr)
 
             this.nodes[key] = node
         }
@@ -88,11 +88,11 @@ export class InnerLab {
         for (let key in sch.lines) {
             const edge = new Edge(key, sch, this.nodes, this._root)
             const attr = edge.getAttr()
-            _M.mergeIndexedArrays({ v, c }, attr)
+            _M.mergeIndexedArrays({ v, c, index }, attr)
         }
 
         const m = _M.createMesh({ 
-            v, c, 
+            v, c, index,
             material: new THREE.MeshBasicMaterial({ color: 0xffffff, vertexColors: true }) 
         })
         m.position.copy(POS)

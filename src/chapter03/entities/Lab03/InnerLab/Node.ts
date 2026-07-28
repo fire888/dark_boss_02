@@ -60,8 +60,10 @@ export class Node {
     }
 
     getAttr() {
-        const v = []
-        const c = []
+        const v: number[] = []
+        const c: number[] = []
+        const index: number[] = []
+        let currInd = 0 
 
         const neighbors: Neighbor[] = []
         for (let key in this.neighbors) {
@@ -72,7 +74,7 @@ export class Node {
         for (let i = 0; i < neighbors.length; ++i) {
             const curr = neighbors[i]
 
-            //в сторону соседа
+            //в сторону соседа низ
             v.push(
                 ...this.pos.toArray(),
                 ...curr.rightPLocal.clone().add(this.pos).toArray(),
@@ -83,8 +85,26 @@ export class Node {
                 1, 1, 0,
                 1, 1, 0
             )
+            index.push(currInd, currInd + 1, currInd + 2)
+            currInd += 3
 
-            // закрыть пустоту
+
+            // в сторону соседа верх
+            v.push(
+                ...new THREE.Vector3(0, 2.5, 0).add(this.pos).toArray(),
+                ...new THREE.Vector3(0, 2.5, 0).add(curr.leftPLocal).add(this.pos).toArray(),
+                ...new THREE.Vector3(0, 2.5, 0).add(curr.rightPLocal).add(this.pos).toArray()
+            )
+            c.push(
+                .1, .1, .1,
+                .1, .1, .1,
+                .1, .1, .1,
+            )
+            index.push(currInd, currInd + 1, currInd + 2)
+            currInd += 3
+
+
+            // закрыть пустоту нежду проемами
             let next = neighbors[i + 1] 
             if (!next) next = neighbors[0]
 
@@ -109,10 +129,48 @@ export class Node {
                     0, 1, 1,
                     0, 1, 1,
                 )
+                index.push(currInd, currInd + 1, currInd + 2)
+                currInd += 3
+
+                const topLP = lP.clone()
+                topLP.y += 2.5
+                const topRP = rP.clone()
+                topRP.y += 2.5
+
+                { // стена
+                    const _v = _M.createPolygonV(rP, lP, topLP, topRP)
+                    _M.fill(_v, v)
+                    const _c = _M.fillColorFace([1, 1, 1])
+                    _M.fill(_c, c)
+                    index.push(currInd, currInd + 1, currInd + 2, currInd + 3, currInd + 4, currInd + 5)
+                    currInd += 6
+                }
+
+                { // верх
+                    const topP = new THREE.Vector3(0, 2.5, 0).add(this.pos)
+
+                    const _v = [
+                        ...topP.toArray(),
+                        ...topRP.toArray(),
+                        ...topLP.toArray(),
+                    ]
+                    _M.fill(_v, v)
+
+                    const _c = [
+                        .1, .1, .1,
+                        .1, .1, .1,
+                        .1, .1, .1,
+                    ]
+                    _M.fill(_c, c)
+
+                    index.push(currInd, currInd + 1, currInd + 2)
+                    currInd += 3
+                }
+
                 currAngleLeft = localRightAngle
             }
         }
 
-        return { v, c }
+        return { v, c, index }
     }
 }

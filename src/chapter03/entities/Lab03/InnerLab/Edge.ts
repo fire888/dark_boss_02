@@ -38,10 +38,14 @@ export class Edge {
 
         const v: number[] = []
         const c: number[] = []
+        const index: number[] = []
+        let currInd = 0
 
         const _v = _M.createPolygonV(this.p0, this.p1, this.p2, this.p3)
         v.push(..._v)
         c.push(..._M.fillColorFace([1, 0, 1]))
+        index.push(currInd, currInd + 1, currInd + 2, currInd + 3, currInd + 4, currInd + 5)
+        currInd += 6
 
         const p0H = this.p0.clone()
         p0H.y += H
@@ -57,20 +61,26 @@ export class Edge {
             const _v = _M.createPolygonV(this.p0, this.p3, p3H, p0H)
             v.push(..._v)
             c.push(..._M.fillColorFace([.5, 0, .5]))
+            index.push(currInd, currInd + 1, currInd + 2, currInd + 3, currInd + 4, currInd + 5)
+            currInd += 6
         }
 
         { // right
             const _v = _M.createPolygonV(this.p2, this.p1, p1H, p2H)
             v.push(..._v)
             c.push(..._M.fillColorFace([.5, 0, .5]))
+            index.push(currInd, currInd + 1, currInd + 2, currInd + 3, currInd + 4, currInd + 5)
+            currInd += 6
         }
 
         { // top
             const _v = _M.createPolygonV(p2H, p1H, p0H, p3H)
             v.push(..._v)
             c.push(..._M.fillColorFace([.4, 0, .4]))
+            index.push(currInd, currInd + 1, currInd + 2, currInd + 3, currInd + 4, currInd + 5)
+            currInd += 6
         }
 
-        return { v, c }
+        return { v, c, index }
     }
 }
