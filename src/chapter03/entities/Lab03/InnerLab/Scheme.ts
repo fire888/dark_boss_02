@@ -4,10 +4,17 @@ import { Root } from '../../../index'
 
 import { distanceBetweenSegments3D } from './distLines'
 
+export type T_StartInitDataPoint = {
+    id: string,
+    pos: THREE.Vector3,
+    visible: boolean
+}
+
 export type TSchemePoint = {
     id: string
     pos: THREE.Vector3,
-    neighbors: string[]
+    neighbors: string[],
+    visible: boolean
 }
 
 const RANDOM_DIST_NEW_POINT = 20
@@ -26,8 +33,9 @@ export class Scheme {
         [key: string]: {
             p0: string, 
             p1: string, 
-            dist: number 
-        } 
+            dist: number,
+            visible: boolean
+        }
     } = {}
     bounds: THREE.Box3 = new THREE.Box3(
         new THREE.Vector3(-70, -100, -300), 
@@ -44,16 +52,17 @@ export class Scheme {
         currentPointId: this.#calkPointId()
     }
 
-    constructor(root: Root, startData: THREE.Vector3[] = []) {
+    constructor(root: Root, startData: T_StartInitDataPoint[] = []) {
         this.#root = root
 
         if (startData.length > 0) {
             let points: TSchemePoint[] = []
             for (let i = 0; i < startData.length; ++i) {
                 const p: TSchemePoint = {
-                    id: this.#calkPointId(),
-                    pos: startData[i].clone(),
-                    neighbors: []
+                    id: startData[i].id,
+                    pos: startData[i].pos.clone(),
+                    neighbors: [],
+                    visible: startData[i].visible
                 }
                 points.push(p)
             }
@@ -64,7 +73,7 @@ export class Scheme {
                 if (points[i - 1]) {
                     this.points[p.id].neighbors.push(points[i - 1].id)
                     this.points[points[i - 1].id].neighbors.push(p.id)
-                    this.#addLine(points[i - 1].id, p.id)
+                    this.#addLine(points[i - 1].id, p.id, points[i-1].visible && p.visible)
                 }
             }
 
@@ -73,8 +82,8 @@ export class Scheme {
             this.#agent.pos.copy(this.points[this.#agent.currentPointId].pos.clone())
             let agentDir = new THREE.Vector3(0, 0, -1)
             if (startData.length === 1) {
-                agentDir.x = startData[0].x
-                agentDir.z = startData[0].z
+                agentDir.x = startData[0].pos.x
+                agentDir.z = startData[0].pos.z
                 agentDir.normalize()
             } else if (startData.length > 1) {
                 const posLast = this.points[lastP.id].pos.clone()
@@ -93,7 +102,8 @@ export class Scheme {
             this.points[this.#agent.currentPointId] = { 
                 id: this.#agent.currentPointId,
                 pos: this.#agent.pos.clone(), 
-                neighbors: [] 
+                neighbors: [],
+                visible: true
             }
         }
     }
@@ -255,7 +265,8 @@ export class Scheme {
                 this.points[pointId] = {
                     id: pointId,
                     pos: newPos.clone(),
-                    neighbors: [] 
+                    neighbors: [],
+                    visible: true
                 }
             }
             this.#addLine(this.#agent.currentPointId, pointId)
@@ -300,7 +311,7 @@ export class Scheme {
         }
     }
 
-    #addLine(p1Id: string, p2Id: string) {
+    #addLine(p1Id: string, p2Id: string, visible = true) {
         let isLineExists = false
         for (let key in this.lines) {
             if (
@@ -315,7 +326,7 @@ export class Scheme {
         if (!isLineExists) {
             const dist = this.points[p1Id].pos.distanceTo(this.points[p2Id].pos)
 
-            this.lines[this.#calkLineId()] = { p0: p1Id, p1: p2Id, dist }
+            this.lines[this.#calkLineId()] = { p0: p1Id, p1: p2Id, dist, visible }
         }
     }
 

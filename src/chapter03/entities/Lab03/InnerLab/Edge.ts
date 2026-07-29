@@ -14,6 +14,7 @@ export class Edge {
     p1: THREE.Vector3
     p2: THREE.Vector3
     p3: THREE.Vector3
+    visible: boolean
 
     _root: Root
 
@@ -29,6 +30,8 @@ export class Edge {
 
         this.p2 = nodes[this.node1Id].neighbors[this.node0Id].leftPLocal.clone().add(nodes[this.node1Id].pos)
         this.p3 = nodes[this.node1Id].neighbors[this.node0Id].rightPLocal.clone().add(nodes[this.node1Id].pos)
+
+        this.visible = line.visible
         
         this.id = key
     }
@@ -39,46 +42,49 @@ export class Edge {
         const v: number[] = []
         const c: number[] = []
         const index: number[] = []
-        let currInd = 0
 
-        const _v = _M.createPolygonV(this.p0, this.p1, this.p2, this.p3)
-        v.push(..._v)
-        c.push(..._M.fillColorFace([1, 0, 1]))
-        index.push(currInd, currInd + 1, currInd + 2, currInd + 3, currInd + 4, currInd + 5)
-        currInd += 6
+        if (this.visible) {
+            let currInd = 0
 
-        const p0H = this.p0.clone()
-        p0H.y += H
-        const p1H = this.p1.clone()
-        p1H.y += H
-        const p2H = this.p2.clone()
-        p2H.y += H
-        const p3H = this.p3.clone()
-        p3H.y += H
-
-
-        { // left            
-            const _v = _M.createPolygonV(this.p0, this.p3, p3H, p0H)
+            const _v = _M.createPolygonV(this.p0, this.p1, this.p2, this.p3)
             v.push(..._v)
-            c.push(..._M.fillColorFace([.5, 0, .5]))
+            c.push(..._M.fillColorFace([1, 0, 1]))
             index.push(currInd, currInd + 1, currInd + 2, currInd + 3, currInd + 4, currInd + 5)
             currInd += 6
-        }
 
-        { // right
-            const _v = _M.createPolygonV(this.p2, this.p1, p1H, p2H)
-            v.push(..._v)
-            c.push(..._M.fillColorFace([.5, 0, .5]))
-            index.push(currInd, currInd + 1, currInd + 2, currInd + 3, currInd + 4, currInd + 5)
-            currInd += 6
-        }
+            const p0H = this.p0.clone()
+            p0H.y += H
+            const p1H = this.p1.clone()
+            p1H.y += H
+            const p2H = this.p2.clone()
+            p2H.y += H
+            const p3H = this.p3.clone()
+            p3H.y += H
 
-        { // top
-            const _v = _M.createPolygonV(p2H, p1H, p0H, p3H)
-            v.push(..._v)
-            c.push(..._M.fillColorFace([.4, 0, .4]))
-            index.push(currInd, currInd + 1, currInd + 2, currInd + 3, currInd + 4, currInd + 5)
-            currInd += 6
+
+            { // left            
+                const _v = _M.createPolygonV(this.p0, this.p3, p3H, p0H)
+                v.push(..._v)
+                c.push(..._M.fillColorFace([.5, 0, .5]))
+                index.push(currInd, currInd + 1, currInd + 2, currInd + 3, currInd + 4, currInd + 5)
+                currInd += 6
+            }
+
+            { // right
+                const _v = _M.createPolygonV(this.p2, this.p1, p1H, p2H)
+                v.push(..._v)
+                c.push(..._M.fillColorFace([.5, 0, .5]))
+                index.push(currInd, currInd + 1, currInd + 2, currInd + 3, currInd + 4, currInd + 5)
+                currInd += 6
+            }
+
+            { // top
+                const _v = _M.createPolygonV(p2H, p1H, p0H, p3H)
+                v.push(..._v)
+                c.push(..._M.fillColorFace([.4, 0, .4]))
+                index.push(currInd, currInd + 1, currInd + 2, currInd + 3, currInd + 4, currInd + 5)
+                currInd += 6
+            }
         }
 
         return { v, c, index }

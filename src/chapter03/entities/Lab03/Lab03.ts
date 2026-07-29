@@ -63,7 +63,7 @@ export class Labyrinth {
         /////////////////////////////////////////
 
         const inner = new InnerLab(root)
-
+        await inner.build()
     }
 
 }

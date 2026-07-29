@@ -1,60 +1,94 @@
 import * as THREE from 'three'
 import { tunnel00 } from 'geometry/04_tunnel00/tunnel00'
-// import { room00 } from 'geometry/05_room00/room_00'
 import { _M, IArraysGeom } from '_CORE/_M/_m'
 import { Root } from '../../../index'
-import { Scheme } from './Scheme'
+import { Scheme, T_StartInitDataPoint } from './Scheme'
 import { Node } from './Node'
 import { Edge } from './Edge'
-
 
 export type TNodes = { 
     [key: string]: Node 
 }
 
-const ZERO_Y = -2.5
-
 export class InnerLab {
     _root: Root
-    mesh: THREE.Mesh
-    meshCollision: THREE.Mesh
+    mesh: THREE.Mesh | null = null
+    meshCollision: THREE.Mesh | null = null
 
     nodes: TNodes = {}
 
     constructor(root: Root) {
         this._root = root
+    }
+
+    async build() {
         const { studio, materials, phisics } = this._root
 
-        /////////////////////////////////
-
-        this.#calcLevel()
-
-        ////////////////////////////////
+        const startPoints = await this.#calcLevel()
 
         const D = -150
+
         
-        const g: IArraysGeom = { v: [], c: [], index: [] } 
+        const v: number[] = []
 
-        const t = tunnel00({
-            w0: 2, h0: 4, 
-            w1: 2, h1: 4, 
-            d: 30 
-        })
-        _M.translateVertices(t.v, 0, 4.5, D)
-        _M.mergeIndexedArrays(g, t)
+        {
+            const _v = _M.createPolygonV(
+                new THREE.Vector3(-1, 2, D),
+                new THREE.Vector3(1, 2, D),
+                startPoints.rP,
+                startPoints.lP,
+            )
+            _M.fill(_v, v)
+        }
+        {
+            const _v = _M.createPolygonV(
+                new THREE.Vector3(-1, 2, D),
+                startPoints.lP,
+                startPoints.lP.clone().add(new THREE.Vector3(0, 2.5, 0)),
+                new THREE.Vector3(-1, 6, D),
+            )
+            _M.fill(_v, v)
+        }
 
-        //const r = room00()
-        //_M.translateVertices(r.v, 0, 4, D - 30 - 15)
-        //_M.mergeIndexedArrays(g, r)
+        {
+            const _v = _M.createPolygonV(
+                new THREE.Vector3(-1, 2, D),
+                startPoints.lP,
+                startPoints.lP.clone().add(new THREE.Vector3(0, 2.5, 0)),
+                new THREE.Vector3(-1, 6, D),
+            )
+            _M.fill(_v, v)
+        }
 
-        this.mesh = _M.createMesh({ ...g, material: materials.levelMatNorm })
-        this.mesh.position.set(0, ZERO_Y, 0)
+        {
+            const _v = _M.createPolygonV(
+
+                startPoints.rP,
+                new THREE.Vector3(1, 2, D),
+                new THREE.Vector3(1, 6, D),
+                startPoints.rP.clone().add(new THREE.Vector3(0, 2.5, 0)),
+            )
+            _M.fill(_v, v)
+        }
+
+        {
+            const _v = _M.createPolygonV(
+                startPoints.lP.clone().add(new THREE.Vector3(0, 2.5, 0)),
+                startPoints.rP.clone().add(new THREE.Vector3(0, 2.5, 0)),
+                new THREE.Vector3(1, 6, D),
+                new THREE.Vector3(-1, 6, D),
+            )
+            _M.fill(_v, v)
+        }
+
+
+        
+        this.mesh = _M.createMesh({ v, material: materials.levelMatNorm })
         this.mesh.geometry.computeVertexNormals()
         studio.add(this.mesh)
 
         const collG1 = this.mesh.geometry.clone().toNonIndexed()
         this.meshCollision = new THREE.Mesh(collG1, materials.collision)
-        this.meshCollision.position.set(0, ZERO_Y, 0)
         phisics.addMeshToCollision(this.meshCollision, true)
     }
 
@@ -64,10 +98,14 @@ export class InnerLab {
 
         const POS = new THREE.Vector3(0, -7, -195)
 
-        const sch = new Scheme(this._root, [
-            new THREE.Vector3(0, 9, 15),
-            new THREE.Vector3(0, 0, 0),   
-        ])
+        
+        const startPointsData: T_StartInitDataPoint[] = [
+            { id: 's_p0', pos: new THREE.Vector3(0, 9, 30), visible: false },
+            { id: 's_p1', pos: new THREE.Vector3(0, 9, 15), visible: true },
+            { id: 's_p3', pos: new THREE.Vector3(0, 0, 0), visible: true },
+        ] 
+
+        const sch = new Scheme(this._root, startPointsData)
         await sch.create()
         
         console.log('sh !!!!', sch)
@@ -99,6 +137,13 @@ export class InnerLab {
 
         studio.add(m)
         phisics.addMeshToCollision(m, true)
+
+        const enterPoints = {
+            rP: this.nodes['s_p1'].neighbors['s_p0'].leftPLocal.clone().add(this.nodes['s_p1'].pos).add(POS),
+            lP: this.nodes['s_p1'].neighbors['s_p0'].rightPLocal.clone().add(this.nodes['s_p1'].pos).add(POS),
+        }
+        
+        return enterPoints
     }
 
 }
