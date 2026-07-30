@@ -10,11 +10,25 @@ export type T_StartInitDataPoint = {
     visible: boolean
 }
 
-export type TSchemePoint = {
+export type T_SchemePoint = {
     id: string
     pos: THREE.Vector3,
     neighbors: string[],
     visible: boolean
+}
+
+export interface I_Scheme {
+    points: {
+        [key: string]: T_SchemePoint
+    },
+    lines: {
+        [key: string]: {
+            p0: string, 
+            p1: string, 
+            dist: number,
+            visible: boolean
+        }
+    }
 }
 
 const RANDOM_DIST_NEW_POINT = 20
@@ -25,18 +39,9 @@ const RANDOM_H_BY_DIST = .2
 
 const MAX_POINTS = 32
 
-export class Scheme {
-    points: { 
-        [key: string]: TSchemePoint
-    } = {}
-    lines: { 
-        [key: string]: {
-            p0: string, 
-            p1: string, 
-            dist: number,
-            visible: boolean
-        }
-    } = {}
+export class Scheme implements I_Scheme {
+    points: I_Scheme['points'] = {}
+    lines: I_Scheme['lines'] = {}
     bounds: THREE.Box3 = new THREE.Box3(
         new THREE.Vector3(-70, -100, -300), 
         new THREE.Vector3(70, 0, 0)
@@ -56,9 +61,9 @@ export class Scheme {
         this.#root = root
 
         if (startData.length > 0) {
-            let points: TSchemePoint[] = []
+            let points: T_SchemePoint[] = []
             for (let i = 0; i < startData.length; ++i) {
-                const p: TSchemePoint = {
+                const p: T_SchemePoint = {
                     id: startData[i].id,
                     pos: startData[i].pos.clone(),
                     neighbors: [],
@@ -398,4 +403,23 @@ export class Scheme {
 
     // #endregion
 
-}   
+}
+
+
+export class SchemeTest implements I_Scheme {
+    points: I_Scheme['points'] = {}
+    lines: I_Scheme['lines'] = {}
+
+    async create() {
+        this.points['p1'] = { id: 'p1', pos: new THREE.Vector3(0, 0, 0), neighbors: ['p2', 'p3', 'p4'], visible: true }
+        this.points['p2'] = { id: 'p2', pos: new THREE.Vector3(0, 0, -20), neighbors: ['p1'], visible: true }
+        this.points['p3'] = { id: 'p3', pos: new THREE.Vector3(5, 0, -20), neighbors: ['p1'], visible: true }
+        this.points['p4'] = { id: 'p3', pos: new THREE.Vector3(20, 0, 0), neighbors: ['p1'], visible: true }
+
+        this.lines['l1'] = { p0: 'p1', p1: 'p2', dist: 0, visible: true }
+        this.lines['l2'] = { p0: 'p1', p1: 'p3', dist: 0, visible: true }
+        this.lines['l3'] = { p0: 'p1', p1: 'p4', dist: 0, visible: true }
+    }
+}
+
+

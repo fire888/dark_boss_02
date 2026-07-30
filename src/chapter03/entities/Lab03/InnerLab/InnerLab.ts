@@ -2,7 +2,7 @@ import * as THREE from 'three'
 import { tunnel00 } from 'geometry/04_tunnel00/tunnel00'
 import { _M, IArraysGeom } from '_CORE/_M/_m'
 import { Root } from '../../../index'
-import { Scheme, T_StartInitDataPoint } from './Scheme'
+import { Scheme, T_StartInitDataPoint, SchemeTest, I_Scheme } from './Scheme'
 import { Node } from './Node'
 import { Edge } from './Edge'
 
@@ -105,11 +105,13 @@ export class InnerLab {
             { id: 's_p3', pos: new THREE.Vector3(0, 0, 0), visible: true },
         ] 
 
-        const sch = new Scheme(this._root, startPointsData)
+        //const sch = new Scheme(this._root, startPointsData)
+        //await sch.create()
+
+        const sch = new SchemeTest()
         await sch.create()
         
         console.log('sh !!!!', sch)
-
 
         const v: number[] = []
         const c: number[] = []
@@ -122,6 +124,8 @@ export class InnerLab {
 
             this.nodes[key] = node
         }
+
+        console.log('this.nodes', this.nodes)
 
         for (let key in sch.lines) {
             const edge = new Edge(key, sch, this.nodes, this._root)
@@ -138,11 +142,18 @@ export class InnerLab {
         studio.add(m)
         phisics.addMeshToCollision(m, true)
 
-        const enterPoints = {
-            rP: this.nodes['s_p1'].neighbors['s_p0'].leftPLocal.clone().add(this.nodes['s_p1'].pos).add(POS),
-            lP: this.nodes['s_p1'].neighbors['s_p0'].rightPLocal.clone().add(this.nodes['s_p1'].pos).add(POS),
+        let enterPoints = {
+            lP: new THREE.Vector3(),
+            rP: new THREE.Vector3(),            
         }
-        
+
+        if (this.nodes['s_p1']) {
+            enterPoints = {
+                rP: this.nodes['s_p1'].neighbors['s_p0'].leftPLocal.clone().add(this.nodes['s_p1'].pos).add(POS),
+                lP: this.nodes['s_p1'].neighbors['s_p0'].rightPLocal.clone().add(this.nodes['s_p1'].pos).add(POS),
+            }
+        }
+
         return enterPoints
     }
 

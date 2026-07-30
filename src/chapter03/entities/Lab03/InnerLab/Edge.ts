@@ -1,5 +1,5 @@
 import * as THREE from 'three'
-import { TSchemePoint, Scheme } from './Scheme'
+import { I_Scheme } from './Scheme'
 import { _M, IArraysGeom } from '_CORE/_M/_m'
 import { Root } from '../../../index' 
 import { Node } from './Node'
@@ -18,12 +18,20 @@ export class Edge {
 
     _root: Root
 
-    constructor(key: string, sh: Scheme, nodes: TNodes, root: Root) {
+    constructor(key: string, sh: I_Scheme, nodes: TNodes, root: Root) {
         this._root = root
 
         const line = sh.lines[key]
+        console.log('line', line)
+
         this.node0Id = line.p0
         this.node1Id = line.p1
+
+        const node0 = nodes[this.node0Id]
+        const node1 = nodes[this.node1Id]
+
+        console.log('node0', node0)
+        console.log('node1', node1)
 
         this.p0 = nodes[this.node0Id].neighbors[this.node1Id].leftPLocal.clone().add(nodes[this.node0Id].pos)
         this.p1 = nodes[this.node0Id].neighbors[this.node1Id].rightPLocal.clone().add(nodes[this.node0Id].pos)

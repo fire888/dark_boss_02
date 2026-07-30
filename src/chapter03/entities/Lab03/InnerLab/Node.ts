@@ -1,5 +1,5 @@
 import * as THREE from 'three'
-import { TSchemePoint, Scheme } from './Scheme'
+import { I_Scheme } from './Scheme'
 import { _M, IArraysGeom } from '_CORE/_M/_m'
 import { Root } from '../../../index' 
 
@@ -24,7 +24,7 @@ export class Node {
     } = {}
     _root: Root
 
-    constructor(key: string, sh: Scheme, root: Root) {
+    constructor(key: string, sh: I_Scheme, root: Root) {
         this._root = root
         
         this.id = key

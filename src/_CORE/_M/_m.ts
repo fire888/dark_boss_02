@@ -149,7 +149,7 @@ export const _M = {
         }
         return uv
     },
-    ran: function (start: number, end: number = null) {
+    ran: function (start: number, end: number | null = null) {
         if (end === null) {
             return Math.random() * start;
         } 
@@ -680,20 +680,6 @@ export const _M = {
         return { v, uv, c }
     },
 
-    waitClickNext: (t: string = 'next') => new Promise((resolve) => {
-        const button = document.createElement('button')
-        button.style.position = 'absolute'
-        button.style.left = '50%'
-        button.style.top = '0'
-        button.innerText = t
-        button.classList.add('debug-button')
-        document.body.appendChild(button)
-        button.addEventListener('pointerdown', () => {
-            document.body.removeChild(button)
-            resolve(true)
-        })
-    }),
-
     toleranceToZero: (num: number, tolerance = 1e-10) => Math.abs(num) < tolerance ? 0 : num,
 
     appendMirrorX: (v: number[], c: number[] = [], uv: number[] = []) => {
@@ -1004,6 +990,34 @@ export const _M = {
             mess('uv2', l, g.uv2.length / 2)
         }
         mess(`---- complete: ${message}: ${isMisteke ? 'error' : 'ok'}`)
-    }
+    },
+
+    // #region click
+
+    waitClickOnce(keyCode: string, cb: () => void) {
+        const f = (event: KeyboardEvent) => {
+            if (event.code === keyCode) {
+                cb()
+                document.removeEventListener('keydown', f)
+            }
+        }
+        document.addEventListener('keydown', f)
+    },
+
+    waitClickNext: (t: string = 'next') => new Promise((resolve) => {
+        const button = document.createElement('button')
+        button.style.position = 'absolute'
+        button.style.left = '50%'
+        button.style.top = '0'
+        button.innerText = t
+        button.classList.add('debug-button')
+        document.body.appendChild(button)
+        button.addEventListener('pointerdown', () => {
+            document.body.removeChild(button)
+            resolve(true)
+        })
+    }),
+
+    // #endregion
 
 }
