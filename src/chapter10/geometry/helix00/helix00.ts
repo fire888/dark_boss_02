@@ -1,5 +1,4 @@
-import { _M, A2, A3 } from "_CORE/_M/_m"
-import { IArrayForBuffers } from "chapter10/types/GeomTypes"
+import { _M, type A2, type A3, type IArrayForBuffers } from "_CORE/_M/_m"
 import * as THREE from "three" 
 import { 
     COL_RED,

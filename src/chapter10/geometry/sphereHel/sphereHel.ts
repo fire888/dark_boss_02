@@ -1,6 +1,4 @@
-import { _M, A2, A3 } from "_CORE/_M/_m"
-import { IArrayForBuffers } from "chapter10/types/GeomTypes"
-import { Root } from "chapter10"
+import { _M, type A2, type A3, type IArrayForBuffers } from "_CORE/_M/_m"
 import { UV_TRIANGLE, COL_WHITE, UV_DARK, COL_BLUE_TOP, COL_RED, UV_EMPTY } from "../tileMapWall"
 import * as THREE from "three"
 

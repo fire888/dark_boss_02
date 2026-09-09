@@ -1,16 +1,5 @@
 import * as THREE from 'three'
 
-export type IArrayForBuffers = {
-    v: number[]
-    uv: number[]
-    c: number[]
-    vCollide?: number[]
-    forceMat?: number[]
-    w?: number 
-    h?: number
-    d?: number 
-}
-
 export type IPerimeter = [number, number][]
 
 export type I_TypeSeg = 'FLOOR' | 'STAIR' | 'STAIR_ADAPTER'

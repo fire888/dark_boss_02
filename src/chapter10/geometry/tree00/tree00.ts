@@ -1,5 +1,4 @@
-import { _M } from "_CORE/_M/_m"
-import { IArrayForBuffers } from "chapter10/types/GeomTypes"
+import { _M, type IArrayForBuffers } from "_CORE/_M/_m"
 import { COL_WHITE, UV_DARK, COL_BLUE_TOP, UV_GRID_CIRCLE, COL_RED, UV_EMPTY, 
     UV_POINTS_TREE,
     COL_BLUE_LIGHT_3,

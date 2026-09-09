@@ -1,5 +1,5 @@
-import { _M } from "_CORE/_M/_m"
-import { IArrayForBuffers, T_ROOM, I_TypeSeg } from "chapter10/types/GeomTypes"
+import { _M, type IArrayForBuffers } from "_CORE/_M/_m"
+import { type T_ROOM, type I_TypeSeg } from "chapter10/types/GeomTypes"
 import * as THREE from "three" 
 import { createPlatform00 } from "../platform00/platform00"
 import { createTree00 } from "../tree00/tree00"

@@ -1,6 +1,4 @@
-import { _M } from "_CORE/_M/_m"
-import { IArrayForBuffers } from "chapter10/types/GeomTypes"
-import { Root } from "chapter10"
+import { _M, type IArrayForBuffers } from "_CORE/_M/_m"
 import { UV_TRIANGLE, COL_WHITE, UV_DARK, COL_BLUE_TOP, 
     UV_POINTS, COL_RED,
     UV_EMPTY,

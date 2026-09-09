@@ -1,5 +1,4 @@
-import { IArrayForBuffers } from "chapter10/types/GeomTypes"
-import { _M } from "_CORE/_M/_m"
+import { _M, type IArrayForBuffers } from "_CORE/_M/_m"
 import { COL_RED, UV_POINTS } from "../tileMapWall"
 import * as THREE from "three"
 

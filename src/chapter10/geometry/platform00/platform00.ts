@@ -1,6 +1,6 @@
-import { IArrayForBuffers, T_ROOM } from "chapter10/types/GeomTypes"
-import { createFloor00, T_Floor } from "../floor00/floor00"
-import { _M } from "_CORE/_M/_m"
+import { type T_ROOM } from "chapter10/types/GeomTypes"
+import { createFloor00, type T_Floor } from "../floor00/floor00"
+import { _M, type IArrayForBuffers } from "_CORE/_M/_m"
 import { COL_RED, UV_POINTS } from "../tileMapWall"
 
 export const createPlatform00 = (s: T_ROOM): IArrayForBuffers => {

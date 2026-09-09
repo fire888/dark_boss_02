@@ -13,10 +13,26 @@ export type A3 = [number, number, number]
 export type A2 = [number, number]
 export type IArraysGeom = {
     index?: number[],
-    v: number[], 
-    uv?: number[], 
-    uv2?: number[], 
+    v: number[],
+    uv?: number[],
+    uv2?: number[],
     c?: number[],
+}
+
+export type IArrayForBuffers = {
+    v: number[]
+    uv: number[]
+    c: number[]
+    vCollide?: number[]
+    forceMat?: number[]
+    w?: number
+    h?: number
+    d?: number
+}
+
+export type IDebugArraysResult = {
+    ok: boolean
+    errors: string[]
 }
 
 let geomLabel: THREE.PlaneGeometry | null = null
@@ -908,36 +924,34 @@ export const _M = {
         return r
     },
 
-    debugArrays: (g: IArraysGeom, message: string = 'result') => {
-        const mess = (m: string, l?: number, need?: number) => {
-            if (l === undefined)  {
-                console.log(`${m}`)
-            } else {
-                console.log(`${m}: ${l === need}, curr: ${need?.toFixed(2)}, need: ${l}`)
-            }
+    debugArrays: (g: IArraysGeom, message: string = 'result'): IDebugArraysResult => {
+        const errors: string[] = []
+        const fail = (m: string) => {
+            errors.push(m)
+            console.log(m)
+        }
+        const failCount = (name: string, need: number, curr: number) => {
+            fail(`${name}: false, curr: ${curr.toFixed(2)}, need: ${need}`)
         }
 
-        mess('---- start: ' + message)
+        console.log('---- start: ' + message)
 
-        let l = g.v.length / 3
-        let isMisteke = false
+        const l = g.v.length / 3
 
-        if (g.index) {            
+        if (g.index) {
             // проверяем что в v есть вершина на которую ссылается index
-            let isIndMiss = false
-            let arr = []
+            // сравнение с undefined, а не truthy: координата 0 — валидное значение
+            const missing: number[] = []
             for (let i = 0; i < g.index.length; i++) {
-                if (!g.v[g.index[i] * 3]) {
-                    isIndMiss = true
-                    if (arr.length < 10) arr.push(g.index[i])
+                if (g.v[g.index[i] * 3] === undefined && missing.length < 10) {
+                    missing.push(g.index[i])
                 }
             }
-            if (isIndMiss) { 
-                mess(`index value not in v: ${JSON.stringify(arr)}, max ${g.v.length / 3 - 1} }`) 
-                isMisteke = true
+            if (missing.length) {
+                fail(`index value not in v: ${JSON.stringify(missing)}, max ${g.v.length / 3 - 1} }`)
             }
 
-           
+
             // проверяем что нет пропущенных индексов 1, 2, 4: пропущен 3
             const uniqueSortedIndexes = [...new Set(g.index)].sort((a, b) => a - b)
             let isNotPrevPlusOne = false
@@ -946,50 +960,31 @@ export const _M = {
                     isNotPrevPlusOne = true
                 }
             }
-            if (isNotPrevPlusOne) {
-                mess('index not used contiguously values v')
-                isMisteke = true
-            }
+            if (isNotPrevPlusOne) fail('index not used contiguously values v')
 
             // проверяем что нет неиспользуемых вершин в v на которых нет ссылки в index
             const maxInd = uniqueSortedIndexes[uniqueSortedIndexes.length - 1]
             if (g.v.length !== 0 && g.index.length !== 0 && g.v.length / 3 - 1 !== maxInd) {
-                mess('v has values more than used in index')
-                isMisteke = true
+                fail('v has values more than used in index')
             }
 
-            if (g.index.length === 0) {
-                mess('index length is 0')
-                isMisteke = true
-            }
-            if (g.v.length === 0) {
-                mess('v length is 0')
-                isMisteke = true
-            }
+            if (g.index.length === 0) fail('index length is 0')
+            if (g.v.length === 0) fail('v length is 0')
         }
 
         // проверяем что v кратно 3
-        if (l % 1 !== 0) { 
-           isMisteke = true
-           mess('v need step 3')
-        }
+        if (l % 1 !== 0) fail('v need step 3')
 
         // проверяем что c кратно соответствует v
-        if (g.c && g.c.length / 3 !== l) { 
-            isMisteke = true
-            mess('c', l, g.c.length / 3)
-        }
+        if (g.c && g.c.length / 3 !== l) failCount('c', l, g.c.length / 3)
         // проверяем что uv кратно соответствует v
-        if (g.uv && g.uv.length / 2 !== l) { 
-            isMisteke = true
-            mess('uv', l, g.uv.length / 2)
-        }
+        if (g.uv && g.uv.length / 2 !== l) failCount('uv', l, g.uv.length / 2)
         // проверяем что uv2 кратно соответствует v
-        if (g.uv2 && g.uv2.length / 2 !== 0) { 
-            isMisteke = true
-            mess('uv2', l, g.uv2.length / 2)
-        }
-        mess(`---- complete: ${message}: ${isMisteke ? 'error' : 'ok'}`)
+        if (g.uv2 && g.uv2.length / 2 !== l) failCount('uv2', l, g.uv2.length / 2)
+
+        const ok = errors.length === 0
+        console.log(`---- complete: ${message}: ${ok ? 'ok' : 'error'}`)
+        return { ok, errors }
     },
 
     // #region click

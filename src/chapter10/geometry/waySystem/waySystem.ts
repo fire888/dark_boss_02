@@ -1,8 +1,8 @@
-import { _M, A3 } from "_CORE/_M/_m"
-import { IArrayForBuffers, T_ROOM } from "chapter10/types/GeomTypes"
+import { _M, type A3, type IArrayForBuffers } from "_CORE/_M/_m"
+import { type T_ROOM } from "chapter10/types/GeomTypes"
 import * as THREE from "three" 
 import { createHelix01 } from "../helix01/helix01"
-import { createWaySingle, T_LONG_WAY } from "./waySingle"
+import { createWaySingle, type T_LONG_WAY } from "./waySingle"
 
 
 export const createWaySystem = ():  { geomData: IArrayForBuffers, segments: T_ROOM[] } => {

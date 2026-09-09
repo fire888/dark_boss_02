@@ -30,6 +30,8 @@
     "build10": "set FOLDER=chapter10 && webpack --mode=production",
     "dev10": "set FOLDER=chapter10 && webpack serve --mode=development",
 
+    "check:geom": "node --experimental-strip-types --no-warnings --import ./scripts/register.mjs scripts/checkGeom.mjs",
+
     "deploy": "node deploy",
     "test": "jasmine",
     "testbr": "jasmine-browser-runner runSpecs"
