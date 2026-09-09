@@ -1,19 +1,35 @@
 import * as THREE from 'three'
-import { tunnel00 } from 'geometry/04_tunnel00/tunnel00'
-import { _M, IArraysGeom } from '_CORE/_M/_m'
-import { Root } from '../../../index'
-import { Scheme, T_StartInitDataPoint, SchemeTest, I_Scheme } from './Scheme'
-import { Node } from './Node'
+import { _M } from '_CORE/_M/_m'
+import type { Root } from '../../../index'
+import { Scheme, type T_StartInitDataPoint, type I_Scheme } from './Scheme'
+import { Node, H_ROOM } from './Node'
 import { Edge } from './Edge'
 
-export type TNodes = { 
-    [key: string]: Node 
+export type TNodes = {
+    [key: string]: Node
 }
+
+type T_Geom = { v: number[], c: number[], index: number[] }
+
+// смещение всего подземелья в мировые координаты
+const POS = new THREE.Vector3(0, -7, -195)
+
+// стык с внешним уровнем: проём в стене на z = Z_GATE, x от -1 до 1, y от 2 до 6
+const Z_GATE = -150
+const GATE_HALF_W = 1
+const GATE_Y0 = 2
+const GATE_Y1 = 6
+// узел, в который заходит вход, и сосед, задающий направление проёма
+const GATE_NODE = 's_p1'
+const GATE_DIR_NODE = 's_p0'
+
+const COL_GATE: [number, number, number] = [.42, .40, .38]
 
 export class InnerLab {
     _root: Root
     mesh: THREE.Mesh | null = null
     meshCollision: THREE.Mesh | null = null
+    meshGate: THREE.Mesh | null = null
 
     nodes: TNodes = {}
 
@@ -22,139 +38,100 @@ export class InnerLab {
     }
 
     async build() {
+        const sch = await this.#createScheme()
+
+        this.#createNodes(sch)
+        const geom = this.#collectGeometry(sch)
+
+        this.#addToScene(geom)
+        this.#addGate()
+    }
+
+    async #createScheme(): Promise<I_Scheme> {
+        const startPointsData: T_StartInitDataPoint[] = [
+            { id: GATE_DIR_NODE, pos: new THREE.Vector3(0, 9, 30), visible: false },
+            { id: GATE_NODE, pos: new THREE.Vector3(0, 9, 15), visible: true },
+            { id: 's_p3', pos: new THREE.Vector3(0, 0, 0), visible: true },
+        ]
+
+        const sch = new Scheme(this._root, startPointsData)
+        await sch.create()
+
+        return sch
+    }
+
+    // Узлы строятся раньше рёбер: ребро пристыковывается к уже посчитанным проёмам,
+    // а Node мог отбросить слишком тесный проём — тогда коридор помечается broken и не рисуется.
+    #createNodes(sch: I_Scheme) {
+        this.nodes = {}
+        for (const key in sch.points) {
+            this.nodes[key] = new Node(key, sch, this._root)
+        }
+    }
+
+    #collectGeometry(sch: I_Scheme): T_Geom {
+        const geom: T_Geom = { v: [], c: [], index: [] }
+
+        for (const key in this.nodes) {
+            _M.mergeIndexedArrays(geom, this.nodes[key].getAttr())
+        }
+
+        for (const key in sch.lines) {
+            const edge = new Edge(key, sch, this.nodes, this._root)
+            _M.mergeIndexedArrays(geom, edge.getAttr())
+        }
+
+        return geom
+    }
+
+    #addToScene({ v, c, index }: T_Geom) {
         const { studio, materials, phisics } = this._root
 
-        const startPoints = await this.#calcLevel()
-
-        const D = -150
-
-        
-        const v: number[] = []
-
-        {
-            const _v = _M.createPolygonV(
-                new THREE.Vector3(-1, 2, D),
-                new THREE.Vector3(1, 2, D),
-                startPoints.rP,
-                startPoints.lP,
-            )
-            _M.fill(_v, v)
-        }
-        {
-            const _v = _M.createPolygonV(
-                new THREE.Vector3(-1, 2, D),
-                startPoints.lP,
-                startPoints.lP.clone().add(new THREE.Vector3(0, 2.5, 0)),
-                new THREE.Vector3(-1, 6, D),
-            )
-            _M.fill(_v, v)
-        }
-
-        {
-            const _v = _M.createPolygonV(
-                new THREE.Vector3(-1, 2, D),
-                startPoints.lP,
-                startPoints.lP.clone().add(new THREE.Vector3(0, 2.5, 0)),
-                new THREE.Vector3(-1, 6, D),
-            )
-            _M.fill(_v, v)
-        }
-
-        {
-            const _v = _M.createPolygonV(
-
-                startPoints.rP,
-                new THREE.Vector3(1, 2, D),
-                new THREE.Vector3(1, 6, D),
-                startPoints.rP.clone().add(new THREE.Vector3(0, 2.5, 0)),
-            )
-            _M.fill(_v, v)
-        }
-
-        {
-            const _v = _M.createPolygonV(
-                startPoints.lP.clone().add(new THREE.Vector3(0, 2.5, 0)),
-                startPoints.rP.clone().add(new THREE.Vector3(0, 2.5, 0)),
-                new THREE.Vector3(1, 6, D),
-                new THREE.Vector3(-1, 6, D),
-            )
-            _M.fill(_v, v)
-        }
-
-
-        
-        this.mesh = _M.createMesh({ v, material: materials.levelMatNorm })
-        this.mesh.geometry.computeVertexNormals()
+        this.mesh = _M.createMesh({ v, c, index, material: materials.levelMatNorm })
+        this.mesh.position.copy(POS)
         studio.add(this.mesh)
 
-        const collG1 = this.mesh.geometry.clone().toNonIndexed()
-        this.meshCollision = new THREE.Mesh(collG1, materials.collision)
+        this.meshCollision = new THREE.Mesh(this.mesh.geometry.clone().toNonIndexed(), materials.collision)
+        this.meshCollision.position.copy(POS)
         phisics.addMeshToCollision(this.meshCollision, true)
     }
 
-    async #calcLevel() {
-        const { studio, phisics } = this._root
+    // Короб между проёмом внешнего уровня и проёмом узла GATE_NODE.
+    #addGate() {
+        const { studio, materials, phisics } = this._root
 
+        const node = this.nodes[GATE_NODE]
+        const portal = node && node.neighbors[GATE_DIR_NODE]
+        if (!portal) return
 
-        const POS = new THREE.Vector3(0, -7, -195)
+        // смотрим на узел снаружи, поэтому левый край проёма становится правым краем входа
+        const inR = portal.leftPLocal.clone().add(node.pos).add(POS)
+        const inL = portal.rightPLocal.clone().add(node.pos).add(POS)
+        const inRT = inR.clone().setY(inR.y + H_ROOM)
+        const inLT = inL.clone().setY(inL.y + H_ROOM)
 
-        
-        const startPointsData: T_StartInitDataPoint[] = [
-            { id: 's_p0', pos: new THREE.Vector3(0, 9, 30), visible: false },
-            { id: 's_p1', pos: new THREE.Vector3(0, 9, 15), visible: true },
-            { id: 's_p3', pos: new THREE.Vector3(0, 0, 0), visible: true },
-        ] 
-
-        //const sch = new Scheme(this._root, startPointsData)
-        //await sch.create()
-
-        const sch = new SchemeTest()
-        await sch.create()
-        
-        console.log('sh !!!!', sch)
+        const outL = new THREE.Vector3(-GATE_HALF_W, GATE_Y0, Z_GATE)
+        const outR = new THREE.Vector3(GATE_HALF_W, GATE_Y0, Z_GATE)
+        const outLT = new THREE.Vector3(-GATE_HALF_W, GATE_Y1, Z_GATE)
+        const outRT = new THREE.Vector3(GATE_HALF_W, GATE_Y1, Z_GATE)
 
         const v: number[] = []
         const c: number[] = []
-        const index: number[] = []
 
-        for (let key in sch.points) {
-            const node = new Node(key, sch, this._root)
-            const attr = node.getAttr()
-            _M.mergeIndexedArrays({ v, c, index }, attr)
-
-            this.nodes[key] = node
+        const quad = (a: THREE.Vector3, b: THREE.Vector3, d: THREE.Vector3, e: THREE.Vector3) => {
+            _M.fill(_M.createPolygonV(a, b, d, e), v)
+            _M.fill(_M.fillColorFace(COL_GATE), c)
         }
 
-        console.log('this.nodes', this.nodes)
+        quad(outL, outR, inR, inL)      // пол
+        quad(outL, inL, inLT, outLT)    // левая стена
+        quad(inR, outR, outRT, inRT)    // правая стена
+        quad(inLT, inRT, outRT, outLT)  // потолок
 
-        for (let key in sch.lines) {
-            const edge = new Edge(key, sch, this.nodes, this._root)
-            const attr = edge.getAttr()
-            _M.mergeIndexedArrays({ v, c, index }, attr)
-        }
+        this.meshGate = _M.createMesh({ v, c, material: materials.levelMatNorm })
+        studio.add(this.meshGate)
 
-        const m = _M.createMesh({ 
-            v, c, index,
-            material: new THREE.MeshBasicMaterial({ color: 0xffffff, vertexColors: true }) 
-        })
-        m.position.copy(POS)
-
-        studio.add(m)
-        phisics.addMeshToCollision(m, true)
-
-        let enterPoints = {
-            lP: new THREE.Vector3(),
-            rP: new THREE.Vector3(),            
-        }
-
-        if (this.nodes['s_p1']) {
-            enterPoints = {
-                rP: this.nodes['s_p1'].neighbors['s_p0'].leftPLocal.clone().add(this.nodes['s_p1'].pos).add(POS),
-                lP: this.nodes['s_p1'].neighbors['s_p0'].rightPLocal.clone().add(this.nodes['s_p1'].pos).add(POS),
-            }
-        }
-
-        return enterPoints
+        const collision = new THREE.Mesh(this.meshGate.geometry.clone().toNonIndexed(), materials.collision)
+        phisics.addMeshToCollision(collision, true)
     }
-
 }

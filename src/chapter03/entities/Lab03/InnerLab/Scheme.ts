@@ -1,8 +1,9 @@
 import * as THREE from 'three'
-import { _M, IArraysGeom } from '_CORE/_M/_m'
-import { Root } from '../../../index'
+import { _M, type IArraysGeom } from '_CORE/_M/_m'
+import type { Root } from '../../../index'
 
 import { distanceBetweenSegments3D } from './distLines'
+import { CORRIDOR_CLEARANCE } from './Node'
 
 export type T_StartInitDataPoint = {
     id: string,
@@ -37,7 +38,7 @@ const DIST_MERGE_POINTS = 7
 const DIST_LINE_MERGE_POINTS = 10 
 const RANDOM_H_BY_DIST = .2
 
-const MAX_POINTS = 32
+const MAX_POINTS = 500
 
 export class Scheme implements I_Scheme {
     points: I_Scheme['points'] = {}
@@ -227,6 +228,29 @@ export class Scheme implements I_Scheme {
         return false
     }
 
+    // Ребро станет коробом-коридором, поэтому оно не должно проходить вплотную к другим рёбрам.
+    // Рёбра с общим узлом не проверяем: у узла они сходятся по определению, и разводит их Node,
+    // ужимая проёмы.
+    #checkSegmentTooCloseToLines(p0: THREE.Vector3, p1: THREE.Vector3, fromId: string, toId: string) {
+        const seg = { p1: p0, p2: p1 }
+
+        for (let key in this.lines) {
+            const { p0: aId, p1: bId } = this.lines[key]
+
+            if (aId === fromId || bId === fromId || aId === toId || bId === toId) continue
+            if (!this.points[aId] || !this.points[bId]) continue
+
+            const d = distanceBetweenSegments3D(
+                seg,
+                { p1: this.points[aId].pos, p2: this.points[bId].pos }
+            )
+
+            if (d < CORRIDOR_CLEARANCE) return true
+        }
+
+        return false
+    }
+
     #makePoint() {
         if (Object.keys(this.points).length > MAX_POINTS) {
             return null
@@ -248,10 +272,15 @@ export class Scheme implements I_Scheme {
                 }
 
                 if (!pointId) {
-                    pointId = this.#calkPointId()   
-                } else { 
+                    pointId = this.#calkPointId()
+                } else {
                     newPos = this.points[pointId].pos.clone()
                     dist = newPos.distanceTo(this.#agent.pos)
+                }
+
+                // коридор вдоль этого ребра прошил бы чужой коридор — пробуем другое направление
+                if (this.#checkSegmentTooCloseToLines(this.#agent.pos, newPos, this.#agent.currentPointId, pointId)) {
+                    continue
                 }
 
                 return { newPos, dir, dist, pointId }
@@ -411,15 +440,13 @@ export class SchemeTest implements I_Scheme {
     lines: I_Scheme['lines'] = {}
 
     async create() {
-        this.points['p1'] = { id: 'p1', pos: new THREE.Vector3(0, 0, 0), neighbors: ['p2', 'p3', 'p4'], visible: true }
+        this.points['p1'] = { id: 'p1', pos: new THREE.Vector3(0, 0, 0), neighbors: ['p2', 'p3'], visible: true }
         this.points['p2'] = { id: 'p2', pos: new THREE.Vector3(0, 0, -20), neighbors: ['p1'], visible: true }
         this.points['p3'] = { id: 'p3', pos: new THREE.Vector3(5, 0, -20), neighbors: ['p1'], visible: true }
-        this.points['p4'] = { id: 'p3', pos: new THREE.Vector3(20, 0, 0), neighbors: ['p1'], visible: true }
+        //this.points['p4'] = { id: 'p3', pos: new THREE.Vector3(20, 0, 0), neighbors: ['p1'], visible: true }
 
         this.lines['l1'] = { p0: 'p1', p1: 'p2', dist: 0, visible: true }
         this.lines['l2'] = { p0: 'p1', p1: 'p3', dist: 0, visible: true }
-        this.lines['l3'] = { p0: 'p1', p1: 'p4', dist: 0, visible: true }
+        //this.lines['l3'] = { p0: 'p1', p1: 'p4', dist: 0, visible: true }
     }
 }
-
-
