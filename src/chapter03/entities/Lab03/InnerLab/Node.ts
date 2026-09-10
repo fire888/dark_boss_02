@@ -14,7 +14,7 @@ export type Neighbor = {
 
 const RADIUS_NODE = 4
 const W_SIDE = 1.3
-export const H_ROOM = 2.5
+export const H_ROOM = 3.5
 
 // Коридор — короб шириной 2*W_SIDE и высотой H_ROOM, натянутый вдоль ребра схемы.
 // Если оси двух рёбер расходятся дальше диагонали сечения, короба пересечься не могут:
@@ -117,10 +117,10 @@ export class Node {
             a: THREE.Vector3, b: THREE.Vector3, d: THREE.Vector3, e: THREE.Vector3,
             col: [number, number, number]
         ) => {
-            _M.fill(_M.createPolygonV(a, b, d, e), v)
-            _M.fill(_M.fillColorFace(col), c)
-            for (let k = 0; k < 6; ++k) index.push(ind + k)
-            ind += 6
+            v.push(...a.toArray(), ...b.toArray(), ...d.toArray(), ...e.toArray())
+            c.push(...col, ...col, ...col, ...col)
+            index.push(ind, ind + 1, ind + 2, ind, ind + 2, ind + 3)
+            ind += 4
         }
 
         const center = this.pos.clone()
@@ -141,6 +141,14 @@ export class Node {
             pushTri(centerTop, PT(t1), PT(t0), COL_CEIL)
         })
 
+        // В проёме пол и потолок обрываются по хорде между его краями, а не по дуге обода.
+        // Коридор пристыкован именно к хорде, поэтому дуга выпирала бы в него язычком
+        // глубиной R*(1 - cos(halfAngle)) с ребром по центру проёма.
+        const portalFloorAndCeil = (n: Neighbor) => {
+            pushTri(center, P(n.angleRight), P(n.angleLeft), COL_FLOOR)
+            pushTri(centerTop, PT(n.angleLeft), PT(n.angleRight), COL_CEIL)
+        }
+
         const wall = (from: number, sweep: number) => walk(from, sweep, (t0, t1) => {
             pushQuad(P(t1), P(t0), PT(t0), PT(t1), COL_WALL)
         })
@@ -158,7 +166,7 @@ export class Node {
             const next = list[(i + 1) % list.length]
 
             // проём: пол и потолок есть, стены нет — сюда пристыковывается коридор
-            floorAndCeil(curr.angleRight, curr.halfAngle * 2)
+            portalFloorAndCeil(curr)
 
             // глухой участок от левого края текущего проёма до правого края следующего;
             // при одном соседе формула сама даёт TAU - 2*half, то есть кольцо с одним разрывом

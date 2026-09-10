@@ -1,6 +1,5 @@
 import * as THREE from 'three'
 import type { I_Scheme } from './Scheme'
-import { _M } from '_CORE/_M/_m'
 import type { Root } from '../../../index'
 import { H_ROOM } from './Node'
 import type { TNodes } from './InnerLab'
@@ -64,10 +63,10 @@ export class Edge {
             a: THREE.Vector3, b: THREE.Vector3, d: THREE.Vector3, e: THREE.Vector3,
             col: [number, number, number]
         ) => {
-            _M.fill(_M.createPolygonV(a, b, d, e), v)
-            _M.fill(_M.fillColorFace(col), c)
-            for (let k = 0; k < 6; ++k) index.push(ind + k)
-            ind += 6
+            v.push(...a.toArray(), ...b.toArray(), ...d.toArray(), ...e.toArray())
+            c.push(...col, ...col, ...col, ...col)
+            index.push(ind, ind + 1, ind + 2, ind, ind + 2, ind + 3)
+            ind += 4
         }
 
         const up = new THREE.Vector3(0, H_ROOM, 0)
