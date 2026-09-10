@@ -38,7 +38,7 @@ const DIST_MERGE_POINTS = 7
 const DIST_LINE_MERGE_POINTS = 10 
 const RANDOM_H_BY_DIST = .2
 
-const MAX_POINTS = 500
+const MAX_POINTS = 100
 
 export class Scheme implements I_Scheme {
     points: I_Scheme['points'] = {}
@@ -60,7 +60,10 @@ export class Scheme implements I_Scheme {
 
     constructor(root: Root, startData: T_StartInitDataPoint[] = []) {
         this.#root = root
+        this.#fillStartPoints(startData)
+    }
 
+    #fillStartPoints(startData: T_StartInitDataPoint[]) {
         if (startData.length > 0) {
             let points: T_SchemePoint[] = []
             for (let i = 0; i < startData.length; ++i) {
@@ -112,7 +115,7 @@ export class Scheme implements I_Scheme {
                 visible: true
             }
         }
-    }
+    } 
 
     async create() {
         
