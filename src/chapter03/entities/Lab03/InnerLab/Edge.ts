@@ -3,6 +3,7 @@ import type { I_Scheme } from './Scheme'
 import type { Root } from '../../../index'
 import { H_ROOM } from './Node'
 import type { TNodes } from './InnerLab'
+import { tunnel01 } from 'geometry/04_tunnel01/tunnel01'
 
 const COL_FLOOR: [number, number, number] = [.46, .42, .38]
 const COL_WALL: [number, number, number] = [.66, .63, .58]
@@ -52,34 +53,17 @@ export class Edge {
     }
 
     getAttr() {
-        const v: number[] = []
-        const c: number[] = []
-        const index: number[] = []
+        if (!this.visible || this.isBroken) return { v: [], c: [], index: [], vCollide: [] }
 
-        if (!this.visible || this.isBroken) return { v, c, index }
-
-        let ind = 0
-        const pushQuad = (
-            a: THREE.Vector3, b: THREE.Vector3, d: THREE.Vector3, e: THREE.Vector3,
-            col: [number, number, number]
-        ) => {
-            v.push(...a.toArray(), ...b.toArray(), ...d.toArray(), ...e.toArray())
-            c.push(...col, ...col, ...col, ...col)
-            index.push(ind, ind + 1, ind + 2, ind, ind + 2, ind + 3)
-            ind += 4
-        }
-
-        const up = new THREE.Vector3(0, H_ROOM, 0)
-        const p0H = this.p0.clone().add(up)
-        const p1H = this.p1.clone().add(up)
-        const p2H = this.p2.clone().add(up)
-        const p3H = this.p3.clone().add(up)
-
-        pushQuad(this.p0, this.p1, this.p2, this.p3, COL_FLOOR)
-        pushQuad(p3H, p2H, p1H, p0H, COL_CEIL)
-        pushQuad(this.p0, this.p3, p3H, p0H, COL_WALL)
-        pushQuad(this.p2, this.p1, p1H, p2H, COL_WALL)
-
-        return { v, c, index }
+        return tunnel01({
+            p0: this.p0.toArray(),
+            p1: this.p1.toArray(),
+            p2: this.p2.toArray(),
+            p3: this.p3.toArray(),
+            h: H_ROOM,
+            colFloor: COL_FLOOR,
+            colWall: COL_WALL,
+            colCeil: COL_CEIL,
+        })
     }
 }

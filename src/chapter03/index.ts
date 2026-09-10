@@ -11,7 +11,6 @@ import { Particles } from './entities/Particles'
 
 import { UiCustom } from "./entities/UiCustom"
 
-//import { Labyrinth } from './entityLabyrinth/Labyrinth'
 import { Labyrinth } from './entities/Lab03/Lab03'
 import { AudioManagerCustom } from "./entities/AudioManagerCustom"
 import { Materials } from "./entities/Materials"
@@ -42,6 +41,11 @@ export interface Root extends Core {
     }
     debug: Debug
 }
+
+import { showMap00, map00 } from '../maps/map00/map00'
+
+const m = map00() 
+showMap00(m)
 
 
 window.addEventListener("DOMContentLoaded", async () => {

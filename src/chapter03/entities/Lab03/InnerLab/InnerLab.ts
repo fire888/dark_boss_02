@@ -9,7 +9,7 @@ export type TNodes = {
     [key: string]: Node
 }
 
-type T_Geom = { v: number[], c: number[], index: number[] }
+type T_Geom = { v: number[], c: number[], index: number[], vCollide: number[] }
 
 // смещение всего подземелья в мировые координаты
 const POS = new THREE.Vector3(0, -7, -195)
@@ -70,28 +70,36 @@ export class InnerLab {
     }
 
     #collectGeometry(sch: I_Scheme): T_Geom {
-        const geom: T_Geom = { v: [], c: [], index: [] }
+        const geom: T_Geom = { v: [], c: [], index: [], vCollide: [] }
+
+        // vCollide не индексируется и mergeIndexedArrays его не знает, поэтому
+        // просто дописывается следом: смещать в нём нечего
+        const add = (part: { v: number[], c?: number[], index?: number[], vCollide?: number[] }) => {
+            _M.mergeIndexedArrays(geom, part)
+            if (part.vCollide) _M.fill(part.vCollide, geom.vCollide)
+        }
 
         for (const key in this.nodes) {
-            _M.mergeIndexedArrays(geom, this.nodes[key].getAttr())
+            add(this.nodes[key].getAttr())
         }
 
         for (const key in sch.lines) {
             const edge = new Edge(key, sch, this.nodes, this._root)
-            _M.mergeIndexedArrays(geom, edge.getAttr())
+            add(edge.getAttr())
         }
 
         return geom
     }
 
-    #addToScene({ v, c, index }: T_Geom) {
+    #addToScene({ v, c, index, vCollide }: T_Geom) {
         const { studio, materials, phisics } = this._root
 
         this.mesh = _M.createMesh({ v, c, index, material: materials.levelMatNorm })
         this.mesh.position.copy(POS)
         studio.add(this.mesh)
 
-        this.meshCollision = new THREE.Mesh(this.mesh.geometry.clone().toNonIndexed(), materials.collision)
+        // коллизия идёт по собственному прокси фабрик, а не по клону рендер-меша
+        this.meshCollision = _M.createMesh({ v: vCollide, material: materials.collision })
         this.meshCollision.position.copy(POS)
         phisics.addMeshToCollision(this.meshCollision, true)
     }

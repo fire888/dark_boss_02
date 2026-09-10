@@ -2,6 +2,7 @@ import * as THREE from 'three'
 import type { I_Scheme } from './Scheme'
 import { _M } from '_CORE/_M/_m'
 import type { Root } from '../../../index'
+import { room00 } from 'geometry/05_room00/room00'
 
 export type Neighbor = {
     id: string
@@ -98,83 +99,19 @@ export class Node {
     }
 
     getAttr() {
-        const v: number[] = []
-        const c: number[] = []
-        const index: number[] = []
+        if (!this.visible) return { v: [], c: [], index: [], vCollide: [] }
 
-        if (!this.visible) return { v, c, index }
-
-        let ind = 0
-
-        const pushTri = (a: THREE.Vector3, b: THREE.Vector3, d: THREE.Vector3, col: number[]) => {
-            v.push(...a.toArray(), ...b.toArray(), ...d.toArray())
-            c.push(...col, ...col, ...col)
-            index.push(ind, ind + 1, ind + 2)
-            ind += 3
-        }
-
-        const pushQuad = (
-            a: THREE.Vector3, b: THREE.Vector3, d: THREE.Vector3, e: THREE.Vector3,
-            col: [number, number, number]
-        ) => {
-            v.push(...a.toArray(), ...b.toArray(), ...d.toArray(), ...e.toArray())
-            c.push(...col, ...col, ...col, ...col)
-            index.push(ind, ind + 1, ind + 2, ind, ind + 2, ind + 3)
-            ind += 4
-        }
-
-        const center = this.pos.clone()
-        const centerTop = center.clone().setY(center.y + H_ROOM)
-        const P = (a: number) => rimPoint(a).add(this.pos)
-        const PT = (a: number) => P(a).setY(this.pos.y + H_ROOM)
-
-        const walk = (from: number, sweep: number, cb: (t0: number, t1: number) => void) => {
-            if (sweep <= 1e-6) return
-            const steps = Math.max(1, Math.ceil(sweep / ARC_STEP))
-            const d = sweep / steps
-            for (let s = 0; s < steps; ++s) cb(from + s * d, from + (s + 1) * d)
-        }
-
-        // пол и потолок сплошные, в том числе под проёмами
-        const floorAndCeil = (from: number, sweep: number) => walk(from, sweep, (t0, t1) => {
-            pushTri(center, P(t0), P(t1), COL_FLOOR)
-            pushTri(centerTop, PT(t1), PT(t0), COL_CEIL)
+        return room00({
+            pos: this.pos.toArray(),
+            r: RADIUS_NODE,
+            h: H_ROOM,
+            arcStep: ARC_STEP,
+            portals: Object.values(this.neighbors)
+                .sort((a, b) => a.angle - b.angle)
+                .map(({ angleRight, angleLeft }) => ({ angleRight, angleLeft })),
+            colFloor: COL_FLOOR,
+            colWall: COL_WALL,
+            colCeil: COL_CEIL,
         })
-
-        // В проёме пол и потолок обрываются по хорде между его краями, а не по дуге обода.
-        // Коридор пристыкован именно к хорде, поэтому дуга выпирала бы в него язычком
-        // глубиной R*(1 - cos(halfAngle)) с ребром по центру проёма.
-        const portalFloorAndCeil = (n: Neighbor) => {
-            pushTri(center, P(n.angleRight), P(n.angleLeft), COL_FLOOR)
-            pushTri(centerTop, PT(n.angleLeft), PT(n.angleRight), COL_CEIL)
-        }
-
-        const wall = (from: number, sweep: number) => walk(from, sweep, (t0, t1) => {
-            pushQuad(P(t1), P(t0), PT(t0), PT(t1), COL_WALL)
-        })
-
-        const list = Object.values(this.neighbors).sort((a, b) => a.angle - b.angle)
-
-        if (list.length === 0) {
-            floorAndCeil(0, TAU)
-            wall(0, TAU)
-            return { v, c, index }
-        }
-
-        for (let i = 0; i < list.length; ++i) {
-            const curr = list[i]
-            const next = list[(i + 1) % list.length]
-
-            // проём: пол и потолок есть, стены нет — сюда пристыковывается коридор
-            portalFloorAndCeil(curr)
-
-            // глухой участок от левого края текущего проёма до правого края следующего;
-            // при одном соседе формула сама даёт TAU - 2*half, то есть кольцо с одним разрывом
-            const sweep = norm(next.angleRight - curr.angleLeft)
-            floorAndCeil(curr.angleLeft, sweep)
-            wall(curr.angleLeft, sweep)
-        }
-
-        return { v, c, index }
     }
 }
