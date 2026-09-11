@@ -1,6 +1,7 @@
 import { Root } from '../index'
 import { update } from '@tweenjs/tween.js'
 import { IS_DEV_START_ORBIT } from '../constants/CONSTANTS'
+import * as THREE from 'three'
 
 export const pipeInit_03 = async (root: Root) => {
     const {

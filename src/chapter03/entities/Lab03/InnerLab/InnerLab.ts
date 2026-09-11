@@ -4,12 +4,13 @@ import type { Root } from '../../../index'
 import { Scheme, type T_StartInitDataPoint, type I_Scheme } from './Scheme'
 import { Node, H_ROOM } from './Node'
 import { Edge } from './Edge'
+import { tunnel01 } from 'geometry/04_tunnel01/tunnel01'
 
 export type TNodes = {
     [key: string]: Node
 }
 
-type T_Geom = { v: number[], c: number[], index: number[], vCollide: number[] }
+type T_Geom = { v: number[], c: number[], uv: number[], index: number[], vCollide: number[] }
 
 // смещение всего подземелья в мировые координаты
 const POS = new THREE.Vector3(0, -7, -195)
@@ -70,11 +71,11 @@ export class InnerLab {
     }
 
     #collectGeometry(sch: I_Scheme): T_Geom {
-        const geom: T_Geom = { v: [], c: [], index: [], vCollide: [] }
+        const geom: T_Geom = { v: [], c: [], uv: [], index: [], vCollide: [] }
 
         // vCollide не индексируется и mergeIndexedArrays его не знает, поэтому
         // просто дописывается следом: смещать в нём нечего
-        const add = (part: { v: number[], c?: number[], index?: number[], vCollide?: number[] }) => {
+        const add = (part: { v: number[], c?: number[], uv?: number[], index?: number[], vCollide?: number[] }) => {
             _M.mergeIndexedArrays(geom, part)
             if (part.vCollide) _M.fill(part.vCollide, geom.vCollide)
         }
@@ -91,10 +92,10 @@ export class InnerLab {
         return geom
     }
 
-    #addToScene({ v, c, index, vCollide }: T_Geom) {
+    #addToScene({ v, c, uv, index, vCollide }: T_Geom) {
         const { studio, materials, phisics } = this._root
 
-        this.mesh = _M.createMesh({ v, c, index, material: materials.levelMatNorm })
+        this.mesh = _M.createMesh({ v, c, uv, index, material: materials.levelMatNorm })
         this.mesh.position.copy(POS)
         studio.add(this.mesh)
 
@@ -104,7 +105,10 @@ export class InnerLab {
         phisics.addMeshToCollision(this.meshCollision, true)
     }
 
-    // Короб между проёмом внешнего уровня и проёмом узла GATE_NODE.
+    // Короб между проёмом внешнего уровня и проёмом узла GATE_NODE. Это тот же tunnel01,
+    // что и на рёбрах: концы у него разного роста — снаружи дыра в стене высотой
+    // GATE_Y1 - GATE_Y0, внутри проём высотой H_ROOM, — и это ровно тот случай, под который
+    // у фабрики есть h1.
     #addGate() {
         const { studio, materials, phisics } = this._root
 
@@ -115,31 +119,28 @@ export class InnerLab {
         // смотрим на узел снаружи, поэтому левый край проёма становится правым краем входа
         const inR = portal.leftPLocal.clone().add(node.pos).add(POS)
         const inL = portal.rightPLocal.clone().add(node.pos).add(POS)
-        const inRT = inR.clone().setY(inR.y + H_ROOM)
-        const inLT = inL.clone().setY(inL.y + H_ROOM)
 
         const outL = new THREE.Vector3(-GATE_HALF_W, GATE_Y0, Z_GATE)
         const outR = new THREE.Vector3(GATE_HALF_W, GATE_Y0, Z_GATE)
-        const outLT = new THREE.Vector3(-GATE_HALF_W, GATE_Y1, Z_GATE)
-        const outRT = new THREE.Vector3(GATE_HALF_W, GATE_Y1, Z_GATE)
 
-        const v: number[] = []
-        const c: number[] = []
+        // p0 -> p1 -> p2 -> p3 обходит пол по кругу: сначала наружная пара, потом внутренняя,
+        // поэтому ближний конец короба — дыра в стене, дальний — проём узла
+        const gate = tunnel01({
+            p0: outL.toArray(), p1: outR.toArray(),
+            p2: inR.toArray(), p3: inL.toArray(),
+            h: GATE_Y1 - GATE_Y0,
+            h1: H_ROOM,
+            colFloor: COL_GATE, colWall: COL_GATE, colCeil: COL_GATE,
+        })
 
-        const quad = (a: THREE.Vector3, b: THREE.Vector3, d: THREE.Vector3, e: THREE.Vector3) => {
-            _M.fill(_M.createPolygonV(a, b, d, e), v)
-            _M.fill(_M.fillColorFace(COL_GATE), c)
-        }
-
-        quad(outL, outR, inR, inL)      // пол
-        quad(outL, inL, inLT, outLT)    // левая стена
-        quad(inR, outR, outRT, inRT)    // правая стена
-        quad(inLT, inRT, outRT, outLT)  // потолок
-
-        this.meshGate = _M.createMesh({ v, c, material: materials.levelMatNorm })
+        // POS уже учтён в inL/inR, а outL/outR заданы в мировых координатах,
+        // поэтому меш входа, в отличие от основного, никуда не сдвигается
+        this.meshGate = _M.createMesh({ ...gate, material: materials.levelMatNorm })
         studio.add(this.meshGate)
 
-        const collision = new THREE.Mesh(this.meshGate.geometry.clone().toNonIndexed(), materials.collision)
+        // коллизия по прокси фабрики, а не по клону рендер-меша: короб нарезан на секции
+        // под текстуру, физике эта нарезка не нужна
+        const collision = _M.createMesh({ v: gate.vCollide || [], material: materials.collision })
         phisics.addMeshToCollision(collision, true)
     }
 }

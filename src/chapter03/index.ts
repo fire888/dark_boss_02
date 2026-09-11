@@ -42,12 +42,6 @@ export interface Root extends Core {
     debug: Debug
 }
 
-import { showMap00, map00 } from '../maps/map00/map00'
-
-const m = map00() 
-showMap00(m)
-
-
 window.addEventListener("DOMContentLoaded", async () => {
     // @ts-ignore:next-line
     console.log("branch:" + __GIT_CURRENT_BRANCH__ + ' commit:' + __HASH_COMMIT__)

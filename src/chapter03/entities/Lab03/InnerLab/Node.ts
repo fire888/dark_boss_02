@@ -14,8 +14,8 @@ export type Neighbor = {
 }
 
 const RADIUS_NODE = 4
-const W_SIDE = 1.3
-export const H_ROOM = 3.5
+const W_SIDE = .8
+export const H_ROOM = 2.5
 
 // Коридор — короб шириной 2*W_SIDE и высотой H_ROOM, натянутый вдоль ребра схемы.
 // Если оси двух рёбер расходятся дальше диагонали сечения, короба пересечься не могут:
@@ -111,7 +111,7 @@ export class Node {
                 .map(({ angleRight, angleLeft }) => ({ angleRight, angleLeft })),
             colFloor: COL_FLOOR,
             colWall: COL_WALL,
-            colCeil: COL_CEIL,
+            //colCeil: COL_CEIL,
         })
     }
 }

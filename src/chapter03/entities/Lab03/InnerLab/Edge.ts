@@ -63,7 +63,7 @@ export class Edge {
             h: H_ROOM,
             colFloor: COL_FLOOR,
             colWall: COL_WALL,
-            colCeil: COL_CEIL,
+            //colCeil: COL_CEIL,
         })
     }
 }
