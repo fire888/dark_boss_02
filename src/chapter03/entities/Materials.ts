@@ -94,7 +94,7 @@ export class Materials {
             bumpMap: this.levelAtlas,
             bumpScale: BUMP_SCALE,
             vertexColors: true,
-            wireframe: true,
+            // wireframe: true,
         })
 
         this.collision = new THREE.MeshBasicMaterial({ color: 0x00ff00 })

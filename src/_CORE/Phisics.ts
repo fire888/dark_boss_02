@@ -84,7 +84,7 @@ export class Phisics {
 
         // DEBUGGER PHISICS
         // @ts-ignore
-        this.cannonDebugger = new CannonDebugger(root.studio.scene, this.world, {})
+        // this.cannonDebugger = new CannonDebugger(root.studio.scene, this.world, {})
     }
 
     createPlayer () {
