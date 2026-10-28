@@ -8,11 +8,14 @@ import { AudioManager } from "_CORE/AudioManager"
 import { Studio } from "_CORE"
 import { StudioConf, ControlsConf } from "_CORE/types"
 import * as THREE from 'three'
+import { _M } from '_CORE/_M/_m'
 
 import tx from '../../0_refs/aa.jpg'
 
 import { Core } from '_CORE/types'
 import { Debug } from "_CORE/Debug"
+
+import { stairs00 } from "geometry/07_stairs00/stairs00/stairs00" 
 
 
 export interface Root extends Core {
@@ -99,6 +102,11 @@ async function init(root: Root) {
     )
     p.position.set(0, 0, -10)
     studio.add(p)
+
+
+    const s = stairs00()
+    const m = _M.createMesh(s)
+    root.studio.add(m)
 
 
 }

@@ -1,5 +1,4 @@
 import { _M, IArraysGeom } from "_CORE/_M/_m"
-import { offset } from "chapter09/entityLabyrinth/offset"
 import * as THREE from "three"
 
 const COLOR_OUT = new THREE.Color().setStyle('#000000').toArray()
