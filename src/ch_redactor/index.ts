@@ -10,12 +10,11 @@ import { StudioConf, ControlsConf } from "_CORE/types"
 import * as THREE from 'three'
 import { _M } from '_CORE/_M/_m'
 
-import tx from '../../0_refs/aa.jpg'
-
 import { Core } from '_CORE/types'
 import { Debug } from "_CORE/Debug"
 
 import { stairs00 } from "geometry/07_stairs00/stairs00/stairs00" 
+import tx from 'geometry/07_stairs00/stairs00/ref.jpg'
 
 
 export interface Root extends Core {
