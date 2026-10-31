@@ -13,8 +13,10 @@ import { _M } from '_CORE/_M/_m'
 import { Core } from '_CORE/types'
 import { Debug } from "_CORE/Debug"
 
-import { stairs00 } from "geometry/07_stairs00/stairs00/stairs00" 
-import tx from 'geometry/07_stairs00/stairs00/ref.jpg'
+import { stairs00 } from "geometry/07_stairs00/stairs00" 
+import tx from 'geometry/07_stairs00/ref.jpg'
+import atlas00Img from 'atlases/atlas00/512.jpg'
+import atlasAo00Img from 'atlases/atlasAo00/512Ao.jpg'
 
 
 export interface Root extends Core {
@@ -103,11 +105,64 @@ async function init(root: Root) {
     studio.add(p)
 
 
-    const s = stairs00()
-    const m = _M.createMesh(s)
-    root.studio.add(m)
+    const mapAtlas = textureLoader.load(atlas00Img)
+    mapAtlas.colorSpace = THREE.SRGBColorSpace
+    const mapAo = textureLoader.load(atlasAo00Img)
+    // aoMap читает uv2 геометрии: в three 0.173 это канал 2
+    mapAo.channel = 2
 
+    const material = new THREE.MeshBasicMaterial({
+        color: 0xffffff,
+        //wireframe: true
+        vertexColors: true,
+        map: mapAtlas,
+        aoMap: mapAo,
+        aoMapIntensity: 1,
+    })
+    const materialCollide = new THREE.MeshBasicMaterial({ color: 0x00ff00, wireframe: true })
 
+    // 20 крылец со случайными параметрами сеткой; справа от каждого — его vCollide
+    const rand = (min: number, max: number) => min + Math.random() * (max - min)
+    const COUNT = 20
+    const COLS = 4
+    const R_MAX = 8
+    // ячейка: крыльцо (2r) + прокси (2r) + зазоры
+    const CELL_W = R_MAX * 4 + 6
+    const CELL_D = R_MAX + 6
+
+    for (let i = 0; i < COUNT; ++i) {
+        const r = rand(3, R_MAX)
+        const stairsCount = 1 + Math.floor(Math.random() * 3)
+        const stairs = []
+        for (let k = 0; k < stairsCount; ++k) {
+            // пролёты разнесены по дуге, внутри своей доли — с разбросом
+            const angle = Math.PI * (k + rand(.3, .7)) / stairsCount
+            stairs.push({ angle, w: rand(1, Math.min(2.5, r * Math.PI / stairsCount * .6)) })
+        }
+        const opts = {
+            r,
+            t: rand(.3, .6),
+            hP: rand(.6, 2),
+            hW: rand(.5, 1.4),
+            stepH: rand(.15, .25),
+            stepD: rand(.28, .45),
+            stairs,
+            arcStep: rand(.3, 1),
+        }
+        const s = stairs00(opts)
+
+        const x = (i % COLS) * CELL_W
+        const z = Math.floor(i / COLS) * CELL_D
+
+        const m = _M.createMesh({ ...s, material })
+        m.position.set(x, 0, z)
+        studio.add(m)
+
+        // прокси — triangle soup без index
+        const mCollide = _M.createMesh({ v: s.vCollide ?? [], material: materialCollide })
+        mCollide.position.set(x + R_MAX * 2 + 2, 0, z)
+        studio.add(mCollide)
+    }
 }
 
 
