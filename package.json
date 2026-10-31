@@ -5,39 +5,26 @@
   "scripts": {
     "build_rededactor": "set FOLDER=ch_redactor && webpack --mode=production",
     "dev_redactor": "set FOLDER=ch_redactor && webpack serve --mode=development",
-
     "build_t": "set FOLDER=ch_test && webpack --mode=production",
     "dev_t": "set FOLDER=ch_test && webpack serve --mode=development",
-
     "build03": "set FOLDER=chapter03 && webpack --mode=production",
     "dev03": "set FOLDER=chapter03 && webpack serve --mode=development",
-
     "build04": "set FOLDER=chapter04 && webpack --mode=production",
     "dev04": "set FOLDER=chapter04 && webpack serve --mode=development",
-
     "build05": "set FOLDER=chapter05 && webpack --mode=production",
     "dev05": "set FOLDER=chapter05 && webpack serve --mode=development",
-
     "build06": "set FOLDER=chapter06 && webpack --mode=production",
     "dev06": "set FOLDER=chapter06 && webpack serve --mode=development",
-
     "build07": "set FOLDER=chapter07 && webpack --mode=production",
     "dev07": "set FOLDER=chapter07 && webpack serve --mode=development",
-
     "build08": "set FOLDER=chapter08 && webpack --mode=production",
     "dev08": "set FOLDER=chapter08 && webpack serve --mode=development",
-
     "build09": "set FOLDER=chapter09 && webpack --mode=production",
     "dev09": "set FOLDER=chapter09 && webpack serve --mode=development",
-
     "build10": "set FOLDER=chapter10 && webpack --mode=production",
     "dev10": "set FOLDER=chapter10 && webpack serve --mode=development",
-
     "check:geom": "node --experimental-strip-types --no-warnings --import ./scripts/register.mjs scripts/checkGeom.mjs",
-
-    "deploy": "node deploy",
-    "test": "jasmine",
-    "testbr": "jasmine-browser-runner runSpecs"
+    "deploy": "node deploy"
   },
   "author": "",
   "license": "ISC",
@@ -49,7 +36,6 @@
     "dotenv": "^16.4.7",
     "eslint-webpack-plugin": "^4.2.0",
     "ftp-deploy": "^2.4.7",
-    "jasmine": "^5.7.1",
     "line-intersect": "^3.0.0",
     "polygon-offset": "^0.3.2",
     "three": "^0.173.0",
@@ -58,7 +44,6 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.17.0",
-    "@types/jasmine": "^5.1.8",
     "@typescript-eslint/eslint-plugin": "^8.19.0",
     "@typescript-eslint/parser": "^8.19.0",
     "copy-webpack-plugin": "^11.0.0",
@@ -66,8 +51,6 @@
     "eslint": "^9.17.0",
     "globals": "^15.14.0",
     "html-webpack-plugin": "^5.5.3",
-    "jasmine-browser-runner": "^3.0.0",
-    "jasmine-core": "^5.7.1",
     "mini-css-extract-plugin": "^2.7.6",
     "ts-loader": "^9.5.1",
     "tsc-watch": "^6.2.0",
