@@ -7,8 +7,6 @@
     "dev_redactor": "set FOLDER=ch_redactor && webpack serve --mode=development",
     "build_t": "set FOLDER=ch_test && webpack --mode=production",
     "dev_t": "set FOLDER=ch_test && webpack serve --mode=development",
-    "build03": "set FOLDER=chapter03 && webpack --mode=production",
-    "dev03": "set FOLDER=chapter03 && webpack serve --mode=development",
     "build04": "set FOLDER=chapter04 && webpack --mode=production",
     "dev04": "set FOLDER=chapter04 && webpack serve --mode=development",
     "build05": "set FOLDER=chapter05 && webpack --mode=production",

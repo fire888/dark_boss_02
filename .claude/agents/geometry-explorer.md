@@ -13,7 +13,7 @@ tools: Read, Glob, Grep
 - `src/chapter10/geometry/tileMapWall.ts` — UV-константы атласа.
 - `src/chapter10/entities/TexturesCanvas.ts` — атлас рисуется процедурно на канвасе.
 - `src/chapter10/entityLab01/**` — Web Worker, SharedArrayBuffer, сборка мешей.
-- `src/chapter03..09` — предыдущие итерации, конвенции там устарели.
+- `src/chapter04..09` — предыдущие итерации, конвенции там устарели.
 
 ## Как отвечать
 

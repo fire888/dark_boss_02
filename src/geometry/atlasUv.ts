@@ -1,4 +1,4 @@
-// Тайлы атласа chapter03 (см. createLevelAtlas в chapter03/entities/Materials.ts):
+// Тайлы атласа (см. createLevelAtlas):
 // canvas 12 x 12, заняты первые шесть тайлов — по одному на грань из maps/map00..map05.
 // Остальные пока пустые и белые, поэтому грань на пустом тайле выглядит ровно как раньше —
 // только vertexColors.

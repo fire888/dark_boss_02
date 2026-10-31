@@ -17,6 +17,7 @@ export type IArraysGeom = {
     uv?: number[],
     uv2?: number[],
     c?: number[],
+    vCollide?: number[],
 }
 
 export type IArrayForBuffers = {
@@ -861,6 +862,12 @@ export const _M = {
         if (arrsNew.uv && arrsTarget.uv) {
             for (let i = 0; i < arrsNew.uv.length; i++) {
                 arrsTarget.uv.push(arrsNew.uv[i])
+            }
+        }
+        // vCollide — triangle soup без index, поэтому склеивается простым дописыванием, без смещения
+        if (arrsNew.vCollide && arrsTarget.vCollide) {
+            for (let i = 0; i < arrsNew.vCollide.length; i++) {
+                arrsTarget.vCollide.push(arrsNew.vCollide[i])
             }
         }
         return arrsTarget
