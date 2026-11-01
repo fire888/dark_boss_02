@@ -1,27 +1,32 @@
 import path from 'node:path'
 import fs from 'node:fs'
+import os from 'node:os'
 import { pathToFileURL } from 'node:url'
 import { _GM } from '_CORE/_M/_gm'
 import * as ATLAS from 'atlases/atlas00/atlas00'
 import * as ATLAS_AO from 'atlases/atlasAo00/atlasAo00'
 
-// Validates a geometry factory by actually running it and inspecting the
-// number arrays it returns. Geometry modules are pure and serializable
+// Validates geometry factories by actually running them and inspecting the
+// number arrays they return. Geometry modules are pure and serializable
 // (they are meant to run inside a Web Worker), so they load and execute fine in Node.
 //
 // Indexed geometry only (src/geometry, reference — 07_stairs00): all six arrays
 // { index, v, uv, uv2, c, vCollide } are required, triangles come from `index`,
 // every uv/uv2 triangle must sit inside one atlas region, vertices must not be
 // shared between non-coplanar triangles.
+//
+// Each module runs twice over: with default options and with its `randomOpts()` —
+// the option ranges the module is used with. A module without `randomOpts` fails.
 
 const usage = `Usage:
-  npm run check:geom -- <module-path> [exportName] [--runs=N] [--args='[...]' | --args=@file.json]
+  npm run check:geom -- <path> [exportName] [--runs=N] [--args='[...]' | --args=@file.json]
 
-  <module-path>  path to the module, e.g. src/geometry/07_stairs00/stairs00.ts
-  [exportName]   factory to call; omitted = the export named like the file (stairs00.ts -> stairs00)
-  --runs=N       how many times to call it (default 20; factories use Math.random)
-  --args='[...]' JSON array of arguments, e.g. --args='[{"r": 4}]' — bash only:
-                 PowerShell and cmd strip the inner quotes on the way to node
+  <path>         a module, e.g. src/geometry/07_stairs00/stairs00.ts,
+                 or a folder: every NN_name/name.ts under it is checked, e.g. src/geometry
+  [exportName]   factory to call (module only); omitted = the export named like the file
+  --runs=N       calls per mode (default 20; factories use Math.random)
+  --args='[...]' JSON array of arguments instead of defaults + randomOpts, e.g. --args='[{"r": 4}]' —
+                 bash only: PowerShell and cmd strip the inner quotes on the way to node
   --args=@file   the same JSON array read from a file — works in any shell
 `
 
@@ -41,26 +46,47 @@ const parseArgs = (s) => {
 
 const positional = []
 let runs = 20
-let args = []
+let args = null
 
 for (const a of process.argv.slice(2)) {
     if (a.startsWith('--runs=')) runs = Number(a.slice(7))
     else if (a.startsWith('--args=')) args = parseArgs(a.slice(7))
     else positional.push(a)
 }
+// zero runs would print PASS without calling the factory
+if (!Number.isInteger(runs) || runs < 1) {
+    console.error(`--runs must be a positive integer, got: ${runs}`)
+    process.exit(2)
+}
 
-const [modulePath, exportName] = positional
-if (!modulePath) {
+const [target, exportName] = positional
+if (!target || !fs.existsSync(target)) {
+    if (target) console.error(`not found: ${target}\n`)
     console.error(usage)
     process.exit(2)
 }
 
-const mod = await import(pathToFileURL(path.resolve(modulePath)).href)
+// module of a folder NN_name is NN_name/name.ts
+const moduleOf = (dir) => {
+    const file = path.join(dir, path.basename(dir).replace(/^\d+_/, '') + '.ts')
+    return fs.existsSync(file) ? file : null
+}
+const findModules = (dir) => {
+    const own = moduleOf(dir)
+    const nested = fs.readdirSync(dir, { withFileTypes: true })
+        .filter(e => e.isDirectory())
+        .flatMap(e => findModules(path.join(dir, e.name)))
+    return own ? [own, ...nested] : nested
+}
 
-const factoryName = exportName ?? path.basename(modulePath, path.extname(modulePath))
-const factory = mod[factoryName]
-if (typeof factory !== 'function') {
-    console.error(`Export "${factoryName}" is not a function. Exports: ${JSON.stringify(Object.keys(mod))}`)
+const isDir = fs.statSync(target).isDirectory()
+const modules = isDir ? findModules(target).sort() : [target]
+if (isDir && exportName) {
+    console.error('exportName works with a single module only')
+    process.exit(2)
+}
+if (!modules.length) {
+    console.error(`no NN_name/name.ts modules under ${target}`)
     process.exit(2)
 }
 
@@ -135,7 +161,7 @@ const checkOnce = (g) => {
     if (g.index.length % 3 !== 0) errors.push(`index.length=${g.index.length} is not a multiple of 3`)
 
     // The shared core check: v/c/uv/uv2 lengths and index integrity.
-    const dbg = _GM.debugArrays(g, factoryName)
+    const dbg = _GM.debugArrays(g)
     errors.push(...dbg.errors)
 
     for (const [label, arr] of [['v', g.v], ['uv', g.uv], ['uv2', g.uv2], ['c', g.c], ['vCollide', g.vCollide], ['index', g.index]]) {
@@ -203,41 +229,86 @@ const checkOnce = (g) => {
     return { errors, warnings, bbox: bbox(g.v), verts: g.v.length / 3, tris: tris.length, collideTris }
 }
 
-const seen = new Map()
-let firstOk = null
-let failed = 0
+// first failing arguments are saved so the failure can be replayed in any shell
+const saveArgs = (modulePath, a) => {
+    const file = path.join(os.tmpdir(), `checkGeom-${path.basename(modulePath, '.ts')}.json`)
+    fs.writeFileSync(file, JSON.stringify(a))
+    return file
+}
 
-const silence = console.log
-console.log = () => {}
-for (let run = 0; run < runs; run++) {
-    let r
-    try {
-        r = checkOnce(factory(...args))
-    } catch (e) {
-        r = { errors: [`threw: ${e.message}`], warnings: [] }
+// one mode: `runs` calls with arguments from makeArgs(); returns whether any run failed
+const runMode = (modulePath, label, factory, makeArgs) => {
+    const seen = new Map()
+    let firstOk = null
+    let firstBadArgs = null
+    let failed = 0
+
+    const silence = console.log
+    console.log = () => {}
+    for (let run = 0; run < runs; run++) {
+        let a = []
+        let r
+        try {
+            a = makeArgs()
+            r = checkOnce(factory(...a))
+        } catch (e) {
+            r = { errors: [`threw: ${e.message}`], warnings: [] }
+        }
+        if (r.errors.length) {
+            failed++
+            if (!firstBadArgs) firstBadArgs = a
+        } else if (!firstOk) firstOk = r
+        for (const m of r.errors) seen.set('ERROR  ' + m, (seen.get('ERROR  ' + m) || 0) + 1)
+        for (const m of r.warnings) seen.set('WARN   ' + m, (seen.get('WARN   ' + m) || 0) + 1)
     }
-    if (r.errors.length) failed++
-    else if (!firstOk) firstOk = r
-    for (const m of r.errors) seen.set('ERROR  ' + m, (seen.get('ERROR  ' + m) || 0) + 1)
-    for (const m of r.warnings) seen.set('WARN   ' + m, (seen.get('WARN   ' + m) || 0) + 1)
+    console.log = silence
+
+    console.log(`  ${label} — ${runs} run(s)`)
+    if (firstOk) {
+        const b = firstOk.bbox
+        console.log(`    ${firstOk.verts} verts / ${firstOk.tris} tris / ${firstOk.collideTris} collide tris   bbox size [${b.size.map(n => n.toFixed(2)).join(', ')}]`)
+    }
+    const errs = [...seen].filter(([m]) => m.startsWith('ERROR'))
+    const warns = [...seen].filter(([m]) => m.startsWith('WARN'))
+    for (const [m, n] of [...errs, ...warns]) {
+        console.log(`    ${m}${n < runs ? `   (${n}/${runs} runs)` : ''}`)
+    }
+    if (errs.length) {
+        console.log(`    FAIL — ${failed}/${runs} run(s) had errors`)
+        if (firstBadArgs?.length) console.log(`    replay: --args=@${saveArgs(modulePath, firstBadArgs)}`)
+    }
+    return errs.length > 0
 }
-console.log = silence
 
-console.log(`${modulePath} :: ${factoryName}()  — ${runs} run(s)`)
-if (firstOk) {
-    const b = firstOk.bbox
-    console.log(`  ${firstOk.verts} verts / ${firstOk.tris} tris / ${firstOk.collideTris} collide tris   bbox size [${b.size.map(n => n.toFixed(2)).join(', ')}]`)
+const checkModule = async (modulePath) => {
+    const mod = await import(pathToFileURL(path.resolve(modulePath)).href)
+    const factoryName = exportName ?? path.basename(modulePath, path.extname(modulePath))
+    const factory = mod[factoryName]
+
+    console.log(`${modulePath} :: ${factoryName}()`)
+    if (typeof factory !== 'function') {
+        console.log(`  ERROR  export "${factoryName}" is not a function. Exports: ${JSON.stringify(Object.keys(mod))}`)
+        return true
+    }
+    if (args) return runMode(modulePath, '--args', factory, () => args)
+
+    let bad = runMode(modulePath, 'default options', factory, () => [])
+    if (typeof mod.randomOpts !== 'function') {
+        console.log('  ERROR  no `randomOpts` export — the option ranges the module is used with are not checked')
+        return true
+    }
+    bad = runMode(modulePath, 'randomOpts()', factory, () => [mod.randomOpts()]) || bad
+    return bad
 }
 
-const errs = [...seen].filter(([m]) => m.startsWith('ERROR'))
-const warns = [...seen].filter(([m]) => m.startsWith('WARN'))
-
-for (const [m, n] of [...errs, ...warns]) {
-    console.log(`  ${m}${n < runs ? `   (${n}/${runs} runs)` : ''}`)
+let failedModules = 0
+for (const m of modules) {
+    if (await checkModule(m)) failedModules++
 }
 
-if (errs.length) {
-    console.log(`FAIL — ${failed}/${runs} run(s) had errors`)
+if (modules.length > 1) console.log(`\n${modules.length} module(s), ${failedModules} failed`)
+if (failedModules) {
+    console.log('FAIL')
     process.exit(1)
 }
-console.log(warns.length ? 'PASS (with warnings)' : 'PASS')
+console.log('PASS')

@@ -3,7 +3,7 @@ import { Matrix4, Vector3 } from "three"
 // Чистая часть _GM для фабрик геометрии: только математика (Vector3, Matrix4) и массивы чисел.
 // Без Mesh, Material, Texture, BufferGeometry и DOM — модуль должен грузиться в Web Worker и в Node.
 // Рендер-хелперы (createMesh, createBufferGeometry, createLabel, createLine, getAngleDirY, waitClick*)
-// остаются в _m.ts.
+// — в _helpers.ts (_H).
 
 export type A3 = [number, number, number]
 export type A2 = [number, number]
@@ -48,7 +48,125 @@ export type T_TileRect = [number, number, number, number]
 // отступ внутрь региона в пикселях: мипмапы и фильтрация не подтягивают соседний тайл
 const TILE_INSET = 2
 
+// #region builder
+
+// нормаль в точке поверхности — для изогнутых граней свет запекается от нормали в самой вершине
+export type F_Nrm = (p: A3) => A3
+
+export type T_LightOpts = {
+    light?: A3,     // направление на «солнце», нормируется
+    ambient?: number,
+    diffuse?: number,
+}
+
+// Сборщик индексированной геометрии по контракту src/geometry
+export type T_GeomBuilder = {
+    // все шесть массивов; фабрика возвращает его как есть
+    g: IBuffersGeom,
+    // квад a -> b -> cc -> dd по контуру: a, b — низ тайла, cc, dd — верх; uvQ, uv2Q — по 8 чисел
+    quad: (a: A3, b: A3, cc: A3, dd: A3, nHint: A3, uvQ: number[], uv2Q: number[], base: A3, nrmAt?: F_Nrm) => void,
+    // треугольная грань; uvT, uv2T — по 6 чисел, в порядке a, b, cc
+    tri: (a: A3, b: A3, cc: A3, nHint: A3, uvT: number[], uv2T: number[], base: A3, nrmAt?: F_Nrm) => void,
+    // прокси: triangle soup без index
+    collideQuad: (a: A3, b: A3, cc: A3, dd: A3) => void,
+    collideTri: (a: A3, b: A3, cc: A3) => void,
+    // запечённый свет с настройками этого сборщика
+    lit: (base: A3, nrm: A3) => A3,
+}
+
+const normalize3 = (l: A3): A3 => {
+    const len = Math.hypot(...l)
+    return [l[0] / len, l[1] / len, l[2] / len]
+}
+
+// Освещение запекается в цвет вершин, чтобы форма читалась и на MeshBasicMaterial:
+// ламберт от одного направленного «солнца» плюс заполняющий свет. Общее для всех фабрик уровня
+const LIGHT: A3 = normalize3([.6, .7, .45])
+const AMBIENT = .4
+const DIFFUSE = .6
+
+// обход выбирается по нормали-подсказке, чтобы не выписывать его для каждой грани руками
+const facesTo = (a: A3, b: A3, cc: A3, nHint: A3): boolean => {
+    const e1 = [b[0] - a[0], b[1] - a[1], b[2] - a[2]]
+    const e2 = [cc[0] - a[0], cc[1] - a[1], cc[2] - a[2]]
+    const nx = e1[1] * e2[2] - e1[2] * e2[1]
+    const ny = e1[2] * e2[0] - e1[0] * e2[2]
+    const nz = e1[0] * e2[1] - e1[1] * e2[0]
+    return nx * nHint[0] + ny * nHint[1] + nz * nHint[2] >= 0
+}
+
+// min(1, base × (ambient + diffuse · max(0, n·light)))
+const lit = (base: A3, nrm: A3, light: A3 = LIGHT, ambient: number = AMBIENT, diffuse: number = DIFFUSE): A3 => {
+    const d = Math.max(0, nrm[0] * light[0] + nrm[1] * light[1] + nrm[2] * light[2])
+    const k = ambient + diffuse * d
+    return [Math.min(1, base[0] * k), Math.min(1, base[1] * k), Math.min(1, base[2] * k)]
+}
+
+// Каждая грань — один вызов: push-и в v, uv, uv2, c, index идут вместе, своя четвёрка (тройка)
+// вершин на грань. При смене обхода вершины меняются местами вместе со своими uv и uv2,
+// иначе ориентированный тайл (AO) ляжет транспонированным
+const createGeomBuilder = (opts: T_LightOpts = {}): T_GeomBuilder => {
+    const light = opts.light ? normalize3(opts.light) : LIGHT
+    const ambient = opts.ambient ?? AMBIENT
+    const diffuse = opts.diffuse ?? DIFFUSE
+
+    const g: IBuffersGeom = { index: [], v: [], uv: [], uv2: [], c: [], vCollide: [] }
+    const { index, v, uv, uv2, c, vCollide } = g
+
+    const litB = (base: A3, nrm: A3): A3 => lit(base, nrm, light, ambient, diffuse)
+
+    const push = (pts: A3[], order: number[], uvs: number[], uv2s: number[], base: A3, nrmAt: F_Nrm) => {
+        for (let k = 0; k < pts.length; ++k) {
+            const o = order[k]
+            v.push(...pts[k])
+            uv.push(uvs[o * 2], uvs[o * 2 + 1])
+            uv2.push(uv2s[o * 2], uv2s[o * 2 + 1])
+            c.push(...litB(base, nrmAt(pts[k])))
+        }
+    }
+
+    return {
+        g,
+        quad: (a, b, cc, dd, nHint, uvQ, uv2Q, base, nrmAt = () => nHint) => {
+            let pts = [a, b, cc, dd]
+            let order = [0, 1, 2, 3]
+            if (!facesTo(a, b, cc, nHint)) {
+                pts = [a, dd, cc, b]
+                order = [0, 3, 2, 1]
+            }
+            const ind = v.length / 3
+            push(pts, order, uvQ, uv2Q, base, nrmAt)
+            index.push(ind, ind + 1, ind + 2, ind, ind + 2, ind + 3)
+        },
+        tri: (a, b, cc, nHint, uvT, uv2T, base, nrmAt = () => nHint) => {
+            let pts = [a, b, cc]
+            let order = [0, 1, 2]
+            if (!facesTo(a, b, cc, nHint)) {
+                pts = [a, cc, b]
+                order = [0, 2, 1]
+            }
+            const ind = v.length / 3
+            push(pts, order, uvT, uv2T, base, nrmAt)
+            index.push(ind, ind + 1, ind + 2)
+        },
+        collideQuad: (a, b, cc, dd) => {
+            vCollide.push(...a, ...b, ...cc, ...a, ...cc, ...dd)
+        },
+        collideTri: (a, b, cc) => {
+            vCollide.push(...a, ...b, ...cc)
+        },
+        lit: litB,
+    }
+}
+
+// #endregion
+
 export const _GM = {
+    // #region builder
+    facesTo,
+    lit,
+    createGeomBuilder,
+    // #endregion
     createPolygon: function(v0: A3, v1: A3, v2: A3, v3: A3) { return  [...v0, ...v1, ...v2, ...v0, ...v2, ...v3] },
     createPolygonV: function(v0: Vector3, v1: Vector3, v2: Vector3, v3: Vector3) { return  [
         ...v0.toArray(), ...v1.toArray(), ...v2.toArray(), ...v0.toArray(), ...v2.toArray(), ...v3.toArray()

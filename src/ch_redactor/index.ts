@@ -14,7 +14,7 @@ import { _H } from '_CORE/_M/_helpers'
 import { Core } from '_CORE/types'
 import { Debug } from "_CORE/Debug"
 
-import { stairs00 } from "geometry/07_stairs00/stairs00" 
+import { stairs00, randomOpts as stairs00RandomOpts } from "geometry/07_stairs00/stairs00"
 import tx from 'geometry/07_stairs00/ref.jpg'
 import atlas00Img from 'atlases/atlas00/512.jpg'
 import atlasAo00Img from 'atlases/atlasAo00/512Ao.jpg'
@@ -122,10 +122,10 @@ async function init(root: Root) {
     })
     const materialCollide = new THREE.MeshBasicMaterial({ color: 0x00ff00, wireframe: true })
 
-    // 20 крылец со случайными параметрами сеткой; справа от каждого — его vCollide
-    const rand = (min: number, max: number) => min + Math.random() * (max - min)
+    // 20 крылец со случайными параметрами (randomOpts модуля) сеткой; справа от каждого — его vCollide
     const COUNT = 20
     const COLS = 4
+    // верхняя граница r в randomOpts
     const R_MAX = 8
     // ячейка: крыльцо (2r) + прокси (2r) + зазоры
     const CELL_W = R_MAX * 4 + 6
@@ -135,32 +135,14 @@ async function init(root: Root) {
     const all: IArraysGeom = { index: [], v: [], uv: [], uv2: [], c: [], vCollide: [] }
 
     for (let i = 0; i < COUNT; ++i) {
-        const r = rand(3, R_MAX)
-        const stairsCount = 1 + Math.floor(Math.random() * 3)
-        const stairs = []
-        for (let k = 0; k < stairsCount; ++k) {
-            // пролёты разнесены по дуге, внутри своей доли — с разбросом
-            const angle = Math.PI * (k + rand(.3, .7)) / stairsCount
-            stairs.push({ angle, w: rand(1, Math.min(2.5, r * Math.PI / stairsCount * .6)) })
-        }
-        const opts = {
-            r,
-            t: rand(.3, .6),
-            hP: rand(.6, 2),
-            hW: rand(.5, 1.4),
-            stepH: rand(.15, .25),
-            stepD: rand(.28, .45),
-            stairs,
-            arcStep: rand(.3, 1),
-        }
-        const s = stairs00(opts)
+        const s = stairs00(stairs00RandomOpts())
 
         const x = (i % COLS) * CELL_W
         const z = Math.floor(i / COLS) * CELL_D
 
         _GM.translateVertices(s.v, x, 0, z)
         // прокси справа от своего крыльца
-        if (s.vCollide) _GM.translateVertices(s.vCollide, x + R_MAX * 2 + 2, 0, z)
+        _GM.translateVertices(s.vCollide, x + R_MAX * 2 + 2, 0, z)
         _GM.mergeIndexedArrays(all, s)
     }
 

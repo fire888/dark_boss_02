@@ -1,4 +1,4 @@
-import { _GM, type IBuffersGeom, type A3 } from "_CORE/_M/_gm"
+import { _GM, type IBuffersGeom, type A3, type F_Nrm } from "_CORE/_M/_gm"
 import {
     RECT_GRAY, RECT_MOSS,
     UV_WHITE_Q, UV_GRAY_Q, UV_MOSS_Q,
@@ -36,22 +36,12 @@ type T = {
     stepH?: number, // целевая высота и глубина ступени; высота подгоняется, чтобы целое число ступеней дало hP
     stepD?: number,
     stairs?: T_Stair[],
-    arcStep?: number, // шаг разбиения дуги видимой геометрии и прокси
-    arcStepCollide?: number,
+    arcStep?: number, // шаг разбиения дуги видимой геометрии
+    arcStepCollide?: number, // то же для прокси, грубее
     colWall?: A3,   // базовые цвета до запечённого освещения; умножаются на тайл атласа
     colStep?: A3,
     colTop?: A3,
 }
-
-// Освещение запекается в цвет вершин, чтобы форма читалась и на MeshBasicMaterial:
-// ламберт от одного направленного «солнца» плюс заполняющий свет
-const LIGHT: A3 = (() => {
-    const l: A3 = [.6, .7, .45]
-    const len = Math.hypot(...l)
-    return [l[0] / len, l[1] / len, l[2] / len]
-})()
-const AMBIENT = .4
-const DIFFUSE = .6
 
 const DEFAULT_OPTS: Required<T> = {
     pos: [0, 0, 0],
@@ -72,18 +62,37 @@ const DEFAULT_OPTS: Required<T> = {
     colTop: [1, 1, 1],
 }
 
+// случайные опции из диапазона, в котором модуль используется; по ним гоняют check:geom и стенд
+export const randomOpts = (): T => {
+    const rand = (min: number, max: number) => min + Math.random() * (max - min)
+    const r = rand(3, 8)
+    const stairsCount = 1 + Math.floor(Math.random() * 3)
+    const stairs: T_Stair[] = []
+    for (let k = 0; k < stairsCount; ++k) {
+        // пролёты разнесены по дуге, внутри своей доли — с разбросом
+        const angle = Math.PI * (k + rand(.3, .7)) / stairsCount
+        stairs.push({ angle, w: rand(1, Math.min(2.5, r * Math.PI / stairsCount * .6)) })
+    }
+    return {
+        r,
+        t: rand(.3, .6),
+        hP: rand(.6, 2),
+        hW: rand(.5, 1.4),
+        stepH: rand(.15, .25),
+        stepD: rand(.28, .45),
+        stairs,
+        arcStep: rand(.3, 1),
+    }
+}
+
 export const stairs00 = (opts: T = {}): IBuffersGeom => {
     const {
         pos, r, t, hP, hW, stepH, stepD, stairs, arcStep, arcStepCollide,
         colWall, colStep, colTop,
     }: Required<T> = { ...DEFAULT_OPTS, ...opts }
 
-    const index: number[] = []
-    const v: number[] = []
-    const uv: number[] = []
-    const uv2: number[] = []
-    const c: number[] = []
-    const vCollide: number[] = []
+    const B = _GM.createGeomBuilder()
+    const { quad, tri, collideQuad, collideTri } = B
 
     const H = hP + hW
     const n = Math.max(1, Math.round(hP / stepH))
@@ -109,25 +118,6 @@ export const stairs00 = (opts: T = {}): IBuffersGeom => {
     const neg = (p: A3): A3 => [-p[0], -p[1], -p[2]]
     const UP: A3 = [0, 1, 0]
 
-    // обход выбирается по нормали-подсказке, чтобы не выписывать его для каждой грани руками
-    const facesTo = (a: A3, b: A3, d: A3, nHint: A3) => {
-        const e1 = [b[0] - a[0], b[1] - a[1], b[2] - a[2]]
-        const e2 = [d[0] - a[0], d[1] - a[1], d[2] - a[2]]
-        const nx = e1[1] * e2[2] - e1[2] * e2[1]
-        const ny = e1[2] * e2[0] - e1[0] * e2[2]
-        const nz = e1[0] * e2[1] - e1[1] * e2[0]
-        return nx * nHint[0] + ny * nHint[1] + nz * nHint[2] >= 0
-    }
-
-    // ---- запечённый свет
-
-    type F_Nrm = (p: A3) => A3
-
-    const lit = (base: A3, nrm: A3): number[] => {
-        const d = Math.max(0, nrm[0] * LIGHT[0] + nrm[1] * LIGHT[1] + nrm[2] * LIGHT[2])
-        const k = AMBIENT + DIFFUSE * d
-        return [Math.min(1, base[0] * k), Math.min(1, base[1] * k), Math.min(1, base[2] * k)]
-    }
     // нормаль цилиндрической грани берётся в самой вершине, а не в середине сегмента:
     // так цвет меняется вдоль дуги плавно, и изгиб виден без источника света
     const radOut: F_Nrm = p => {
@@ -137,31 +127,6 @@ export const stairs00 = (opts: T = {}): IBuffersGeom => {
         return [dx / len, 0, dz / len]
     }
     const radIn: F_Nrm = p => neg(radOut(p))
-    const flat = (nrm: A3): F_Nrm => () => nrm
-
-    // квад a -> b -> cc -> dd по контуру: a, b — низ тайла, cc, dd — верх.
-    // Своя четвёрка вершин на каждую грань. При смене обхода b и dd меняются местами
-    // вместе со своими uv, иначе ориентированный тайл (AO) ляжет транспонированным
-    const quad = (
-        a: A3, b: A3, cc: A3, dd: A3, nHint: A3,
-        uvQ: number[], uv2Q: number[], base: A3, nrmAt: F_Nrm = flat(nHint),
-    ) => {
-        let pts = [a, b, cc, dd]
-        let order = [0, 1, 2, 3]
-        if (!facesTo(a, b, cc, nHint)) {
-            pts = [a, dd, cc, b]
-            order = [0, 3, 2, 1]
-        }
-        const ind = v.length / 3
-        for (let k = 0; k < 4; ++k) {
-            const o = order[k]
-            v.push(...pts[k])
-            uv.push(uvQ[o * 2], uvQ[o * 2 + 1])
-            uv2.push(uv2Q[o * 2], uv2Q[o * 2 + 1])
-            c.push(...lit(base, nrmAt(pts[k])))
-        }
-        index.push(ind, ind + 1, ind + 2, ind, ind + 2, ind + 3)
-    }
 
     // площадка — плоская проекция сектора в один тайл
     const topUv = (p: A3) => _GM.rectPoint(rectTop,
@@ -170,24 +135,9 @@ export const stairs00 = (opts: T = {}): IBuffersGeom => {
     )
     const topUvQ = (a: A3, b: A3, cc: A3, dd: A3) => [...topUv(a), ...topUv(b), ...topUv(cc), ...topUv(dd)]
     // треугольник веера: центр и две точки обода; uv2 — точки AO в центре и на ободе
-    const fanTri = (cen: A3, x: A3, y: A3, aoCen: number[], aoRim: number[]) => {
-        let pts = [cen, x, y]
-        if (!facesTo(cen, x, y, UP)) pts = [cen, y, x]
-        const ind = v.length / 3
-        for (let k = 0; k < 3; ++k) {
-            const p = pts[k]
-            v.push(...p)
-            uv.push(...topUv(p))
-            uv2.push(...(k === 0 ? aoCen : aoRim))
-            c.push(...lit(colTop, UP))
-        }
-        index.push(ind, ind + 1, ind + 2)
-    }
+    const fanTri = (cen: A3, x: A3, y: A3, aoCen: number[], aoRim: number[]) =>
+        tri(cen, x, y, UP, [...topUv(cen), ...topUv(x), ...topUv(y)], [...aoCen, ...aoRim, ...aoRim], colTop)
     const AO_FREE = _GM.rectPoint(RECT_AO_NONE, .5, .5)
-
-    const collideQuad = (a: A3, b: A3, cc: A3, dd: A3) => {
-        vCollide.push(..._GM.createPolygon(a, b, cc, dd))
-    }
 
     // разбиение интервала углов на сегменты по длине дуги внешнего радиуса
     const split = (a0: number, a1: number, step: number): number[] => {
@@ -320,7 +270,7 @@ export const stairs00 = (opts: T = {}): IBuffersGeom => {
         for (let k = 0; k < segs.length - 1; ++k) {
             const s0 = segs[k]
             const s1 = segs[k + 1]
-            vCollide.push(...center, ...P(s0, rTop, hP), ...P(s1, rTop, hP))
+            collideTri(center, P(s0, rTop, hP), P(s1, rTop, hP))
             if (isStair) {
                 collideQuad(P(s0, r, 0), P(s1, r, 0), P(s1, rIn, hP), P(s0, rIn, hP))
             } else {
@@ -330,5 +280,5 @@ export const stairs00 = (opts: T = {}): IBuffersGeom => {
         }
     }
 
-    return { index, v, uv, uv2, c, vCollide }
+    return B.g
 }
