@@ -1,5 +1,5 @@
 import { _M } from "_CORE/_M/_m"
-import { IArrayForBuffers } from "../GeomTypes"
+import { IArrayForBuffers } from "../../geometry/GeomTypes"
 import * as THREE from "three" 
 
 type T_f = {

@@ -4,7 +4,7 @@ import type { Root } from '../../../index'
 import { Scheme, type T_StartInitDataPoint, type I_Scheme } from './Scheme'
 import { Node, H_ROOM } from './Node'
 import { Edge } from './Edge'
-import { tunnel01 } from 'geometry/04_tunnel01/tunnel01'
+import { tunnel01 } from '_00trash_geometry/04_tunnel01/tunnel01'
 
 export type TNodes = {
     [key: string]: Node

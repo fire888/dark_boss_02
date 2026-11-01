@@ -8,7 +8,7 @@ import { AudioManager } from "_CORE/AudioManager"
 import { Studio } from "_CORE"
 import { StudioConf, ControlsConf } from "_CORE/types"
 import * as THREE from 'three'
-import { _M } from '_CORE/_M/_m'
+import { _M, type IArraysGeom } from '_CORE/_M/_m'
 
 import { Core } from '_CORE/types'
 import { Debug } from "_CORE/Debug"
@@ -130,6 +130,9 @@ async function init(root: Root) {
     const CELL_W = R_MAX * 4 + 6
     const CELL_D = R_MAX + 6
 
+    // все крыльца склеиваются в один меш, все прокси — во второй
+    const all: IArraysGeom = { index: [], v: [], uv: [], uv2: [], c: [], vCollide: [] }
+
     for (let i = 0; i < COUNT; ++i) {
         const r = rand(3, R_MAX)
         const stairsCount = 1 + Math.floor(Math.random() * 3)
@@ -154,15 +157,18 @@ async function init(root: Root) {
         const x = (i % COLS) * CELL_W
         const z = Math.floor(i / COLS) * CELL_D
 
-        const m = _M.createMesh({ ...s, material })
-        m.position.set(x, 0, z)
-        studio.add(m)
-
-        // прокси — triangle soup без index
-        const mCollide = _M.createMesh({ v: s.vCollide ?? [], material: materialCollide })
-        mCollide.position.set(x + R_MAX * 2 + 2, 0, z)
-        studio.add(mCollide)
+        _M.translateVertices(s.v, x, 0, z)
+        // прокси справа от своего крыльца
+        if (s.vCollide) _M.translateVertices(s.vCollide, x + R_MAX * 2 + 2, 0, z)
+        _M.mergeIndexedArrays(all, s)
     }
+
+    const m = _M.createMesh({ ...all, material })
+    studio.add(m)
+
+    // прокси — triangle soup без index
+    const mCollide = _M.createMesh({ v: all.vCollide ?? [], material: materialCollide })
+    studio.add(mCollide)
 }
 
 

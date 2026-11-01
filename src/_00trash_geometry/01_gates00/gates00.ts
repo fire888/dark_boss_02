@@ -1,5 +1,5 @@
 import { _M, IArraysGeom } from "_CORE/_M/_m"
-import { box00 } from "geometry/01_box00/box00"
+import { box00 } from "_00trash_geometry/01_box00/box00"
 
 export const gates00 = (): IArraysGeom => {
     const g: IArraysGeom = { v: [], c: [], index: [] }

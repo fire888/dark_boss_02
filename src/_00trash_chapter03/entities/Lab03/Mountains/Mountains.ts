@@ -3,7 +3,7 @@ import { Root } from '../../../index'
 import { _M } from '_CORE/_M/_m'
 export const SIZE_QUADRANT = 10
 
-import { createFloor01, T_Floor01 } from 'geometry/00_floor01/floor01'
+import { createFloor01, T_Floor01 } from '_00trash_geometry/00_floor01/floor01'
 
 export class Mountains {
     private _root!: Root

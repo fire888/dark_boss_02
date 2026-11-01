@@ -864,6 +864,11 @@ export const _M = {
                 arrsTarget.uv.push(arrsNew.uv[i])
             }
         }
+        if (arrsNew.uv2 && arrsTarget.uv2) {
+            for (let i = 0; i < arrsNew.uv2.length; i++) {
+                arrsTarget.uv2.push(arrsNew.uv2[i])
+            }
+        }
         // vCollide — triangle soup без index, поэтому склеивается простым дописыванием, без смещения
         if (arrsNew.vCollide && arrsTarget.vCollide) {
             for (let i = 0; i < arrsNew.vCollide.length; i++) {

@@ -2,7 +2,7 @@ import * as THREE from 'three'
 import type { I_Scheme } from './Scheme'
 import { _M } from '_CORE/_M/_m'
 import type { Root } from '../../../index'
-import { room00 } from 'geometry/05_room00/room00'
+import { room00 } from '_00trash_geometry/05_room00/room00'
 
 export type Neighbor = {
     id: string

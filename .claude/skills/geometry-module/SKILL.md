@@ -1,164 +1,187 @@
 ---
 name: geometry-module
-description: Use when creating or editing a geometry factory in src/chapter10/geometry (non-indexed) or src/geometry (indexed) — building vertex/uv/color/index arrays, picking atlas tiles, adding a vCollide proxy, or verifying the result with check:geom.
+description: Use when creating or editing a geometry factory in src/geometry (indexed, reference — 07_stairs00) — building vertex/uv/uv2/color/index arrays, baking lighting into vertex colors, picking atlas and AO tiles, adding a vCollide proxy, or verifying the result with check:geom.
 ---
 
 # Модуль геометрии
 
-Процедура авторинга фабрики, возвращающей линейные массивы координат.
+Процедура авторинга фабрики в `src/geometry`, возвращающей линейные массивы координат.
 
-**Сначала определи режим по пути модуля** — числа в них разные:
+| | |
+|---|---|
+| путь | `src/geometry/<NN_имя>/<имя>.ts` |
+| экспорт | `<имя>` (по имени файла) |
+| сигнатура | `(opts: T = {})`, `DEFAULT_OPTS: Required<T>` |
+| возврат | `IArraysGeom` — `{ index, v, uv, uv2, c, vCollide }`, все шесть обязательны |
+| квад | 4 вершины + 6 индексов |
+| `uv` | `atlases/atlas00/atlas00` — `UV_*_Q`, `rectPoint(RECT_*)` |
+| `uv2` | `atlases/atlasAo00/atlasAo00` — затенение углов |
+| `c` | запечённый свет `lit(base, nrm)` |
+| эталон | **`07_stairs00/stairs00.ts`** |
 
-| | chapter10 — неиндексированный | `src/geometry` — индексированный |
-|---|---|---|
-| путь | `src/chapter10/geometry/<имя>/<имя>.ts` | `src/geometry/<NN_имя>/<имя>.ts` |
-| экспорт | `create<Имя>` | `<имя>` (по имени файла) |
-| сигнатура | позиционные аргументы с дефолтами | один объект опций + `DEFAULT_OPTS` |
-| возврат | `IArrayForBuffers` | `IArraysGeom` — `{ index, v, uv, c, vCollide }`, все пять обязательны |
-| квад | 6 вершин | 4 вершины + 6 индексов |
-| атлас | `../tileMapWall` | `atlases/atlas00/atlas00`, константы `_Q` |
-
-Оба типа — из `_CORE/_M/_m`, с пометкой `type`.
+Типы — из `_CORE/_M/_m`, с пометкой `type`.
 
 ## Порядок
 
-1. **Прочитать соседа.** chapter10: `tree00` (ствол + крона), `column02` (тело вращения + `vCollide`),
-   `arc00` (арка), `helix00`/`helix01` (спираль), `platform00` (композиция из подгенераторов).
-   `src/geometry`: `04_tunnel01`, `05_room00` — только как образец раскладки граней и прокси;
-   их импорты (`geometry/GeomTypes`, `geometry/atlasUv`) устарели, остальные модули папки
-   написаны по старому правилу целиком. Взять стиль, а не изобретать свой.
-2. **Определить сигнатуру** по таблице выше. В chapter10 один типизированный объект допустим,
-   если параметров много или они приходят из описателя сегмента (`T_ROOM`, `T_Floor`).
-3. **Написать фабрику** по шаблону своего режима.
-4. **Проверить**:
-   - chapter10: `npm run check:geom -- src/chapter10/geometry/<имя>/<имя>.ts`
-   - `src/geometry`: `npm run check:geom -- src/geometry/<NN_имя>/<имя>.ts <имя>` — имя экспорта
-     обязательно, автоподбор ищет только `create*`.
-5. **Чинить до зелёного.** Не сообщать о готовности, пока валидатор не отдаст PASS.
+1. **Прочитать эталон** — целиком `src/geometry/07_stairs00/stairs00.ts`: от него берутся
+   хелперы `quad`/`fanTri`/`facesTo`/`lit`, раскладка AO и прокси. Старые модули в `src/_00trash_geometry`
+   написаны по устаревшим правилам, из них ничего не брать.
+2. **Написать фабрику** по шаблону ниже.
+3. **Проверить**: `npm run check:geom -- <путь-к-модулю>` — фабрика находится по имени файла.
+4. **Чинить до зелёного.** Не сообщать о готовности, пока валидатор не отдаст PASS.
 
-## Шаблон chapter10 (неиндексированный)
-
-```ts
-import { _M, type IArrayForBuffers } from "_CORE/_M/_m"
-import * as THREE from "three"
-import { UV_EMPTY, UV_POINTS, COL_WHITE, COL_RED } from "../tileMapWall"
-
-export const createThing = (w: number = 1, h: number = 2): IArrayForBuffers => {
-    const v: number[] = []
-    const c: number[] = []
-    const uv: number[] = []
-    const vCollide: number[] = []
-
-    // одно семейство текстур на инстанс, вариации — внутри него
-    const TYPE = Math.random() < .5 ? 'GRID' : 'DARK'
-
-    {
-        const _v = _M.createPolygonV(p0, p1, p2, p3)   // 18 чисел
-        v.push(..._v)
-        c.push(...COL_WHITE)                            // 18 чисел
-        uv.push(...(TYPE === 'GRID' ? UV_EMPTY : UV_POINTS))  // 12 чисел
-    }
-
-    vCollide.push(..._M.createPolygon([0, 0, 0], [w, 0, 0], [w, h, 0], [0, h, 0]))
-
-    return { v, c, uv, vCollide }
-}
-```
-
-## Шаблон `src/geometry` (индексированный)
+## Шаблон — выжимка из stairs00
 
 ```ts
 import { _M, type IArraysGeom, type A3 } from "_CORE/_M/_m"
-import { UV_GRID_Q, UV_DARK_Q, COL_WHITE_Q } from "atlases/atlas00/atlas00"
+import { flipUvQ } from "atlases/atlasTools"
+import { UV_GRAY_Q, UV_MOSS_Q } from "atlases/atlas00/atlas00"
+import { UV_AO_NONE_Q, UV_AO_TOP_Q } from "atlases/atlasAo00/atlasAo00"
 
 type T = {
+    pos?: A3,
     w?: number, h?: number, d?: number,
+    col?: A3,       // базовый цвет до запечённого освещения; умножается на тайл атласа
 }
 
+// запечённый свет: ламберт от одного «солнца» плюс заполняющий
+const LIGHT: A3 = (() => {
+    const l: A3 = [.6, .7, .45]
+    const len = Math.hypot(...l)
+    return [l[0] / len, l[1] / len, l[2] / len]
+})()
+const AMBIENT = .4
+const DIFFUSE = .6
+
 const DEFAULT_OPTS: Required<T> = {
+    pos: [0, 0, 0],
     w: 2, h: 3, d: 2,
+    col: [.95, .8, .58],
 }
 
 export const thing00 = (opts: T = {}): IArraysGeom => {
-    const { w, h, d }: Required<T> = { ...DEFAULT_OPTS, ...opts }
+    const { pos, w, h, d, col }: Required<T> = { ...DEFAULT_OPTS, ...opts }
 
     const index: number[] = []
     const v: number[] = []
     const uv: number[] = []
+    const uv2: number[] = []
     const c: number[] = []
     const vCollide: number[] = []
 
-    const TYPE = Math.random() < .5 ? 'GRID' : 'DARK'
+    const TYPE = Math.random() < .5 ? 'STONE' : 'MOSS'
+    const uvMain = TYPE === 'STONE' ? UV_GRAY_Q : UV_MOSS_Q
 
-    // квад a -> b -> c -> d по контуру; своя четвёрка вершин на каждую грань
-    const quad = (a: A3, b: A3, cc: A3, dd: A3, uvQ: number[], colQ: number[]) => {
-        const ind = v.length / 3                       // считать ДО push в v
-        v.push(...a, ...b, ...cc, ...dd)                // 12 чисел
-        uv.push(...uvQ)                                 // 8 чисел
-        c.push(...colQ)                                 // 12 чисел
-        index.push(ind, ind + 1, ind + 2, ind, ind + 2, ind + 3)   // 6 индексов
+    // тень верха тайла AO_TOP: прямо — на ребре cc, dd, перевёрнуто — на a, b
+    const AO_CD = UV_AO_TOP_Q
+    const AO_AB = flipUvQ(UV_AO_TOP_Q)
+
+    const P = (x: number, y: number, z: number): A3 => [pos[0] + x, pos[1] + y, pos[2] + z]
+
+    const facesTo = (a: A3, b: A3, dd: A3, nHint: A3) => {
+        const e1 = [b[0] - a[0], b[1] - a[1], b[2] - a[2]]
+        const e2 = [dd[0] - a[0], dd[1] - a[1], dd[2] - a[2]]
+        const nx = e1[1] * e2[2] - e1[2] * e2[1]
+        const ny = e1[2] * e2[0] - e1[0] * e2[2]
+        const nz = e1[0] * e2[1] - e1[1] * e2[0]
+        return nx * nHint[0] + ny * nHint[1] + nz * nHint[2] >= 0
     }
 
-    quad([0, 0, 0], [w, 0, 0], [w, h, 0], [0, h, 0], TYPE === 'GRID' ? UV_GRID_Q : UV_DARK_Q, COL_WHITE_Q)
+    const lit = (base: A3, nrm: A3): number[] => {
+        const k = AMBIENT + DIFFUSE * Math.max(0, nrm[0] * LIGHT[0] + nrm[1] * LIGHT[1] + nrm[2] * LIGHT[2])
+        return [Math.min(1, base[0] * k), Math.min(1, base[1] * k), Math.min(1, base[2] * k)]
+    }
 
-    // прокси — triangle soup без index, 18 чисел на квад
-    vCollide.push(..._M.createPolygon([0, 0, 0], [w, 0, 0], [w, h, 0], [0, h, 0]))
+    // квад a -> b -> cc -> dd по контуру: a, b — низ тайла, cc, dd — верх; своя четвёрка вершин на грань.
+    // При смене обхода b и dd меняются местами вместе со своими uv, иначе AO ляжет транспонированным
+    const quad = (a: A3, b: A3, cc: A3, dd: A3, nHint: A3, uvQ: number[], uv2Q: number[], base: A3) => {
+        let pts = [a, b, cc, dd]
+        let order = [0, 1, 2, 3]
+        if (!facesTo(a, b, cc, nHint)) {
+            pts = [a, dd, cc, b]
+            order = [0, 3, 2, 1]
+        }
+        const ind = v.length / 3                       // считать ДО push в v
+        for (let k = 0; k < 4; ++k) {
+            const o = order[k]
+            v.push(...pts[k])
+            uv.push(uvQ[o * 2], uvQ[o * 2 + 1])
+            uv2.push(uv2Q[o * 2], uv2Q[o * 2 + 1])
+            c.push(...lit(base, nHint))
+        }
+        index.push(ind, ind + 1, ind + 2, ind, ind + 2, ind + 3)
+    }
 
-    return { index, v, uv, c, vCollide }
+    // передняя стенка: тень внизу, в углу с землёй
+    quad(P(0, 0, d), P(w, 0, d), P(w, h, d), P(0, h, d), [0, 0, 1], uvMain, AO_AB, col)
+    // крыша: открыта
+    quad(P(0, h, d), P(w, h, d), P(w, h, 0), P(0, h, 0), [0, 1, 0], uvMain, UV_AO_NONE_Q, col)
+
+    // прокси — triangle soup без index, 18 чисел на квад, проще рендер-геометрии
+    vCollide.push(..._M.createPolygon(P(0, 0, d), P(w, 0, d), P(w, h, d), P(0, h, d)))
+
+    return { index, v, uv, uv2, c, vCollide }
 }
 ```
 
-В обоих режимах каждая грань — один блок или один вызов, где push-и в `v`, `c`, `uv` (и `index`)
-идут вместе и всегда согласованы по длине: пропустить один — самая частая ошибка, её ловит `check:geom`.
+Шаблон — сокращение. Чего в нём нет, а в stairs00 есть и нужно повторять, когда форма того требует:
 
-**Склейка в индексированном режиме** — `_M.mergeIndexedArrays(target, part)`. Она дописывает массив,
-только если он есть у обоих, поэтому `target` заводится со всеми пятью:
-`{ index: [], v: [], uv: [], c: [], vCollide: [] }`. Сдвиг `index` считается по `max(index) + 1`,
-так что висячая вершина в `part` сломает всё, что приклеится после неё.
+- **изогнутая поверхность** — `quad(..., nrmAt)`, где `nrmAt(p)` даёт нормаль в самой вершине
+  (`radOut`/`radIn`); свет меняется вдоль дуги плавно, геометрия при этом остаётся плоскими квадами;
+- **неквадная грань** — `fanTri`: веер из центра, своя тройка вершин на треугольник, `uv` — плоская проекция
+  через `rectPoint(RECT_*, s, q)` с зажатыми `s, q`, `uv2` — `rectPoint(RECT_AO_TOP, .5, q)` по радиусу;
+- **прокси со своим шагом** (`arcStepCollide`) и упрощённой формой: пандус вместо ступеней, без торцов.
+
+Каждая грань — один вызов хелпера, где push-и в `v`, `uv`, `uv2`, `c`, `index` идут вместе.
+Отдельный `v.push` мимо хелпера — самый частый источник рассинхрона, его ловит `check:geom`.
+
+**Склейка** — `_M.mergeIndexedArrays(target, part)`; массив дописывается, только если он есть у обоих,
+поэтому `target = { index: [], v: [], uv: [], uv2: [], c: [], vCollide: [] }`. Сдвиг части —
+`_M.translateVertices` по `v` и отдельно по `vCollide`.
 
 ## Ключевые числа
 
-| | chapter10 | `src/geometry` |
+| | квад | треугольная грань |
 |---|---|---|
-| `v` на квад | **18** (`createPolygon`/`createPolygonV`) | **12** |
-| `c` на квад | **18** (`fillColorFace`, `COL_*`) | **12** (`COL_*_Q`) |
-| `uv` на квад | **12** (`createUv`, `UV_*`) | **8** (`UV_*_Q`) |
-| `index` на квад | — | **6** |
-| треугольная грань | 9 `v`, 9 `c`, 6 `uv` | 9 `v`, 9 `c`, 6 `uv`, 3 `index` |
-| `vCollide` на квад | 18 | 18 — прокси всегда без индекса |
+| `v` | **12** | 9 |
+| `c` | **12** (`lit` × 4) | 9 |
+| `uv` | **8** (`UV_*_Q`) | 6 |
+| `uv2` | **8** (`UV_AO_*_Q`) | 6 |
+| `index` | **6** | 3 |
+| `vCollide` | 18 — прокси всегда без индекса | 9 |
 
-Для треугольной грани в обоих режимах: `UV_POINTS_TREE` и `COL_BLUE_LIGHT_3`.
+## Атласы
 
-## Тайлы атласа
+`atlases/atlasTools`: `tileRect`, `rectUvQ` (8: a, b — низ, c, d — верх), `flipUvQ`, `rectPoint`.
 
-chapter10 (`../tileMapWall`): `UV_EMPTY`, `UV_TRIANGLE`, `UV_POINTS`, `UV_DARK`, `UV_GRID`,
-`UV_GRID_CIRCLE`, `UV_HT`, `UV_POINTS_TREE`. Цвета: `COL_WHITE`, `COL_RED`, `COL_BLUE_TOP`,
-`COL_BLUE_HIGHT`, `COL_BLUE_LIGHT`, `COL_BLUE_LIGHT_3`, `COL_GREEN_BLUE`.
+- `atlas00` (цвет, `512.jpg`, сетка 64 px): `WHITE`, `MOSS`, `RED` (2:1), `GRAY`, `GRAY_WIDE` (2:1).
+  Тайлы нейтральные, оттенок даёт `c`.
+- `atlasAo00` (затенение, `512Ao.jpg`): `AO_NONE`, `AO_TOP` (тень по верхнему краю — угол с одной стороны),
+  `AO_TOP_BOTTOM`, `AO_ROUND`.
 
-`src/geometry` (`atlases/atlas00/atlas00`): те же тайлы и цвета с суффиксом `_Q` — `UV_EMPTY_Q` … `UV_HT_Q`,
-`COL_WHITE_Q` … `COL_GREEN_BLUE_Q`. Они выводятся из 12/18-числовых, поэтому тайл и цвет совпадают.
-12/18-числовые константы в индексированный модуль не класть — длины разойдутся с `v`.
-
-Нужен новый тайл — это **парное изменение**: дорисовать его в `src/chapter10/entities/TexturesCanvas.ts`
-(сетка 4×4 по 256 px, свободны две нижние строки) и добавить `UV_*` с координатами того же региона.
-В `atlas00` — сразу оба варианта: `UV_*` и `UV_*_Q = quadUv(UV_*)`. Одна половина без другой
-даёт пустую или чужую текстуру.
+Для каждого — `RECT_*`, `UV_*`, `UV_*_Q`; в модуль идут только `_Q` и `rectPoint`. Правило выбора `uv2`:
+грань, упирающаяся ребром во внутренний угол, получает `AO_TOP`, повёрнутый тенью к этому ребру
+(`UV_AO_TOP_Q` — к cc, dd; `flipUvQ(...)` — к a, b); открытая грань — `AO_NONE`.
+Новый тайл — дорисовать его в jpg и добавить тройку `RECT_*`/`UV_*`/`UV_*_Q`.
+Сырые uv вне `RECT_*` `check:geom` отвергнет.
 
 ## Коллизия
 
 `vCollide` — упрощённый прокси, по которому ходит игрок, а не копия рендер-меша.
-У `column02` это одна плоскость вместо 248 треугольников; у `tunnel01` — цельный короб из четырёх граней,
-хотя `v` нарезан на секции. Длина кратна 9, индекса у прокси нет ни в одном режиме.
+У stairs00 это веер площадки, стенка с двух сторон и пандус на месте каждой лестницы, с шагом дуги
+вчетверо грубее рендерного. Длина кратна 9, индекса у прокси нет.
 Если объект декоративный и сквозь него можно проходить — вернуть пустой массив, но вернуть.
 
 ## Чек-лист перед сдачей
 
-- [ ] `check:geom` → PASS (для `src/geometry` — с явным именем экспорта)
+- [ ] `check:geom` → PASS
 - [ ] `npx tsc --noEmit` не добавил ошибок
 - [ ] импорты типов помечены `type`, типы — из `_CORE/_M/_m`, не из `geometry/GeomTypes`
 - [ ] нет `Mesh`/`Material`/`Texture`/DOM — фабрика исполняется в Web Worker
-- [ ] `uv` взяты из атласа своего режима, новых сырых координат не появилось
-- [ ] вершины не сварены между гранями, каждая грань дублирует свои (внутри квада сварка допустима:
-      в `src/geometry` квад — 4 вершины; в chapter10 без `index` она невозможна — квад это 6 вершин)
+- [ ] `uv` — из `atlas00`, `uv2` — из `atlasAo00`, новых сырых координат нет
+- [ ] `c` — запечённый свет от нормали грани (изогнутые — от нормали в вершине)
+- [ ] внутренние углы затенены через `uv2`, тень повёрнута к нужному ребру
+- [ ] вершины не сварены между гранями (внутри плоского квада — допустимо)
+- [ ] обход граней задан нормалью-подсказкой, а подсказка смотрит наружу — проверить глазами,
+      валидатор этого не видит
 - [ ] `vCollide` упрощён относительно рендер-геометрии
-- [ ] `src/geometry`: в возврате все пять массивов — `check:geom` отсутствие `uv`/`vCollide` не ловит

@@ -3,7 +3,7 @@ import type { I_Scheme } from './Scheme'
 import type { Root } from '../../../index'
 import { H_ROOM } from './Node'
 import type { TNodes } from './InnerLab'
-import { tunnel01 } from 'geometry/04_tunnel01/tunnel01'
+import { tunnel01 } from '_00trash_geometry/04_tunnel01/tunnel01'
 
 const COL_FLOOR: [number, number, number] = [.46, .42, .38]
 const COL_WALL: [number, number, number] = [.66, .63, .58]
