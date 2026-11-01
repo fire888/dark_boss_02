@@ -17,24 +17,31 @@
             padding: 0;
             margin: 0;
         }     
-        .start-button {
-            position: absolute;
+        .mode-switch {
+            position: fixed;
             top: 0;
-            right: 0;
-            background-color:  #0e0924;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 10;
+        }
+        .mode-switch button {
+            background-color: #0e0924;
             border: 2px solid #a1ccea;
-            font-style: italic;
-            color: #ffffff;;
+            color: #a1ccea;
+            font: bold 12px monospace;
+            padding: 5px 10px;
             cursor: pointer;
-            transition: 1s;
-            font-style: normal;
-            font-weight: bold;
-            padding: 5px;
+        }
+        .mode-switch button.active {
+            background-color: #a1ccea;
+            color: #0e0924;
         }
     </style>
 </head>
 <body>
-    <button class="start-button">orbit</button>
+    <div class="mode-switch">
+        <button data-mode="orbit">orbit</button><button data-mode="walk">walk</button>
+    </div>
     <div id="container-game" touch-action="none"></div>
     <div id='cont-level-dev'></div> 
 </body>

@@ -229,6 +229,46 @@ export class ControlsSystem {
         this._isDisabled = false
     }
 
+    get isOrbit () {
+        return this._orbit.isEnabled
+    }
+
+    // орбита вместо ходьбы: цель орбиты — перед камерой, чтобы вид не прыгнул
+    enableOrbit () {
+        if (this._orbit.isEnabled) {
+            return
+        }
+        const camera = this._root.studio.camera
+        const dir = new THREE.Vector3()
+        camera.getWorldDirection(dir)
+        this._orbit.controls.target.copy(camera.position).addScaledVector(dir, 10)
+        // орбита включается до unlock: колбэк unlock при включённой орбите не переключает на телефонное управление
+        this._orbit.enable()
+        this._pointer.disable()
+        this._phone.disable()
+        this._root.ui.toggleVisibleButtonLock(false)
+    }
+
+    // ходьба: pointerLock на десктопе; если захват не дали — телефонное управление.
+    // Звать из обработчика клика: pointerLock требует жеста пользователя
+    async enableWalk () {
+        if (this._isDisabled || this._pointer.isEnabled) {
+            return
+        }
+        const { ui, deviceData } = this._root
+        this._orbit.disable()
+        const isDesktop = deviceData.device === 'desktop'
+        if (isDesktop && await this._pointer.enable()) {
+            this._currentWalkingControls = this._pointer
+            this._phone.disable()
+            ui.toggleVisibleButtonLock(false)
+        } else {
+            this._currentWalkingControls = this._phone
+            this._phone.enable()
+            ui.toggleVisibleButtonLock(isDesktop)
+        }
+    }
+
     disableMove() {
         if (this._isMoveDisabled) {
             return;

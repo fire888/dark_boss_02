@@ -29,7 +29,11 @@ const createTrimesh = (geometry: THREE.BufferGeometry) => {
     for (let i = 0; i < vertices.length; ++i) {
         vv[i] = vertices[i]
     }
-    const indices = Object.keys(vertices).map(Number)
+    // triangle soup: по индексу на вершину
+    const indices: number[] = []
+    for (let i = 0; i < vv.length / 3; ++i) {
+        indices[i] = i
+    }
     return new Trimesh(vv, indices)
 }
 
@@ -204,6 +208,7 @@ export class Phisics {
             }
             this._bodiesToRemove.push(this._bodies[i])
         }
+        this._bodies = this._bodies.filter(b => b.myName !== name)
     }
 
     update () {
