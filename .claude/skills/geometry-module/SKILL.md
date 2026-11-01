@@ -15,7 +15,7 @@ description: Use when creating, editing or reviewing a geometry factory in src/g
 | | |
 |---|---|
 | путь | `src/geometry/<NN_имя>/<имя>.ts`, рядом можно положить `ref.jpg` — референс |
-| экспорт | `<имя>` (по имени файла, `stairs00`, а не `createStairs00`) и `randomOpts` |
+| экспорт | `<имя>` (по имени файла, `stairs00`, а не `createStairs00`), `randomOpts` и `DEFAULT_OPTS` (по нему стенд строит инпуты) |
 | сигнатура | `(opts: T = {})`, все поля `T` необязательны, `DEFAULT_OPTS: Required<T>`, `{ ...DEFAULT_OPTS, ...opts }`, положение — `pos: A3` |
 | возврат | `IBuffersGeom` — `{ index, v, uv, uv2, c, vCollide }`, все шесть обязательны; `B.g` сборщика |
 | грани | `_GM.createGeomBuilder()` — `quad`, `tri`, `collideQuad`, `collideTri` |
@@ -37,6 +37,8 @@ description: Use when creating, editing or reviewing a geometry factory in src/g
 3. **`npm run check:geom -- <путь-к-модулю>`** — фабрика находится по имени файла.
 4. **Чинить до зелёного.** Упавший прогон `randomOpts()` воспроизводится строкой `replay: --args=@…` из вывода.
 5. **`npx tsc --noEmit`** — 0 ошибок.
+6. **Подключить к стенду** — запись в `GEOM_REGISTRY` (`src/ch_redactor/registry.ts`), смотреть — `npm run dev_redactor`
+   (обход граней, тени, прокси проверяются только глазами). Устройство стенда — `CLAUDE.md`, «Стенд геометрии».
 
 ## Сборщик — `_GM.createGeomBuilder(light?)`
 
@@ -74,7 +76,7 @@ type T = {
     col?: A3,       // базовый цвет до запечённого освещения; умножается на тайл атласа
 }
 
-const DEFAULT_OPTS: Required<T> = {
+export const DEFAULT_OPTS: Required<T> = {
     pos: [0, 0, 0],
     w: 2, h: 3, d: 2,
     col: [.95, .8, .58],
@@ -209,7 +211,8 @@ c, d — верх), `flipUvQ`, `rectPoint`, тип `T_TileRect`.
 - [ ] `check:geom` → PASS, и по умолчанию, и `randomOpts()`
 - [ ] `npx tsc --noEmit` → 0 ошибок
 - [ ] грани — через `_GM.createGeomBuilder()`, своих копий `quad`/`facesTo`/`lit` в модуле нет
-- [ ] экспорт `<имя>` и `randomOpts`, возврат `IBuffersGeom`
+- [ ] экспорт `<имя>`, `randomOpts`, `DEFAULT_OPTS`, возврат `IBuffersGeom`
+- [ ] запись в `GEOM_REGISTRY` стенда
 - [ ] импорты — из `_CORE/_M/_gm`, типы с `type`; нет `_H`, `_M`, `GeomTypes`, `_00trash_*`
 - [ ] нет `Mesh`/`Material`/`Texture`/DOM/`Root`
 - [ ] `uv` — из `atlas00`, `uv2` — из `atlasAo00`, сырых координат нет

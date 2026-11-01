@@ -43,7 +43,7 @@ type T = {
     colTop?: A3,
 }
 
-const DEFAULT_OPTS: Required<T> = {
+export const DEFAULT_OPTS: Required<T> = {
     pos: [0, 0, 0],
     r: 6,
     t: .4,
