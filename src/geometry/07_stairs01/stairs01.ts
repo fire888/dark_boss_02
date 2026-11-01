@@ -1,0 +1,290 @@
+import { _GM, type IBuffersGeom, type A3, type F_Nrm } from "_CORE/_M/_gm"
+import {
+    RECT_GRAY, RECT_MOSS,
+    UV_WHITE_Q, UV_GRAY_Q, UV_MOSS_Q,
+} from "atlases/atlas00/atlas00"
+import {
+    RECT_AO_NONE, RECT_AO_TOP,
+    UV_AO_NONE_Q, UV_AO_TOP_Q,
+} from "atlases/atlasAo00/atlasAo00"
+
+// Полукруглое крыльцо: площадка-сектор у стены здания, по дуге — подпорная
+// стенка, поднятая над площадкой парапетом. В разрывах дуги — лестницы, врезанные
+// в площадку: ступени — кольцевые секторы, поднимаются от внешнего радиуса к центру.
+// Здание — по линии z = pos[2], дуга выпирает в +z.
+// Угол a: точка = pos + [cos(a) * rad, y, sin(a) * rad]; 0 — справа (+x), PI — слева.
+//
+// uv — атлас цвета atlas00, uv2 — атлас затенения atlasAo00 (aoMap, channel = 2).
+// aoMap затеняет внутренние углы (низ внутренней стенки и подступенков над проступью,
+// проступь у следующего подступенка, площадка у парапета) и низ геометрии, который будет
+// примыкать к земле (низ наружной стенки, торцов, нижнего подступенка);
+// цвет вершин несёт только направленный свет.
+
+type T_Stair = {
+    // центр пролёта
+    angle: number,
+    // ширина пролёта по внешнему радиусу
+    w: number,
+}
+
+type T = {
+    pos?: A3,
+    r?: number,     // внешний радиус стенки
+    t?: number,     // толщина стенки
+    hP?: number,    // высота площадки
+    hW?: number,    // высота парапета над площадкой
+    stepH?: number, // целевая высота и глубина ступени; высота подгоняется, чтобы целое число ступеней дало hP
+    stepD?: number,
+    stairs?: T_Stair[],
+    arcStep?: number, // шаг разбиения дуги видимой геометрии
+    arcStepCollide?: number, // то же для прокси, грубее
+    colWall?: A3,   // базовые цвета до запечённого освещения; умножаются на тайл атласа
+    colStep?: A3,
+    colTop?: A3,
+}
+
+export const DEFAULT_OPTS: Required<T> = {
+    pos: [0, 0, 0],
+    r: 6,
+    t: .4,
+    hP: 1.2,
+    hW: 1,
+    stepH: .2,
+    stepD: .35,
+    stairs: [
+        { angle: Math.PI * .25, w: 3 },
+        { angle: Math.PI * .75, w: 3 },
+    ],
+    arcStep: .5,
+    arcStepCollide: 2,
+    colWall: [.95, .8, .58],
+    colStep: [1, 1, 1],
+    colTop: [1, 1, 1],
+}
+
+// случайные опции из диапазона, в котором модуль используется; по ним гоняют check:geom и стенд
+export const randomOpts = (): T => {
+    const rand = (min: number, max: number) => min + Math.random() * (max - min)
+    const r = rand(3, 8)
+    const stairs: T_Stair[] = []
+    if (r < 5 || Math.random() < .5) {
+        // малое крыльцо — одна широкая лестница, смотрит на зрителя (+z)
+        stairs.push({ angle: Math.PI / 2, w: r * rand(.9, 1.2) })
+    } else {
+        // большое — две широкие, симметрично справа и слева; ширина — с запасом стенки
+        // между пролётами и у здания
+        const off = Math.PI * rand(.2, .3)
+        const wMax = Math.min(2 * off * r - 1, 2 * ((Math.PI / 2 - off) * r - .5))
+        const w = wMax * rand(.7, .9)
+        stairs.push({ angle: Math.PI / 2 - off, w }, { angle: Math.PI / 2 + off, w })
+    }
+    return {
+        r,
+        t: rand(.3, .6),
+        hP: rand(.6, 2),
+        hW: rand(.5, 1.4),
+        stepH: rand(.15, .25),
+        stepD: rand(.28, .45),
+        stairs,
+        arcStep: rand(.3, 1),
+    }
+}
+
+export const stairs01 = (opts: T = {}): IBuffersGeom => {
+    const {
+        pos, r, t, hP, hW, stepH, stepD, stairs, arcStep, arcStepCollide,
+        colWall, colStep, colTop,
+    }: Required<T> = { ...DEFAULT_OPTS, ...opts }
+
+    const B = _GM.createGeomBuilder()
+    const { quad, tri, collideQuad, collideTri } = B
+
+    const H = hP + hW
+    const n = Math.max(1, Math.round(hP / stepH))
+    const sh = hP / n
+    // последняя ступень — сама площадка, поэтому проступей n - 1; пролёт обязан пробить стенку
+    // и уместиться в радиус — иначе нижние проступи проходят через центр и выворачиваются
+    const sd = Math.max(Math.min(stepD, (r - .1) / Math.max(1, n - 1)), (t + .01) / Math.max(1, n - 1))
+    const rIn = r - (n - 1) * sd
+
+    // площадка целиком серая или заросшая; на ступенях мох — редкими пятнами
+    const TYPE = Math.random() < .5 ? 'STONE' : 'MOSS'
+    const rectTop = TYPE === 'STONE' ? RECT_GRAY : RECT_MOSS
+    const uvStep = () => Math.random() < (TYPE === 'MOSS' ? .25 : .05) ? UV_MOSS_Q : UV_GRAY_Q
+
+    // затенение: верх тайла AO_TOP — тень. Прямо — тень на ребре c, d квада, перевёрнуто — на a, b
+    const AO_CD = UV_AO_TOP_Q
+    const AO_AB = _GM.flipUvQ(UV_AO_TOP_Q)
+
+    const P = (a: number, rad: number, y: number): A3 =>
+        [pos[0] + Math.cos(a) * rad, pos[1] + y, pos[2] + Math.sin(a) * rad]
+    // касательная по росту угла и радиальная нормаль
+    const T_ = (a: number): A3 => [-Math.sin(a), 0, Math.cos(a)]
+    const R_ = (a: number): A3 => [Math.cos(a), 0, Math.sin(a)]
+    const neg = (p: A3): A3 => [-p[0], -p[1], -p[2]]
+    const UP: A3 = [0, 1, 0]
+
+    // нормаль цилиндрической грани берётся в самой вершине, а не в середине сегмента:
+    // так цвет меняется вдоль дуги плавно, и изгиб виден без источника света
+    const radOut: F_Nrm = p => {
+        const dx = p[0] - pos[0]
+        const dz = p[2] - pos[2]
+        const len = Math.hypot(dx, dz) || 1
+        return [dx / len, 0, dz / len]
+    }
+    const radIn: F_Nrm = p => neg(radOut(p))
+
+    // площадка — плоская проекция сектора в один тайл
+    const topUv = (p: A3) => _GM.rectPoint(rectTop,
+        Math.min(1, Math.max(0, (p[0] - pos[0] + r) / (2 * r))),
+        Math.min(1, Math.max(0, (p[2] - pos[2]) / r)),
+    )
+    const topUvQ = (a: A3, b: A3, cc: A3, dd: A3) => [...topUv(a), ...topUv(b), ...topUv(cc), ...topUv(dd)]
+    // треугольник веера: центр и две точки обода; uv2 — точки AO в центре и на ободе
+    const fanTri = (cen: A3, x: A3, y: A3, aoCen: number[], aoRim: number[]) =>
+        tri(cen, x, y, UP, [...topUv(cen), ...topUv(x), ...topUv(y)], [...aoCen, ...aoRim, ...aoRim], colTop)
+    const AO_FREE = _GM.rectPoint(RECT_AO_NONE, .5, .5)
+
+    // разбиение интервала углов на сегменты по длине дуги внешнего радиуса
+    const split = (a0: number, a1: number, step: number): number[] => {
+        const count = Math.max(1, Math.ceil((a1 - a0) * r / step))
+        const arr: number[] = []
+        for (let i = 0; i <= count; ++i) arr.push(a0 + (a1 - a0) * i / count)
+        return arr
+    }
+
+    // ---- интервалы дуги: стенка и пролёты лестниц
+
+    const A_FROM = 0
+    const A_TO = Math.PI
+
+    type T_Span = { a0: number, a1: number, isStair: boolean }
+    const spans: T_Span[] = []
+    {
+        const gaps = stairs
+            .map(s => {
+                const half = s.w / r / 2
+                return { a0: Math.max(A_FROM + .01, s.angle - half), a1: Math.min(A_TO - .01, s.angle + half) }
+            })
+            .filter(g => g.a1 > g.a0)
+            .sort((a, b) => a.a0 - b.a0)
+
+        let cur = A_FROM
+        for (const g of gaps) {
+            // пересекающиеся пролёты сливаются в один
+            const a0 = Math.max(cur, g.a0)
+            if (g.a1 <= a0) continue
+            if (a0 > cur) spans.push({ a0: cur, a1: a0, isStair: false })
+            spans.push({ a0, a1: g.a1, isStair: true })
+            cur = g.a1
+        }
+        if (cur < A_TO) spans.push({ a0: cur, a1: A_TO, isStair: false })
+    }
+
+    const center: A3 = P(0, 0, hP)
+
+    for (let si = 0; si < spans.length; ++si) {
+        const { a0, a1, isStair } = spans[si]
+        const segs = split(a0, a1, arcStep)
+
+        // площадка: веер из центра до внутренней грани стенки или до верхней ступени.
+        // У парапета — кольцо шириной hW с тенью у обода: тайл AO ложится на hW, как на внутренней
+        // стенке над площадкой, поэтому полосы тени по обе стороны угла одной ширины
+        const rTop = isStair ? rIn : r - t
+        const rRing = isStair ? rTop : Math.max(0, rTop - hW)
+        for (let k = 0; k < segs.length - 1; ++k) {
+            const s0 = segs[k]
+            const s1 = segs[k + 1]
+            if (rRing > 0) {
+                fanTri(center, P(s0, rRing, hP), P(s1, rRing, hP), AO_FREE, AO_FREE)
+            } else {
+                // кольцо дошло до центра: в центре — та доля тайла, что приходится на rTop
+                fanTri(
+                    center, P(s0, rTop, hP), P(s1, rTop, hP),
+                    _GM.rectPoint(RECT_AO_TOP, .5, 1 - rTop / hW), _GM.rectPoint(RECT_AO_TOP, .5, 1),
+                )
+            }
+            if (rRing > 0 && rRing < rTop) {
+                const a = P(s0, rRing, hP)
+                const b = P(s1, rRing, hP)
+                const cc = P(s1, rTop, hP)
+                const dd = P(s0, rTop, hP)
+                quad(a, b, cc, dd, UP, topUvQ(a, b, cc, dd), AO_CD, colTop)
+            }
+        }
+
+        if (isStair) {
+            for (let k = 0; k < segs.length - 1; ++k) {
+                const s0 = segs[k]
+                const s1 = segs[k + 1]
+                const m = (s0 + s1) / 2
+                const uvS = uvStep()
+                for (let i = 0; i < n; ++i) {
+                    const rad = r - i * sd
+                    // подступенок: тень внизу — в углу с проступью ниже, у нижнего — у земли
+                    const y0 = i * sh
+                    quad(
+                        P(s0, rad, y0), P(s1, rad, y0), P(s1, rad, y0 + sh), P(s0, rad, y0 + sh),
+                        R_(m), uvS, AO_AB, colStep, radOut,
+                    )
+                    // проступь; у последней ступени её роль играет площадка.
+                    // a, b — внешний край, cc, dd — внутренний, у следующего подступенка, там тень
+                    if (i < n - 1) {
+                        const y = (i + 1) * sh
+                        quad(
+                            P(s0, rad, y), P(s1, rad, y), P(s1, rad - sd, y), P(s0, rad - sd, y),
+                            UP, uvS, AO_CD, colStep,
+                        )
+                    }
+                }
+            }
+            continue
+        }
+
+        // стенка
+        for (let k = 0; k < segs.length - 1; ++k) {
+            const s0 = segs[k]
+            const s1 = segs[k + 1]
+            const m = (s0 + s1) / 2
+            // тень внизу: снаружи — низ у земли, изнутри — угол с площадкой
+            quad(P(s0, r, 0), P(s1, r, 0), P(s1, r, H), P(s0, r, H), R_(m), UV_WHITE_Q, AO_AB, colWall, radOut)
+            quad(
+                P(s0, r - t, hP), P(s1, r - t, hP), P(s1, r - t, H), P(s0, r - t, H), neg(R_(m)),
+                UV_WHITE_Q, AO_AB, colWall, radIn,
+            )
+            quad(P(s0, r - t, H), P(s1, r - t, H), P(s1, r, H), P(s0, r, H), UP, UV_WHITE_Q, UV_AO_NONE_Q, colWall)
+        }
+
+        // торцы: у здания — во всю глубину площадки, у пролёта — щека лестницы от верхней ступени;
+        // тень внизу — низ у земли
+        const caps: { a: number, nrm: A3, isOuter: boolean }[] = [
+            { a: a0, nrm: neg(T_(a0)), isOuter: si === 0 },
+            { a: a1, nrm: T_(a1), isOuter: si === spans.length - 1 },
+        ]
+        for (const { a, nrm, isOuter } of caps) {
+            const rLow = isOuter ? 0 : rIn
+            quad(P(a, rLow, 0), P(a, r - t, 0), P(a, r - t, hP), P(a, rLow, hP), nrm, UV_WHITE_Q, AO_AB, colWall)
+            quad(P(a, r - t, 0), P(a, r, 0), P(a, r, H), P(a, r - t, H), nrm, UV_WHITE_Q, AO_AB, colWall)
+        }
+    }
+
+    // ---- прокси: площадка, стенка с двух сторон, пандус на месте каждой лестницы
+
+    for (const { a0, a1, isStair } of spans) {
+        const segs = split(a0, a1, arcStepCollide)
+        const rTop = isStair ? rIn : r - t
+        for (let k = 0; k < segs.length - 1; ++k) {
+            const s0 = segs[k]
+            const s1 = segs[k + 1]
+            collideTri(center, P(s0, rTop, hP), P(s1, rTop, hP))
+            if (isStair) {
+                collideQuad(P(s0, r, 0), P(s1, r, 0), P(s1, rIn, hP), P(s0, rIn, hP))
+            } else {
+                collideQuad(P(s0, r, 0), P(s1, r, 0), P(s1, r, H), P(s0, r, H))
+                collideQuad(P(s0, r - t, hP), P(s1, r - t, hP), P(s1, r - t, H), P(s0, r - t, H))
+            }
+        }
+    }
+
+    return B.g
+}

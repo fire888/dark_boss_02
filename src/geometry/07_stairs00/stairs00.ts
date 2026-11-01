@@ -8,7 +8,7 @@ import {
     UV_AO_NONE_Q, UV_AO_TOP_Q,
 } from "atlases/atlasAo00/atlasAo00"
 
-// Полукруглое крыльцо (ref.jpg): площадка-сектор у стены здания, по дуге — подпорная
+// Полукруглое крыльцо: площадка-сектор у стены здания, по дуге — подпорная
 // стенка, поднятая над площадкой парапетом. В разрывах дуги — лестницы, врезанные
 // в площадку: ступени — кольцевые секторы, поднимаются от внешнего радиуса к центру.
 // Здание — по линии z = pos[2], дуга выпирает в +z.
@@ -52,8 +52,8 @@ export const DEFAULT_OPTS: Required<T> = {
     stepH: .2,
     stepD: .35,
     stairs: [
-        { angle: Math.PI * .3, w: 1.6 },
-        { angle: Math.PI * .72, w: 1.6 },
+        { angle: Math.PI * .25, w: 3 },
+        { angle: Math.PI * .75, w: 3 },
     ],
     arcStep: .5,
     arcStepCollide: 2,
@@ -66,12 +66,17 @@ export const DEFAULT_OPTS: Required<T> = {
 export const randomOpts = (): T => {
     const rand = (min: number, max: number) => min + Math.random() * (max - min)
     const r = rand(3, 8)
-    const stairsCount = 1 + Math.floor(Math.random() * 3)
     const stairs: T_Stair[] = []
-    for (let k = 0; k < stairsCount; ++k) {
-        // пролёты разнесены по дуге, внутри своей доли — с разбросом
-        const angle = Math.PI * (k + rand(.3, .7)) / stairsCount
-        stairs.push({ angle, w: rand(1, Math.min(2.5, r * Math.PI / stairsCount * .6)) })
+    if (r < 5 || Math.random() < .5) {
+        // малое крыльцо — одна широкая лестница, смотрит на зрителя (+z)
+        stairs.push({ angle: Math.PI / 2, w: r * rand(.9, 1.2) })
+    } else {
+        // большое — две широкие, симметрично справа и слева; ширина — с запасом стенки
+        // между пролётами и у здания
+        const off = Math.PI * rand(.2, .3)
+        const wMax = Math.min(2 * off * r - 1, 2 * ((Math.PI / 2 - off) * r - .5))
+        const w = wMax * rand(.7, .9)
+        stairs.push({ angle: Math.PI / 2 - off, w }, { angle: Math.PI / 2 + off, w })
     }
     return {
         r,
@@ -98,8 +103,9 @@ export const stairs00 = (opts: T = {}): IBuffersGeom => {
     const n = Math.max(1, Math.round(hP / stepH))
     const sh = hP / n
     // последняя ступень — сама площадка, поэтому проступей n - 1; пролёт обязан пробить стенку
-    const sd = Math.max(stepD, (t + .01) / Math.max(1, n - 1))
-    const rIn = Math.max(.1, r - (n - 1) * sd)
+    // и уместиться в радиус — иначе нижние проступи проходят через центр и выворачиваются
+    const sd = Math.max(Math.min(stepD, (r - .1) / Math.max(1, n - 1)), (t + .01) / Math.max(1, n - 1))
+    const rIn = r - (n - 1) * sd
 
     // площадка целиком серая или заросшая; на ступенях мох — редкими пятнами
     const TYPE = Math.random() < .5 ? 'STONE' : 'MOSS'
