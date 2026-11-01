@@ -1,4 +1,5 @@
 import path from 'node:path'
+import fs from 'node:fs'
 import { pathToFileURL } from 'node:url'
 import { _M } from '_CORE/_M/_m'
 import * as ATLAS from 'atlases/atlas00/atlas00'
@@ -6,7 +7,7 @@ import * as ATLAS_AO from 'atlases/atlasAo00/atlasAo00'
 
 // Validates a geometry factory by actually running it and inspecting the
 // number arrays it returns. Geometry modules are pure and serializable
-// (they run inside a Web Worker), so they load and execute fine in Node.
+// (they are meant to run inside a Web Worker), so they load and execute fine in Node.
 //
 // Indexed geometry only (src/geometry, reference — 07_stairs00): all six arrays
 // { index, v, uv, uv2, c, vCollide } are required, triangles come from `index`,
@@ -14,13 +15,29 @@ import * as ATLAS_AO from 'atlases/atlasAo00/atlasAo00'
 // shared between non-coplanar triangles.
 
 const usage = `Usage:
-  npm run check:geom -- <module-path> [exportName] [--runs=N] [--args='[...]']
+  npm run check:geom -- <module-path> [exportName] [--runs=N] [--args='[...]' | --args=@file.json]
 
   <module-path>  path to the module, e.g. src/geometry/07_stairs00/stairs00.ts
   [exportName]   factory to call; omitted = the export named like the file (stairs00.ts -> stairs00)
   --runs=N       how many times to call it (default 20; factories use Math.random)
-  --args='[...]' JSON array of arguments, e.g. --args='[{"r": 4}]'
+  --args='[...]' JSON array of arguments, e.g. --args='[{"r": 4}]' — bash only:
+                 PowerShell and cmd strip the inner quotes on the way to node
+  --args=@file   the same JSON array read from a file — works in any shell
 `
+
+// inline JSON or @path to a JSON file
+const parseArgs = (s) => {
+    const text = s.startsWith('@') ? fs.readFileSync(s.slice(1), 'utf8') : s
+    try {
+        const parsed = JSON.parse(text)
+        if (Array.isArray(parsed)) return parsed
+        console.error(`--args must be a JSON array, got: ${text}`)
+    } catch (e) {
+        console.error(`--args is not valid JSON (${e.message}): ${text}`)
+        console.error('In PowerShell/cmd pass the arguments as a file: --args=@file.json')
+    }
+    process.exit(2)
+}
 
 const positional = []
 let runs = 20
@@ -28,7 +45,7 @@ let args = []
 
 for (const a of process.argv.slice(2)) {
     if (a.startsWith('--runs=')) runs = Number(a.slice(7))
-    else if (a.startsWith('--args=')) args = JSON.parse(a.slice(7))
+    else if (a.startsWith('--args=')) args = parseArgs(a.slice(7))
     else positional.push(a)
 }
 
@@ -103,14 +120,11 @@ const checkRange = (label, arr, errors, what) => {
     if (out.length) errors.push(`${label} outside [0,1] — ${what}: ${out.join(', ')}`)
 }
 
-const checkOnce = (result) => {
-    let g = result
+const checkOnce = (g) => {
     const errors = []
     const warnings = []
 
     if (!g || typeof g !== 'object') return { errors: ['factory did not return an object'], warnings }
-    // composite factories return { geomData, segments } rather than the arrays directly
-    if (!Array.isArray(g.v) && g.geomData) g = g.geomData
     if (!Array.isArray(g.v)) return { errors: [`result has no \`v\` array; keys: ${JSON.stringify(Object.keys(g))}`], warnings }
     if (g.v.length === 0) errors.push('`v` is empty — factory produced no geometry')
 
@@ -147,8 +161,9 @@ const checkOnce = (result) => {
     const deg = normals.filter(n => !n).length
     if (deg > 0) warnings.push(`${deg} degenerate (zero-area) triangle(s) — normals there will be NaN`)
 
-    // a vertex shared by non-coplanar triangles gets a smoothed normal from
-    // computeVertexNormals(): faces must not be welded to each other
+    // faces must not be welded to each other: a vertex shared by non-coplanar
+    // triangles holds one uv/uv2/c for both faces (wrong tile, AO and baked light
+    // on one of them) and gets a smoothed normal from computeVertexNormals()
     const vn = new Map()
     let welded = 0
     for (let k = 0; k < tris.length; k++) {
@@ -160,7 +175,7 @@ const checkOnce = (result) => {
             else if (prev[0] * n[0] + prev[1] * n[1] + prev[2] * n[2] < 1 - 1e-4) welded++
         }
     }
-    if (welded) errors.push(`${welded} vertex use(s) shared between non-coplanar triangles — faces are welded, the seam will be smoothed`)
+    if (welded) errors.push(`${welded} vertex use(s) shared between non-coplanar triangles — faces are welded, one face gets the other's uv/uv2/c`)
 
     // uv only from the atlas: a triangle spanning two regions or none samples garbage
     for (const [label, uv, rects] of [['uv', g.uv, RECTS_UV], ['uv2', g.uv2, RECTS_UV2]]) {
@@ -185,14 +200,7 @@ const checkOnce = (result) => {
         warnings.push(`vCollide has ${collideTris} triangles, render geometry ${tris.length} — the proxy is not simpler`)
     }
 
-    const b = bbox(g.v)
-    for (const [dim, axis] of [['w', 0], ['h', 1], ['d', 2]]) {
-        if (typeof g[dim] === 'number' && Math.abs(b.size[axis] - g[dim]) > 1e-6) {
-            warnings.push(`declared ${dim}=${g[dim]} but bbox extent on that axis is ${b.size[axis].toFixed(4)}`)
-        }
-    }
-
-    return { errors, warnings, bbox: b, verts: g.v.length / 3, tris: tris.length, collideTris }
+    return { errors, warnings, bbox: bbox(g.v), verts: g.v.length / 3, tris: tris.length, collideTris }
 }
 
 const seen = new Map()

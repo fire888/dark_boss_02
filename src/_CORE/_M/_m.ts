@@ -19,6 +19,15 @@ export type IArraysGeom = {
     c?: number[],
     vCollide?: number[],
 }
+// возврат фабрик src/geometry: все шесть массивов обязательны
+export type IBuffersGeom = {
+    index: number[],
+    v: number[],
+    uv: number[],
+    uv2: number[],
+    c: number[],
+    vCollide: number[],
+}
 
 export type IArrayForBuffers = {
     v: number[]
@@ -36,6 +45,13 @@ export type IDebugArraysResult = {
     errors: string[]
 }
 
+// Регион тайла атласа в uv: [u0, v0, u1, v1], v0 — низ. Текстура грузится с flipY,
+// поэтому верх картинки — v = 1.
+export type T_TileRect = [number, number, number, number]
+
+// отступ внутрь региона в пикселях: мипмапы и фильтрация не подтягивают соседний тайл
+const TILE_INSET = 2
+
 let geomLabel: THREE.PlaneGeometry | null = null
 const testObject = new THREE.Object3D() 
 
@@ -46,6 +62,30 @@ export const _M = {
     ]},
     fillColorFace: (c: A3) => [...c, ...c, ...c, ...c, ...c, ...c],
     createUv: (v1: A2, v2: A2, v3: A2, v4: A2) => [...v1, ...v2, ...v3, ...v1, ...v3, ...v4],
+
+    // #region atlas
+
+    // регион в пикселях картинки (x вправо, y вниз от левого верхнего угла)
+    tileRect: (size: number, x: number, y: number, w: number, h: number): T_TileRect => [
+        (x + TILE_INSET) / size,
+        1 - (y + h - TILE_INSET) / size,
+        (x + w - TILE_INSET) / size,
+        1 - (y + TILE_INSET) / size,
+    ],
+    // 12 чисел — квад из 6 вершин
+    rectUv: (r: T_TileRect): number[] =>
+        _M.createUv([r[0], r[1]], [r[2], r[1]], [r[2], r[3]], [r[0], r[3]]),
+    // 8 чисел — индексированный квад a, b, c, d: a, b — низ тайла, c, d — верх
+    rectUvQ: (r: T_TileRect): number[] =>
+        [r[0], r[1], r[2], r[1], r[2], r[3], r[0], r[3]],
+    // квад с тайлом, перевёрнутым по вертикали: верх картинки ложится на ребро a, b
+    flipUvQ: (uvQ: number[]): number[] =>
+        [uvQ[6], uvQ[7], uvQ[4], uvQ[5], uvQ[2], uvQ[3], uvQ[0], uvQ[1]],
+    // точка внутри региона: s — доля слева направо, q — снизу вверх
+    rectPoint: (r: T_TileRect, s: number, q: number): A2 =>
+        [r[0] + (r[2] - r[0]) * s, r[1] + (r[3] - r[1]) * q],
+
+    // #endregion
     createBevel4P: function (v0: A3, v1: A3, v2: A3, v3: A3, height: number = 1, isCap: boolean = false): number[] {
         const v: number[] = []
         v.push(
@@ -924,14 +964,12 @@ export const _M = {
         return angle
     },
 
+    // разворачивает индексированные вершины в triangle soup: на каждый индекс — xyz его вершины
     vToNonIndexed(v: number[], index: number[]): number[] {
-        const r = []
+        const r: number[] = []
         for (let i = 0; i < index.length; ++i) {
-            r.push(
-                v[index[i * 3]],
-                v[index[i * 3 + 1]],
-                v[index[i * 3 + 2]]
-            )
+            const k = index[i] * 3
+            r.push(v[k], v[k + 1], v[k + 2])
         }
         return r
     },

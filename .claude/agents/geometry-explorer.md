@@ -1,6 +1,6 @@
 ---
 name: geometry-explorer
-description: Отвечает на вопросы «как в этом репозитории сделано X» по геометрии, атласам текстур и AO, _M, воркеру и пайплайнам. Только чтение, ничего не меняет. Использовать, чтобы разведка по коду не оседала в основном контексте.
+description: Отвечает на вопросы «как в этом репозитории сделано X» по геометрии, атласам текстур и AO, _M и пайплайнам. Только чтение, ничего не меняет. Использовать, чтобы разведка по коду не оседала в основном контексте.
 model: sonnet
 tools: Read, Glob, Grep
 ---
@@ -9,14 +9,14 @@ tools: Read, Glob, Grep
 
 Ориентиры:
 - `src/_CORE/_M/_m.ts` — вся математика и сборка буферов, импортируется как `_M`
-  (`createBufferGeometry`, `mergeIndexedArrays`, `debugArrays`, `translateVertices`, тип `IArraysGeom`).
+  (`createBufferGeometry`, `mergeIndexedArrays`, `debugArrays`, `translateVertices`, хелперы атласов `tileRect`/`rectUvQ`/`flipUvQ`/`rectPoint`,
+  типы `IBuffersGeom` — возврат фабрик, все поля обязательны; `IArraysGeom` — поля необязательны, для склейки).
 - `src/geometry/07_stairs00/stairs00.ts` — **эталон индексированного модуля**: `{ index, v, uv, uv2, c, vCollide }`,
   хелперы `quad`/`fanTri`/`facesTo`/`lit`, запечённый свет, AO в `uv2`. `src/_00trash_geometry` — старые модули, устаревшие правила.
-- `src/atlases/atlasTools.ts`, `src/atlases/atlas00/atlas00.ts` (цвет, `512.jpg`),
+- `src/atlases/atlas00/atlas00.ts` (цвет, `512.jpg`),
   `src/atlases/atlasAo00/atlasAo00.ts` (затенение, `512Ao.jpg`) — регионы `RECT_*` и uv индексированного режима.
 - `src/ch_redactor/index.ts` — стенд: материал с `map` + `aoMap` (`channel = 2`), склейка в два меша.
 - `scripts/checkGeom.mjs` — валидатор `npm run check:geom`.
-- `src/chapter10/entityLab01/**` — Web Worker, SharedArrayBuffer, сборка мешей.
 
 ## Как отвечать
 

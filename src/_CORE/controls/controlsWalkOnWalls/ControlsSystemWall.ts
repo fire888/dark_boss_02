@@ -3,7 +3,7 @@ import { ControlsSystem } from "../ControlsSystem"
 import { ControlsOrbit } from "../ControlsOrbit"
 import { PointerLockControls } from 'three/examples/jsm/controls/PointerLockControls'
 import { Core } from "../../types"
-import { createMeshArrow } from 'geometry/arrow/arrow'
+import { createMeshArrow } from 'geometryCustom/arrow/arrow'
 import * as TWEEN from '@tweenjs/tween.js'
 import { _M } from '_CORE/_M/_m'
 

@@ -1,7 +1,7 @@
-import { _M } from "../../_CORE/_M/_m"
+import { _M, type IArraysGeom } from "../../_CORE/_M/_m"
 import * as THREE from 'three'
 
-export const createArrow = (s: number = 10, wA: number = .2): { v: number[] } => {
+export const createArrow = (s: number = 10, wA: number = .2): IArraysGeom => {
     const w = wA * .2
     const wH = w * .5
     const d = .7 * s

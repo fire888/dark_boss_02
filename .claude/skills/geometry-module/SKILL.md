@@ -12,10 +12,10 @@ description: Use when creating or editing a geometry factory in src/geometry (in
 | путь | `src/geometry/<NN_имя>/<имя>.ts` |
 | экспорт | `<имя>` (по имени файла) |
 | сигнатура | `(opts: T = {})`, `DEFAULT_OPTS: Required<T>` |
-| возврат | `IArraysGeom` — `{ index, v, uv, uv2, c, vCollide }`, все шесть обязательны |
+| возврат | `IBuffersGeom` — `{ index, v, uv, uv2, c, vCollide }`, все шесть обязательны |
 | квад | 4 вершины + 6 индексов |
-| `uv` | `atlases/atlas00/atlas00` — `UV_*_Q`, `rectPoint(RECT_*)` |
-| `uv2` | `atlases/atlasAo00/atlasAo00` — затенение углов |
+| `uv` | `atlases/atlas00/atlas00` — `UV_*_Q`, `_M.rectPoint(RECT_*)` |
+| `uv2` | `atlases/atlasAo00/atlasAo00` — затенение внутренних углов и низа у земли |
 | `c` | запечённый свет `lit(base, nrm)` |
 | эталон | **`07_stairs00/stairs00.ts`** |
 
@@ -33,8 +33,7 @@ description: Use when creating or editing a geometry factory in src/geometry (in
 ## Шаблон — выжимка из stairs00
 
 ```ts
-import { _M, type IArraysGeom, type A3 } from "_CORE/_M/_m"
-import { flipUvQ } from "atlases/atlasTools"
+import { _M, type IBuffersGeom, type A3 } from "_CORE/_M/_m"
 import { UV_GRAY_Q, UV_MOSS_Q } from "atlases/atlas00/atlas00"
 import { UV_AO_NONE_Q, UV_AO_TOP_Q } from "atlases/atlasAo00/atlasAo00"
 
@@ -59,7 +58,7 @@ const DEFAULT_OPTS: Required<T> = {
     col: [.95, .8, .58],
 }
 
-export const thing00 = (opts: T = {}): IArraysGeom => {
+export const thing00 = (opts: T = {}): IBuffersGeom => {
     const { pos, w, h, d, col }: Required<T> = { ...DEFAULT_OPTS, ...opts }
 
     const index: number[] = []
@@ -72,9 +71,9 @@ export const thing00 = (opts: T = {}): IArraysGeom => {
     const TYPE = Math.random() < .5 ? 'STONE' : 'MOSS'
     const uvMain = TYPE === 'STONE' ? UV_GRAY_Q : UV_MOSS_Q
 
-    // тень верха тайла AO_TOP: прямо — на ребре cc, dd, перевёрнуто — на a, b
-    const AO_CD = UV_AO_TOP_Q
-    const AO_AB = flipUvQ(UV_AO_TOP_Q)
+    // тень верха тайла AO_TOP: UV_AO_TOP_Q как есть — на ребре cc, dd, перевёрнутый — на a, b.
+    // Заводить только то, что используется: в stairs00 нужны оба (AO_CD — у проступи)
+    const AO_AB = _M.flipUvQ(UV_AO_TOP_Q)
 
     const P = (x: number, y: number, z: number): A3 => [pos[0] + x, pos[1] + y, pos[2] + z]
 
@@ -112,7 +111,7 @@ export const thing00 = (opts: T = {}): IArraysGeom => {
         index.push(ind, ind + 1, ind + 2, ind, ind + 2, ind + 3)
     }
 
-    // передняя стенка: тень внизу, в углу с землёй
+    // передняя стенка: тень внизу — низ у земли
     quad(P(0, 0, d), P(w, 0, d), P(w, h, d), P(0, h, d), [0, 0, 1], uvMain, AO_AB, col)
     // крыша: открыта
     quad(P(0, h, d), P(w, h, d), P(w, h, 0), P(0, h, 0), [0, 1, 0], uvMain, UV_AO_NONE_Q, col)
@@ -129,7 +128,10 @@ export const thing00 = (opts: T = {}): IArraysGeom => {
 - **изогнутая поверхность** — `quad(..., nrmAt)`, где `nrmAt(p)` даёт нормаль в самой вершине
   (`radOut`/`radIn`); свет меняется вдоль дуги плавно, геометрия при этом остаётся плоскими квадами;
 - **неквадная грань** — `fanTri`: веер из центра, своя тройка вершин на треугольник, `uv` — плоская проекция
-  через `rectPoint(RECT_*, s, q)` с зажатыми `s, q`, `uv2` — `rectPoint(RECT_AO_TOP, .5, q)` по радиусу;
+  через `_M.rectPoint(RECT_*, s, q)` с зажатыми `s, q`, `uv2` — `AO_NONE`;
+- **тень одной ширины по обе стороны угла** — грани угла ложатся на тайл AO в одном масштабе:
+  у парапета площадка получает кольцо шириной `hW` (как высота стенки над ней) с `UV_AO_TOP_Q`,
+  а не растянутый на весь радиус тайл;
 - **прокси со своим шагом** (`arcStepCollide`) и упрощённой формой: пандус вместо ступеней, без торцов.
 
 Каждая грань — один вызов хелпера, где push-и в `v`, `uv`, `uv2`, `c`, `index` идут вместе.
@@ -152,16 +154,17 @@ export const thing00 = (opts: T = {}): IArraysGeom => {
 
 ## Атласы
 
-`atlases/atlasTools`: `tileRect`, `rectUvQ` (8: a, b — низ, c, d — верх), `flipUvQ`, `rectPoint`.
+Хелперы атласов — в `_M` (`_CORE/_M/_m`): `tileRect`, `rectUvQ` (8: a, b — низ, c, d — верх), `flipUvQ`, `rectPoint`, тип `T_TileRect`.
 
 - `atlas00` (цвет, `512.jpg`, сетка 64 px): `WHITE`, `MOSS`, `RED` (2:1), `GRAY`, `GRAY_WIDE` (2:1).
   Тайлы нейтральные, оттенок даёт `c`.
 - `atlasAo00` (затенение, `512Ao.jpg`): `AO_NONE`, `AO_TOP` (тень по верхнему краю — угол с одной стороны),
   `AO_TOP_BOTTOM`, `AO_ROUND`.
 
-Для каждого — `RECT_*`, `UV_*`, `UV_*_Q`; в модуль идут только `_Q` и `rectPoint`. Правило выбора `uv2`:
-грань, упирающаяся ребром во внутренний угол, получает `AO_TOP`, повёрнутый тенью к этому ребру
-(`UV_AO_TOP_Q` — к cc, dd; `flipUvQ(...)` — к a, b); открытая грань — `AO_NONE`.
+Для каждого — `RECT_*`, `UV_*`, `UV_*_Q`; в модуль идут только `_Q` и `_M.rectPoint`. Правило выбора `uv2`:
+грань, упирающаяся ребром во внутренний угол, и грань, низ которой будет примыкать к земле, получают
+`AO_TOP`, повёрнутый тенью к этому ребру (`UV_AO_TOP_Q` — к cc, dd; `_M.flipUvQ(...)` — к a, b);
+открытая грань — `AO_NONE`.
 Новый тайл — дорисовать его в jpg и добавить тройку `RECT_*`/`UV_*`/`UV_*_Q`.
 Сырые uv вне `RECT_*` `check:geom` отвергнет.
 
@@ -176,11 +179,11 @@ export const thing00 = (opts: T = {}): IArraysGeom => {
 
 - [ ] `check:geom` → PASS
 - [ ] `npx tsc --noEmit` не добавил ошибок
-- [ ] импорты типов помечены `type`, типы — из `_CORE/_M/_m`, не из `geometry/GeomTypes`
-- [ ] нет `Mesh`/`Material`/`Texture`/DOM — фабрика исполняется в Web Worker
+- [ ] импорты типов помечены `type`, типы — из `_CORE/_M/_m`, не из `_00trash_geometry/GeomTypes`
+- [ ] нет `Mesh`/`Material`/`Texture`/DOM — фабрика должна будет исполняться в Web Worker
 - [ ] `uv` — из `atlas00`, `uv2` — из `atlasAo00`, новых сырых координат нет
 - [ ] `c` — запечённый свет от нормали грани (изогнутые — от нормали в вершине)
-- [ ] внутренние углы затенены через `uv2`, тень повёрнута к нужному ребру
+- [ ] внутренние углы и низ у земли затенены через `uv2`, тень повёрнута к нужному ребру
 - [ ] вершины не сварены между гранями (внутри плоского квада — допустимо)
 - [ ] обход граней задан нормалью-подсказкой, а подсказка смотрит наружу — проверить глазами,
       валидатор этого не видит

@@ -3,7 +3,7 @@ import { Root } from '../../index'
 import { _M, IArraysGeom } from '_CORE/_M/_m'
 export const SIZE_QUADRANT = 10
 
-import { IArrayForBuffers } from 'geometry/GeomTypes'
+import { IArrayForBuffers } from '_00trash_geometry/GeomTypes'
 import { createFloor01, T_Floor01 } from '_00trash_geometry/00_floor01/floor01'
 import { studioConfig } from 'chapter05/entities/geometry/constants'
 import { Mountains } from './Mountains/Mountains'

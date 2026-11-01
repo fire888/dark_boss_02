@@ -2,7 +2,7 @@ import { _M } from '_CORE/_M/_m'
 import * as THREE from 'three';
 import { PointerLockControls } from 'three/examples/jsm/controls/PointerLockControls'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
-import { createArrow, createMeshArrow } from '../geometry/arrow/arrow'
+import { createArrow, createMeshArrow } from '../geometryCustom/arrow/arrow'
 
 const scene = new THREE.Scene()
         

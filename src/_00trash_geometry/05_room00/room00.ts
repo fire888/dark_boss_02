@@ -1,5 +1,5 @@
-import type { IArrayForBuffers } from "geometry/GeomTypes"
-import { uvQuad, uvPoint, TILE_FLOOR_FINE, TILE_WALL, TILE_CEIL_ROUND } from "geometry/atlasUv"
+import type { IArrayForBuffers } from "_00trash_geometry/GeomTypes"
+import { uvQuad, uvPoint, TILE_FLOOR_FINE, TILE_WALL, TILE_CEIL_ROUND } from "_00trash_geometry/atlasUv"
 
 // Круглый зал: пол, потолок и стена по ободу радиуса r, с разрывами стены под проёмы.
 // Проём задаётся парой углов — правым и левым краем сектора; в нём стены нет, а пол
@@ -24,7 +24,7 @@ type T = {
     // шаг разбиения дуги: чем меньше, тем глаже обод
     arcStep?: number,
     colFloor?: A3, colWall?: A3, colCeil?: A3,
-    // тайлы атласа (geometry/atlasUv).
+    // тайлы атласа (_00trash_geometry/atlasUv).
     // Пол и потолок развёрнуты полярно: u — угол, v — радиус, поэтому прямоугольная
     // текстура ложится на круг кольцами, вертикальная полоса на ней становится радиальной
     // балкой, а нижняя полоса — элементом в самом центре (см. maps/map03 и map04).

@@ -1,5 +1,4 @@
-import { _M, type IArraysGeom, type A3 } from "_CORE/_M/_m"
-import { rectPoint, flipUvQ } from "atlases/atlasTools"
+import { _M, type IBuffersGeom, type A3 } from "_CORE/_M/_m"
 import {
     RECT_GRAY, RECT_MOSS,
     UV_WHITE_Q, UV_GRAY_Q, UV_MOSS_Q,
@@ -16,8 +15,10 @@ import {
 // Угол a: точка = pos + [cos(a) * rad, y, sin(a) * rad]; 0 — справа (+x), PI — слева.
 //
 // uv — атлас цвета atlas00, uv2 — атлас затенения atlasAo00 (aoMap, channel = 2).
-// Внутренние углы (низ стенок, низ подступенка, проступь у следующего подступенка,
-// площадка у парапета) затеняет aoMap; цвет вершин несёт только направленный свет.
+// aoMap затеняет внутренние углы (низ внутренней стенки и подступенков над проступью,
+// проступь у следующего подступенка, площадка у парапета) и низ геометрии, который будет
+// примыкать к земле (низ наружной стенки, торцов, нижнего подступенка);
+// цвет вершин несёт только направленный свет.
 
 type T_Stair = {
     // центр пролёта
@@ -71,7 +72,7 @@ const DEFAULT_OPTS: Required<T> = {
     colTop: [1, 1, 1],
 }
 
-export const stairs00 = (opts: T = {}): IArraysGeom => {
+export const stairs00 = (opts: T = {}): IBuffersGeom => {
     const {
         pos, r, t, hP, hW, stepH, stepD, stairs, arcStep, arcStepCollide,
         colWall, colStep, colTop,
@@ -98,7 +99,7 @@ export const stairs00 = (opts: T = {}): IArraysGeom => {
 
     // затенение: верх тайла AO_TOP — тень. Прямо — тень на ребре c, d квада, перевёрнуто — на a, b
     const AO_CD = UV_AO_TOP_Q
-    const AO_AB = flipUvQ(UV_AO_TOP_Q)
+    const AO_AB = _M.flipUvQ(UV_AO_TOP_Q)
 
     const P = (a: number, rad: number, y: number): A3 =>
         [pos[0] + Math.cos(a) * rad, pos[1] + y, pos[2] + Math.sin(a) * rad]
@@ -163,12 +164,13 @@ export const stairs00 = (opts: T = {}): IArraysGeom => {
     }
 
     // площадка — плоская проекция сектора в один тайл
-    const topUv = (p: A3) => rectPoint(rectTop,
+    const topUv = (p: A3) => _M.rectPoint(rectTop,
         Math.min(1, Math.max(0, (p[0] - pos[0] + r) / (2 * r))),
         Math.min(1, Math.max(0, (p[2] - pos[2]) / r)),
     )
-    // треугольник веера: центр и две точки обода; isShadowRim — тень у обода (парапет)
-    const fanTri = (cen: A3, x: A3, y: A3, isShadowRim: boolean) => {
+    const topUvQ = (a: A3, b: A3, cc: A3, dd: A3) => [...topUv(a), ...topUv(b), ...topUv(cc), ...topUv(dd)]
+    // треугольник веера: центр и две точки обода; uv2 — точки AO в центре и на ободе
+    const fanTri = (cen: A3, x: A3, y: A3, aoCen: number[], aoRim: number[]) => {
         let pts = [cen, x, y]
         if (!facesTo(cen, x, y, UP)) pts = [cen, y, x]
         const ind = v.length / 3
@@ -176,13 +178,12 @@ export const stairs00 = (opts: T = {}): IArraysGeom => {
             const p = pts[k]
             v.push(...p)
             uv.push(...topUv(p))
-            // AO по радиусу: центр — низ тайла, обод — верх, где полоса тени
-            const q = k === 0 ? 0 : 1
-            uv2.push(...(isShadowRim ? rectPoint(RECT_AO_TOP, .5, q) : rectPoint(RECT_AO_NONE, .5, .5)))
+            uv2.push(...(k === 0 ? aoCen : aoRim))
             c.push(...lit(colTop, UP))
         }
         index.push(ind, ind + 1, ind + 2)
     }
+    const AO_FREE = _M.rectPoint(RECT_AO_NONE, .5, .5)
 
     const collideQuad = (a: A3, b: A3, cc: A3, dd: A3) => {
         vCollide.push(..._M.createPolygon(a, b, cc, dd))
@@ -230,10 +231,30 @@ export const stairs00 = (opts: T = {}): IArraysGeom => {
         const { a0, a1, isStair } = spans[si]
         const segs = split(a0, a1, arcStep)
 
-        // площадка: веер из центра до внутренней грани стенки или до верхней ступени
+        // площадка: веер из центра до внутренней грани стенки или до верхней ступени.
+        // У парапета — кольцо шириной hW с тенью у обода: тайл AO ложится на hW, как на внутренней
+        // стенке над площадкой, поэтому полосы тени по обе стороны угла одной ширины
         const rTop = isStair ? rIn : r - t
+        const rRing = isStair ? rTop : Math.max(0, rTop - hW)
         for (let k = 0; k < segs.length - 1; ++k) {
-            fanTri(center, P(segs[k], rTop, hP), P(segs[k + 1], rTop, hP), !isStair)
+            const s0 = segs[k]
+            const s1 = segs[k + 1]
+            if (rRing > 0) {
+                fanTri(center, P(s0, rRing, hP), P(s1, rRing, hP), AO_FREE, AO_FREE)
+            } else {
+                // кольцо дошло до центра: в центре — та доля тайла, что приходится на rTop
+                fanTri(
+                    center, P(s0, rTop, hP), P(s1, rTop, hP),
+                    _M.rectPoint(RECT_AO_TOP, .5, 1 - rTop / hW), _M.rectPoint(RECT_AO_TOP, .5, 1),
+                )
+            }
+            if (rRing > 0 && rRing < rTop) {
+                const a = P(s0, rRing, hP)
+                const b = P(s1, rRing, hP)
+                const cc = P(s1, rTop, hP)
+                const dd = P(s0, rTop, hP)
+                quad(a, b, cc, dd, UP, topUvQ(a, b, cc, dd), AO_CD, colTop)
+            }
         }
 
         if (isStair) {
@@ -244,11 +265,11 @@ export const stairs00 = (opts: T = {}): IArraysGeom => {
                 const uvS = uvStep()
                 for (let i = 0; i < n; ++i) {
                     const rad = r - i * sd
-                    // подступенок: тень внизу, в углу с проступью ниже
+                    // подступенок: тень внизу — в углу с проступью ниже, у нижнего — у земли
                     const y0 = i * sh
                     quad(
                         P(s0, rad, y0), P(s1, rad, y0), P(s1, rad, y0 + sh), P(s0, rad, y0 + sh),
-                        R_(m), uvS, i === 0 ? UV_AO_NONE_Q : AO_AB, colStep, radOut,
+                        R_(m), uvS, AO_AB, colStep, radOut,
                     )
                     // проступь; у последней ступени её роль играет площадка.
                     // a, b — внешний край, cc, dd — внутренний, у следующего подступенка, там тень
@@ -269,7 +290,7 @@ export const stairs00 = (opts: T = {}): IArraysGeom => {
             const s0 = segs[k]
             const s1 = segs[k + 1]
             const m = (s0 + s1) / 2
-            // снаружи и изнутри тень внизу: у земли и в углу с площадкой
+            // тень внизу: снаружи — низ у земли, изнутри — угол с площадкой
             quad(P(s0, r, 0), P(s1, r, 0), P(s1, r, H), P(s0, r, H), R_(m), UV_WHITE_Q, AO_AB, colWall, radOut)
             quad(
                 P(s0, r - t, hP), P(s1, r - t, hP), P(s1, r - t, H), P(s0, r - t, H), neg(R_(m)),
@@ -278,7 +299,8 @@ export const stairs00 = (opts: T = {}): IArraysGeom => {
             quad(P(s0, r - t, H), P(s1, r - t, H), P(s1, r, H), P(s0, r, H), UP, UV_WHITE_Q, UV_AO_NONE_Q, colWall)
         }
 
-        // торцы: у здания — во всю глубину площадки, у пролёта — щека лестницы от верхней ступени
+        // торцы: у здания — во всю глубину площадки, у пролёта — щека лестницы от верхней ступени;
+        // тень внизу — низ у земли
         const caps: { a: number, nrm: A3, isOuter: boolean }[] = [
             { a: a0, nrm: neg(T_(a0)), isOuter: si === 0 },
             { a: a1, nrm: T_(a1), isOuter: si === spans.length - 1 },

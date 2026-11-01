@@ -1,5 +1,5 @@
-import type { IArrayForBuffers } from "geometry/GeomTypes"
-import { uvQuad, TILE_FLOOR, TILE_WALL, TILE_CEIL_BEAMS } from "geometry/atlasUv"
+import type { IArrayForBuffers } from "_00trash_geometry/GeomTypes"
+import { uvQuad, TILE_FLOOR, TILE_WALL, TILE_CEIL_BEAMS } from "_00trash_geometry/atlasUv"
 
 // Короб коридора, натянутый на две пары точек: p0/p1 — края проёма на одном конце,
 // p3/p2 — на другом. p0 и p3 лежат с одной стороны коридора, p1 и p2 — с другой,
@@ -24,7 +24,7 @@ type T = {
     // высота дальнего конца (у пары p3/p2); 0 — держать h по всей длине
     h1?: number,
     colFloor?: A3, colWall?: A3, colCeil?: A3,
-    // тайлы атласа (geometry/atlasUv): по одному экземпляру тайла на секцию грани
+    // тайлы атласа (_00trash_geometry/atlasUv): по одному экземпляру тайла на секцию грани
     tileFloor?: number, tileWall?: number, tileCeil?: number,
     // секций по длине; 0 — посчитать из длины коридора по SEG_LEN
     segments?: number,

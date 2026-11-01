@@ -9,12 +9,12 @@ import { createMap05 } from 'maps/map05/map05'
 import {
     ATLAS_GRID, TILE_PAD_FRACTION,
     TILE_FLOOR, TILE_WALL, TILE_ROCK, TILE_FLOOR_FINE, TILE_CEIL_ROUND, TILE_CEIL_BEAMS,
-} from 'geometry/atlasUv'
+} from '_00trash_geometry/atlasUv'
 
 // Атлас уровня: сетка ATLAS_GRID x ATLAS_GRID тайлов по TILE пикселей.
 // Заняты первые шесть тайлов верхнего ряда: пол коридора (maps/map00), стены (map01),
 // порода (map02, сейчас запас), пол зала (map03), потолок зала (map04),
-// потолок коридора (map05), остальные пока пустые. Раскладка тайлов в uv и их номера — в geometry/atlasUv,
+// потолок коридора (map05), остальные пока пустые. Раскладка тайлов в uv и их номера — в _00trash_geometry/atlasUv,
 // оттуда же их берут фабрики room00 и tunnel01.
 // Пустой тайл белый, а не фоновый: map умножается на vertexColors, и любой другой
 // цвет затемнил бы все грани, которым карта не назначена.
