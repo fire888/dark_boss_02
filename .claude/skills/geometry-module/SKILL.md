@@ -14,12 +14,12 @@ description: Use when creating or editing a geometry factory in src/geometry (in
 | сигнатура | `(opts: T = {})`, `DEFAULT_OPTS: Required<T>` |
 | возврат | `IBuffersGeom` — `{ index, v, uv, uv2, c, vCollide }`, все шесть обязательны |
 | квад | 4 вершины + 6 индексов |
-| `uv` | `atlases/atlas00/atlas00` — `UV_*_Q`, `_M.rectPoint(RECT_*)` |
+| `uv` | `atlases/atlas00/atlas00` — `UV_*_Q`, `_GM.rectPoint(RECT_*)` |
 | `uv2` | `atlases/atlasAo00/atlasAo00` — затенение внутренних углов и низа у земли |
 | `c` | запечённый свет `lit(base, nrm)` |
 | эталон | **`07_stairs00/stairs00.ts`** |
 
-Типы — из `_CORE/_M/_m`, с пометкой `type`.
+`_GM` и типы — из `_CORE/_M/_gm`, типы с пометкой `type`. `_CORE/_M/_helpers` (рендер, стенд) в фабрику не импортировать.
 
 ## Порядок
 
@@ -33,7 +33,7 @@ description: Use when creating or editing a geometry factory in src/geometry (in
 ## Шаблон — выжимка из stairs00
 
 ```ts
-import { _M, type IBuffersGeom, type A3 } from "_CORE/_M/_m"
+import { _GM, type IBuffersGeom, type A3 } from "_CORE/_M/_gm"
 import { UV_GRAY_Q, UV_MOSS_Q } from "atlases/atlas00/atlas00"
 import { UV_AO_NONE_Q, UV_AO_TOP_Q } from "atlases/atlasAo00/atlasAo00"
 
@@ -73,7 +73,7 @@ export const thing00 = (opts: T = {}): IBuffersGeom => {
 
     // тень верха тайла AO_TOP: UV_AO_TOP_Q как есть — на ребре cc, dd, перевёрнутый — на a, b.
     // Заводить только то, что используется: в stairs00 нужны оба (AO_CD — у проступи)
-    const AO_AB = _M.flipUvQ(UV_AO_TOP_Q)
+    const AO_AB = _GM.flipUvQ(UV_AO_TOP_Q)
 
     const P = (x: number, y: number, z: number): A3 => [pos[0] + x, pos[1] + y, pos[2] + z]
 
@@ -117,7 +117,7 @@ export const thing00 = (opts: T = {}): IBuffersGeom => {
     quad(P(0, h, d), P(w, h, d), P(w, h, 0), P(0, h, 0), [0, 1, 0], uvMain, UV_AO_NONE_Q, col)
 
     // прокси — triangle soup без index, 18 чисел на квад, проще рендер-геометрии
-    vCollide.push(..._M.createPolygon(P(0, 0, d), P(w, 0, d), P(w, h, d), P(0, h, d)))
+    vCollide.push(..._GM.createPolygon(P(0, 0, d), P(w, 0, d), P(w, h, d), P(0, h, d)))
 
     return { index, v, uv, uv2, c, vCollide }
 }
@@ -128,7 +128,7 @@ export const thing00 = (opts: T = {}): IBuffersGeom => {
 - **изогнутая поверхность** — `quad(..., nrmAt)`, где `nrmAt(p)` даёт нормаль в самой вершине
   (`radOut`/`radIn`); свет меняется вдоль дуги плавно, геометрия при этом остаётся плоскими квадами;
 - **неквадная грань** — `fanTri`: веер из центра, своя тройка вершин на треугольник, `uv` — плоская проекция
-  через `_M.rectPoint(RECT_*, s, q)` с зажатыми `s, q`, `uv2` — `AO_NONE`;
+  через `_GM.rectPoint(RECT_*, s, q)` с зажатыми `s, q`, `uv2` — `AO_NONE`;
 - **тень одной ширины по обе стороны угла** — грани угла ложатся на тайл AO в одном масштабе:
   у парапета площадка получает кольцо шириной `hW` (как высота стенки над ней) с `UV_AO_TOP_Q`,
   а не растянутый на весь радиус тайл;
@@ -137,9 +137,9 @@ export const thing00 = (opts: T = {}): IBuffersGeom => {
 Каждая грань — один вызов хелпера, где push-и в `v`, `uv`, `uv2`, `c`, `index` идут вместе.
 Отдельный `v.push` мимо хелпера — самый частый источник рассинхрона, его ловит `check:geom`.
 
-**Склейка** — `_M.mergeIndexedArrays(target, part)`; массив дописывается, только если он есть у обоих,
+**Склейка** — `_GM.mergeIndexedArrays(target, part)`; массив дописывается, только если он есть у обоих,
 поэтому `target = { index: [], v: [], uv: [], uv2: [], c: [], vCollide: [] }`. Сдвиг части —
-`_M.translateVertices` по `v` и отдельно по `vCollide`.
+`_GM.translateVertices` по `v` и отдельно по `vCollide`.
 
 ## Ключевые числа
 
@@ -154,16 +154,16 @@ export const thing00 = (opts: T = {}): IBuffersGeom => {
 
 ## Атласы
 
-Хелперы атласов — в `_M` (`_CORE/_M/_m`): `tileRect`, `rectUvQ` (8: a, b — низ, c, d — верх), `flipUvQ`, `rectPoint`, тип `T_TileRect`.
+Хелперы атласов — в `_GM` (`_CORE/_M/_gm`): `tileRect`, `rectUvQ` (8: a, b — низ, c, d — верх), `flipUvQ`, `rectPoint`, тип `T_TileRect`.
 
 - `atlas00` (цвет, `512.jpg`, сетка 64 px): `WHITE`, `MOSS`, `RED` (2:1), `GRAY`, `GRAY_WIDE` (2:1).
   Тайлы нейтральные, оттенок даёт `c`.
 - `atlasAo00` (затенение, `512Ao.jpg`): `AO_NONE`, `AO_TOP` (тень по верхнему краю — угол с одной стороны),
   `AO_TOP_BOTTOM`, `AO_ROUND`.
 
-Для каждого — `RECT_*`, `UV_*`, `UV_*_Q`; в модуль идут только `_Q` и `_M.rectPoint`. Правило выбора `uv2`:
+Для каждого — `RECT_*`, `UV_*`, `UV_*_Q`; в модуль идут только `_Q` и `_GM.rectPoint`. Правило выбора `uv2`:
 грань, упирающаяся ребром во внутренний угол, и грань, низ которой будет примыкать к земле, получают
-`AO_TOP`, повёрнутый тенью к этому ребру (`UV_AO_TOP_Q` — к cc, dd; `_M.flipUvQ(...)` — к a, b);
+`AO_TOP`, повёрнутый тенью к этому ребру (`UV_AO_TOP_Q` — к cc, dd; `_GM.flipUvQ(...)` — к a, b);
 открытая грань — `AO_NONE`.
 Новый тайл — дорисовать его в jpg и добавить тройку `RECT_*`/`UV_*`/`UV_*_Q`.
 Сырые uv вне `RECT_*` `check:geom` отвергнет.
@@ -178,8 +178,8 @@ export const thing00 = (opts: T = {}): IBuffersGeom => {
 ## Чек-лист перед сдачей
 
 - [ ] `check:geom` → PASS
-- [ ] `npx tsc --noEmit` не добавил ошибок
-- [ ] импорты типов помечены `type`, типы — из `_CORE/_M/_m`, не из `_00trash_geometry/GeomTypes`
+- [ ] `npx tsc --noEmit` → 0 ошибок
+- [ ] импорты типов помечены `type`, `_GM` и типы — из `_CORE/_M/_gm`, не из `_00trash_geometry/GeomTypes`
 - [ ] нет `Mesh`/`Material`/`Texture`/DOM — фабрика должна будет исполняться в Web Worker
 - [ ] `uv` — из `atlas00`, `uv2` — из `atlasAo00`, новых сырых координат нет
 - [ ] `c` — запечённый свет от нормали грани (изогнутые — от нормали в вершине)

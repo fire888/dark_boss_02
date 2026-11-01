@@ -1,3 +1,6 @@
+// УСТАРЕЛ. Новый код сюда не ссылается: чистая математика и геометрия — _CORE/_M/_gm (_GM),
+// рендер и стенд (Mesh, BufferGeometry, DOM) — _CORE/_M/_helpers (_H). Файл оставлен только для старых глав.
+
 import * as THREE from 'three'
 import { 
     Matrix4, 
@@ -55,6 +58,7 @@ const TILE_INSET = 2
 let geomLabel: THREE.PlaneGeometry | null = null
 const testObject = new THREE.Object3D() 
 
+/** @deprecated чистая геометрия — `_GM` из `_CORE/_M/_gm`, рендер и стенд — `_H` из `_CORE/_M/_helpers` */
 export const _M = {
     createPolygon: function(v0: A3, v1: A3, v2: A3, v3: A3) { return  [...v0, ...v1, ...v2, ...v0, ...v2, ...v3] },
     createPolygonV: function(v0: Vector3, v1: Vector3, v2: Vector3, v3: Vector3) { return  [
@@ -1011,6 +1015,11 @@ export const _M = {
                 }
             }
             if (isNotPrevPlusOne) fail('index not used contiguously values v')
+
+            // проверяем что index начинается с 0: иначе первые вершины v висячие
+            if (uniqueSortedIndexes.length && uniqueSortedIndexes[0] !== 0) {
+                fail(`index starts from ${uniqueSortedIndexes[0]}, not 0: first vertices of v are unused`)
+            }
 
             // проверяем что нет неиспользуемых вершин в v на которых нет ссылки в index
             const maxInd = uniqueSortedIndexes[uniqueSortedIndexes.length - 1]

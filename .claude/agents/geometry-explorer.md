@@ -1,6 +1,6 @@
 ---
 name: geometry-explorer
-description: Отвечает на вопросы «как в этом репозитории сделано X» по геометрии, атласам текстур и AO, _M и пайплайнам. Только чтение, ничего не меняет. Использовать, чтобы разведка по коду не оседала в основном контексте.
+description: Отвечает на вопросы «как в этом репозитории сделано X» по геометрии, атласам текстур и AO, _GM и пайплайнам. Только чтение, ничего не меняет. Использовать, чтобы разведка по коду не оседала в основном контексте.
 model: sonnet
 tools: Read, Glob, Grep
 ---
@@ -8,9 +8,11 @@ tools: Read, Glob, Grep
 Ты отвечаешь на вопросы по устройству кода этого проекта. **Только чтение.**
 
 Ориентиры:
-- `src/_CORE/_M/_m.ts` — вся математика и сборка буферов, импортируется как `_M`
-  (`createBufferGeometry`, `mergeIndexedArrays`, `debugArrays`, `translateVertices`, хелперы атласов `tileRect`/`rectUvQ`/`flipUvQ`/`rectPoint`,
-  типы `IBuffersGeom` — возврат фабрик, все поля обязательны; `IArraysGeom` — поля необязательны, для склейки).
+- `src/_CORE/_M/_gm.ts` — чистая математика для фабрик, импортируется как `_GM`
+  (`mergeIndexedArrays`, `debugArrays`, `translateVertices`, хелперы атласов `tileRect`/`rectUvQ`/`flipUvQ`/`rectPoint`,
+  типы `IBuffersGeom` — возврат фабрик, все поля обязательны; `IArraysGeom` — обязателен только `v`, остальные поля необязательны, для склейки).
+- `src/_CORE/_M/_helpers.ts` — нечистые хелперы рендера и стенда, импортируется как `_H`
+  (`createMesh`, `createBufferGeometry`, `createLabel`, `createLine`, `getAngleDirY`, `waitClick*`).
 - `src/geometry/07_stairs00/stairs00.ts` — **эталон индексированного модуля**: `{ index, v, uv, uv2, c, vCollide }`,
   хелперы `quad`/`fanTri`/`facesTo`/`lit`, запечённый свет, AO в `uv2`. `src/_00trash_geometry` — старые модули, устаревшие правила.
 - `src/atlases/atlas00/atlas00.ts` (цвет, `512.jpg`),

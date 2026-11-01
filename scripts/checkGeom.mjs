@@ -1,7 +1,7 @@
 import path from 'node:path'
 import fs from 'node:fs'
 import { pathToFileURL } from 'node:url'
-import { _M } from '_CORE/_M/_m'
+import { _GM } from '_CORE/_M/_gm'
 import * as ATLAS from 'atlases/atlas00/atlas00'
 import * as ATLAS_AO from 'atlases/atlasAo00/atlasAo00'
 
@@ -135,7 +135,7 @@ const checkOnce = (g) => {
     if (g.index.length % 3 !== 0) errors.push(`index.length=${g.index.length} is not a multiple of 3`)
 
     // The shared core check: v/c/uv/uv2 lengths and index integrity.
-    const dbg = _M.debugArrays(g, factoryName)
+    const dbg = _GM.debugArrays(g, factoryName)
     errors.push(...dbg.errors)
 
     for (const [label, arr] of [['v', g.v], ['uv', g.uv], ['uv2', g.uv2], ['c', g.c], ['vCollide', g.vCollide], ['index', g.index]]) {

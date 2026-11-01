@@ -1,4 +1,4 @@
-import { _M, type IBuffersGeom, type A3 } from "_CORE/_M/_m"
+import { _GM, type IBuffersGeom, type A3 } from "_CORE/_M/_gm"
 import {
     RECT_GRAY, RECT_MOSS,
     UV_WHITE_Q, UV_GRAY_Q, UV_MOSS_Q,
@@ -99,7 +99,7 @@ export const stairs00 = (opts: T = {}): IBuffersGeom => {
 
     // затенение: верх тайла AO_TOP — тень. Прямо — тень на ребре c, d квада, перевёрнуто — на a, b
     const AO_CD = UV_AO_TOP_Q
-    const AO_AB = _M.flipUvQ(UV_AO_TOP_Q)
+    const AO_AB = _GM.flipUvQ(UV_AO_TOP_Q)
 
     const P = (a: number, rad: number, y: number): A3 =>
         [pos[0] + Math.cos(a) * rad, pos[1] + y, pos[2] + Math.sin(a) * rad]
@@ -164,7 +164,7 @@ export const stairs00 = (opts: T = {}): IBuffersGeom => {
     }
 
     // площадка — плоская проекция сектора в один тайл
-    const topUv = (p: A3) => _M.rectPoint(rectTop,
+    const topUv = (p: A3) => _GM.rectPoint(rectTop,
         Math.min(1, Math.max(0, (p[0] - pos[0] + r) / (2 * r))),
         Math.min(1, Math.max(0, (p[2] - pos[2]) / r)),
     )
@@ -183,10 +183,10 @@ export const stairs00 = (opts: T = {}): IBuffersGeom => {
         }
         index.push(ind, ind + 1, ind + 2)
     }
-    const AO_FREE = _M.rectPoint(RECT_AO_NONE, .5, .5)
+    const AO_FREE = _GM.rectPoint(RECT_AO_NONE, .5, .5)
 
     const collideQuad = (a: A3, b: A3, cc: A3, dd: A3) => {
-        vCollide.push(..._M.createPolygon(a, b, cc, dd))
+        vCollide.push(..._GM.createPolygon(a, b, cc, dd))
     }
 
     // разбиение интервала углов на сегменты по длине дуги внешнего радиуса
@@ -245,7 +245,7 @@ export const stairs00 = (opts: T = {}): IBuffersGeom => {
                 // кольцо дошло до центра: в центре — та доля тайла, что приходится на rTop
                 fanTri(
                     center, P(s0, rTop, hP), P(s1, rTop, hP),
-                    _M.rectPoint(RECT_AO_TOP, .5, 1 - rTop / hW), _M.rectPoint(RECT_AO_TOP, .5, 1),
+                    _GM.rectPoint(RECT_AO_TOP, .5, 1 - rTop / hW), _GM.rectPoint(RECT_AO_TOP, .5, 1),
                 )
             }
             if (rRing > 0 && rRing < rTop) {

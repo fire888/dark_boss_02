@@ -8,7 +8,8 @@ import { AudioManager } from "_CORE/AudioManager"
 import { Studio } from "_CORE"
 import { StudioConf, ControlsConf } from "_CORE/types"
 import * as THREE from 'three'
-import { _M, type IArraysGeom } from '_CORE/_M/_m'
+import { _GM, type IArraysGeom } from '_CORE/_M/_gm'
+import { _H } from '_CORE/_M/_helpers'
 
 import { Core } from '_CORE/types'
 import { Debug } from "_CORE/Debug"
@@ -157,17 +158,17 @@ async function init(root: Root) {
         const x = (i % COLS) * CELL_W
         const z = Math.floor(i / COLS) * CELL_D
 
-        _M.translateVertices(s.v, x, 0, z)
+        _GM.translateVertices(s.v, x, 0, z)
         // прокси справа от своего крыльца
-        if (s.vCollide) _M.translateVertices(s.vCollide, x + R_MAX * 2 + 2, 0, z)
-        _M.mergeIndexedArrays(all, s)
+        if (s.vCollide) _GM.translateVertices(s.vCollide, x + R_MAX * 2 + 2, 0, z)
+        _GM.mergeIndexedArrays(all, s)
     }
 
-    const m = _M.createMesh({ ...all, material })
+    const m = _H.createMesh({ ...all, material })
     studio.add(m)
 
     // прокси — triangle soup без index
-    const mCollide = _M.createMesh({ v: all.vCollide ?? [], material: materialCollide })
+    const mCollide = _H.createMesh({ v: all.vCollide ?? [], material: materialCollide })
     studio.add(mCollide)
 }
 

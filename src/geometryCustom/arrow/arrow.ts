@@ -1,4 +1,5 @@
-import { _M, type IArraysGeom } from "../../_CORE/_M/_m"
+import { type IArraysGeom } from "_CORE/_M/_gm"
+import { _H } from "_CORE/_M/_helpers"
 import * as THREE from 'three'
 
 export const createArrow = (s: number = 10, wA: number = .2): IArraysGeom => {
@@ -46,7 +47,7 @@ export const createMeshArrow = (opts: T_CrMeshArrow = {}) => {
 
     const dataV = createArrow(l, w)
     
-    const m = _M.createMesh({ v: dataV.v, material: new THREE.MeshBasicMaterial({ color, side: THREE.DoubleSide }) } )
+    const m = _H.createMesh({ v: dataV.v, material: new THREE.MeshBasicMaterial({ color, side: THREE.DoubleSide }) } )
     m.position.copy(startPos)
     m.lookAt(endPos)
         
