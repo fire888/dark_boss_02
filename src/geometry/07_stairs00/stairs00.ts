@@ -1,7 +1,7 @@
 import { _GM, type IBuffersGeom, type A3, type F_Nrm } from "_CORE/_M/_gm"
 import {
     RECT_GRAY, RECT_MOSS,
-    UV_WHITE_Q, UV_GRAY_Q, UV_MOSS_Q,
+    UV_WHITE_Q, UV_MOSS_Q, UV_SLAB_Q,
 } from "atlases/atlas00/atlas00"
 import {
     RECT_AO_NONE, RECT_AO_TOP,
@@ -107,14 +107,13 @@ export const stairs00 = (opts: T = {}): IBuffersGeom => {
     const sd = Math.max(Math.min(stepD, (r - .1) / Math.max(1, n - 1)), (t + .01) / Math.max(1, n - 1))
     const rIn = r - (n - 1) * sd
 
-    // площадка целиком серая или заросшая; на ступенях мох — редкими пятнами
-    const TYPE = Math.random() < .5 ? 'STONE' : 'MOSS'
-    const rectTop = TYPE === 'STONE' ? RECT_GRAY : RECT_MOSS
-    const uvStep = () => Math.random() < (TYPE === 'MOSS' ? .25 : .05) ? UV_MOSS_Q : UV_GRAY_Q
+    // площадка целиком серая или заросшая; подступенки — мох, проступи — плита
+    const rectTop = Math.random() < .5 ? RECT_GRAY : RECT_MOSS
 
     // затенение: верх тайла AO_TOP — тень. Прямо — тень на ребре c, d квада, перевёрнуто — на a, b
     const AO_CD = UV_AO_TOP_Q
     const AO_AB = _GM.flipUvQ(UV_AO_TOP_Q)
+    const UV_SLAB_TREAD = _GM.flipUvQ(UV_SLAB_Q)
 
     const P = (a: number, rad: number, y: number): A3 =>
         [pos[0] + Math.cos(a) * rad, pos[1] + y, pos[2] + Math.sin(a) * rad]
@@ -218,22 +217,22 @@ export const stairs00 = (opts: T = {}): IBuffersGeom => {
                 const s0 = segs[k]
                 const s1 = segs[k + 1]
                 const m = (s0 + s1) / 2
-                const uvS = uvStep()
                 for (let i = 0; i < n; ++i) {
                     const rad = r - i * sd
                     // подступенок: тень внизу — в углу с проступью ниже, у нижнего — у земли
                     const y0 = i * sh
                     quad(
                         P(s0, rad, y0), P(s1, rad, y0), P(s1, rad, y0 + sh), P(s0, rad, y0 + sh),
-                        R_(m), uvS, AO_AB, colStep, radOut,
+                        R_(m), UV_MOSS_Q, AO_AB, colStep, radOut,
                     )
                     // проступь; у последней ступени её роль играет площадка.
-                    // a, b — внешний край, cc, dd — внутренний, у следующего подступенка, там тень
+                    // a, b — внешний край, cc, dd — внутренний, у следующего подступенка, там тень.
+                    // Плита перевёрнута: светлая фаска — на внешнем крае
                     if (i < n - 1) {
                         const y = (i + 1) * sh
                         quad(
                             P(s0, rad, y), P(s1, rad, y), P(s1, rad - sd, y), P(s0, rad - sd, y),
-                            UP, uvS, AO_CD, colStep,
+                            UP, UV_SLAB_TREAD, AO_CD, colStep,
                         )
                     }
                 }
