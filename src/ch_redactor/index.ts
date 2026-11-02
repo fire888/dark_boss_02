@@ -190,11 +190,10 @@ async function init(root: Root) {
         single = _H.createMesh({ ...g, material })
         singleCollide = _H.createMesh({ v: g.vCollide, material: materialCollide })
 
-        // прокси — левее начала координат, пример — левее прокси; поэтому pos фабрики по x не виден
+        // пример стоит в начале координат и не сдвигается, прокси — справа от него
         const bV = bounds(g.v)
         const bC = bounds(g.vCollide)
-        singleCollide.position.x = -GAP - bC.max[0]
-        single.position.x = singleCollide.position.x + bC.min[0] - GAP - bV.max[0]
+        singleCollide.position.x = bV.max[0] + GAP - bC.min[0]
         studio.add(single)
         studio.add(singleCollide)
         singleCollision = replaceCollision(singleCollision, g.vCollide, single.position)
@@ -215,8 +214,8 @@ async function init(root: Root) {
             }
         }
         if (refPlane) {
-            // референс — за примером, низом на земле
-            refPlane.position.set(single.position.x + (bV.min[0] + bV.max[0]) / 2, 7, bV.min[2] - GAP)
+            // референс — слева от примера (позади — сетка вариантов), низом на земле
+            refPlane.position.set(bV.min[0] - GAP - 10, 7, (bV.min[2] + bV.max[2]) / 2)
         }
 
         panel?.setStats(
@@ -224,7 +223,8 @@ async function init(root: Root) {
         )
     }
 
-    // ---- 20 случайных вариантов сеткой: все склеены в один меш, все прокси — во второй
+    // ---- 20 случайных вариантов сеткой позади примера (в −z, камера смотрит из +z), по центру по x:
+    // все склеены в один меш, все прокси — во второй
 
     let grid: THREE.Mesh | null = null
     let gridCollide: THREE.Mesh | null = null
@@ -261,16 +261,20 @@ async function init(root: Root) {
         const all: IArraysGeom = { index: [], v: [], uv: [], uv2: [], c: [], vCollide: [] }
         // тела физики — vCollide на месте видимого варианта, а не видимого прокси
         const physics: number[] = []
+        // пример строится отдельно и может уходить в −z: отступ от нуля — с запасом на глубину варианта
+        const X0 = -COLS * CELL_W / 2
+        const Z0 = -GAP - d
         items.forEach((g, i) => {
             const { bV, bC } = bs[i]
-            const x = GAP + (i % COLS) * CELL_W
-            const z = Math.floor(i / COLS) * CELL_D
-            _GM.translateVertices(g.v, x - bV.min[0], 0, z - bV.min[2])
+            const x = X0 + (i % COLS) * CELL_W
+            // передний край ячейки (max z) на Z0, ряды уходят назад
+            const z = Z0 - Math.floor(i / COLS) * CELL_D
+            _GM.translateVertices(g.v, x - bV.min[0], 0, z - bV.max[2])
             const phys = g.vCollide.slice()
-            _GM.translateVertices(phys, x - bV.min[0], 0, z - bV.min[2])
+            _GM.translateVertices(phys, x - bV.min[0], 0, z - bV.max[2])
             for (let k = 0; k < phys.length; ++k) physics.push(phys[k])
             // прокси справа от своего варианта
-            _GM.translateVertices(g.vCollide, x + wV + GAP - bC.min[0], 0, z - bV.min[2])
+            _GM.translateVertices(g.vCollide, x + wV + GAP - bC.min[0], 0, z - bV.max[2])
             _GM.mergeIndexedArrays(all, g)
         })
 

@@ -60,7 +60,7 @@ export const DEFAULT_OPTS: Required<T> = {
     wTile: .5,
     arcStep: .5,
     arcStepCollide: 2,
-    colWall: [.95, .8, .58],
+    colWall: [.64, .67, .7],
     colStep: [1, 1, 1],
     colTop: [1, 1, 1],
 }
@@ -70,16 +70,27 @@ export const randomOpts = (): T => {
     const rand = (min: number, max: number) => min + Math.random() * (max - min)
     const r = rand(3, 8)
     const stairs: T_Stair[] = []
+    // разворот от «на зрителя» (+z) — не больше 0.35 рад и с запасом стенки 0.5 у здания
+    const turn = (room: number) => rand(-1, 1) * Math.min(.35, Math.max(0, room))
     if (r < 5 || Math.random() < .5) {
-        // малое крыльцо — одна широкая лестница, смотрит на зрителя (+z)
-        stairs.push({ angle: Math.PI / 2, w: r * rand(.9, 1.2) })
+        // малое крыльцо — одна широкая лестница, примерно на зрителя
+        const w = r * rand(.9, 1.2)
+        stairs.push({ angle: Math.PI / 2 + turn(Math.PI / 2 - w / r / 2 - .5 / r), w })
     } else {
-        // большое — две широкие, симметрично справа и слева; ширина — с запасом стенки
+        // большое — две широкие справа и слева, пара развёрнута целиком; ширина — с запасом стенки
         // между пролётами и у здания
         const off = Math.PI * rand(.2, .3)
         const wMax = Math.min(2 * off * r - 1, 2 * ((Math.PI / 2 - off) * r - .5))
         const w = wMax * rand(.7, .9)
-        stairs.push({ angle: Math.PI / 2 - off, w }, { angle: Math.PI / 2 + off, w })
+        const a = Math.PI / 2 + turn(Math.PI / 2 - off - w / r / 2 - .5 / r)
+        stairs.push({ angle: a - off, w }, { angle: a + off, w })
+    }
+    // бетон бортиков: серый с лёгким оттенком, чаще холодным; ступени и площадка — множитель тайла около 1
+    const g = rand(.55, .75)
+    const cool = rand(-.03, .05)
+    const tone = (): A3 => {
+        const v = rand(.85, 1)
+        return [v, v, v * rand(.95, 1)]
     }
     return {
         r,
@@ -91,6 +102,9 @@ export const randomOpts = (): T => {
         stairs,
         wTile: rand(.35, .7),
         arcStep: rand(.3, 1),
+        colWall: [g - cool, g, g + cool],
+        colStep: tone(),
+        colTop: tone(),
     }
 }
 

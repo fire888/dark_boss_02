@@ -68,6 +68,52 @@ const rangeFallback = (v: number): T_Range => {
     return { min: Math.min(a, b), max: Math.max(a, b), isInt: Number.isInteger(v) }
 }
 
+// анимация опций: переход от текущих к случайным за ANIM_MS, по приходу — к новым случайным
+const ANIM_MS = 2500
+
+// числа — линейно (целые с обеих сторон остаются целыми), массивы и объекты — поэлементно;
+// булевы, строки и прочая разная форма переключаются посередине.
+// Массивы объектов разной длины (другое число лестниц): короткий дополняется копиями последнего
+// элемента — лестница расходится на две из одной или две сходятся в одну; в конце — длина b
+const lerpOpts = (a: unknown, b: unknown, t: number): unknown => {
+    if (typeof a === 'number' && typeof b === 'number') {
+        const v = a + (b - a) * t
+        return Number.isInteger(a) && Number.isInteger(b) ? Math.round(v) : v
+    }
+    if (Array.isArray(a) && Array.isArray(b) && a.length === b.length) return a.map((x, i) => lerpOpts(x, b[i], t))
+    if (Array.isArray(a) && Array.isArray(b) && a.length && b.length && a.every(isObj) && b.every(isObj)) {
+        if (t >= 1) return clone(b)
+        const n = Math.max(a.length, b.length)
+        const out: unknown[] = []
+        for (let i = 0; i < n; ++i) out.push(lerpOpts(a[Math.min(i, a.length - 1)], b[Math.min(i, b.length - 1)], t))
+        return out
+    }
+    if (isObj(a) && isObj(b)) {
+        const o: T_Opts = {}
+        for (const k of Object.keys(b)) o[k] = k in a ? lerpOpts(a[k], b[k], t) : clone(b[k])
+        return o
+    }
+    return clone(t < .5 ? a : b)
+}
+
+// значения src — в dst на месте, чтобы инпуты формы остались привязаны к тем же объектам.
+// false — форма разошлась (другое число лестниц): поле заменено целиком, форму надо перестроить
+const assignInPlace = (dst: Record<string, unknown>, src: Record<string, unknown>): boolean => {
+    let isSame = true
+    for (const k of Object.keys(src)) {
+        const a = dst[k]
+        const b = src[k]
+        const isSameArr = Array.isArray(a) && Array.isArray(b) && a.length === b.length
+        if (isSameArr || (isObj(a) && isObj(b))) {
+            if (!assignInPlace(a as Record<string, unknown>, b as Record<string, unknown>)) isSame = false
+        } else {
+            if (typeof a === 'object' || typeof b === 'object') isSame = false
+            dst[k] = b
+        }
+    }
+    return isSame
+}
+
 const fmt = (v: number) => String(+v.toFixed(3))
 
 // цвет — тройка 0..1 в поле col*: colWall, colStep, colTop. По одним значениям не узнать — pos [0, 0, 0] тоже в [0, 1]
@@ -89,6 +135,12 @@ export class OptsPanel {
     _form: HTMLDivElement
     _stats: HTMLDivElement
     _json: HTMLTextAreaElement
+    _animButton: HTMLButtonElement
+    // обновить инпуты формы по текущим опциям, без перестройки — для анимации
+    _refreshers: (() => void)[] = []
+    // идёт ли анимация; номер запуска отсекает кадры прошлого запуска после stop и нового старта
+    _isAnim = false
+    _animRun = 0
 
     constructor (entries: T_GeomEntry[], handlers: T_Handlers) {
         this._entries = entries
@@ -112,9 +164,10 @@ export class OptsPanel {
 
         const bar = document.createElement('div')
         this._button(bar, 'default', () => this.setOpts(clone(this._entry.defaultOpts)))
-        this._button(bar, 'random', () => this.setOpts({ ...clone(this._entry.defaultOpts), ...clone(this._entry.randomOpts()) }))
+        this._button(bar, 'random', () => this.setOpts(this._randomOpts()))
         this._button(bar, 'rebuild', () => this._emit())
         this._button(bar, 'reroll 20', () => this._h.onReroll(this._entry))
+        this._animButton = this._button(bar, 'animate', () => this._isAnim ? this._stopAnim() : this._startAnim())
         this.dom.appendChild(bar)
 
         this._stats = document.createElement('div')
@@ -152,13 +205,60 @@ export class OptsPanel {
         this._h.onReroll(entry)
     }
 
+    // любая установка опций снаружи анимации её останавливает
     setOpts (opts: T_Opts) {
+        if (this._isAnim) this._setAnimState(false)
         this._opts = opts
-        this._form.innerHTML = ''
-        for (const key of Object.keys(opts)) {
-            this._field(this._form, opts, key, key, key, this._entry.defaultOpts[key])
-        }
+        this._renderForm()
         this._emit()
+    }
+
+    _renderForm () {
+        this._form.innerHTML = ''
+        this._refreshers = []
+        for (const key of Object.keys(this._opts)) {
+            this._field(this._form, this._opts, key, key, key, this._entry.defaultOpts[key])
+        }
+    }
+
+    _randomOpts (): T_Opts {
+        return { ...clone(this._entry.defaultOpts), ...clone(this._entry.randomOpts()) }
+    }
+
+    _setAnimState (isAnim: boolean) {
+        this._isAnim = isAnim
+        ++this._animRun
+        this._animButton.textContent = isAnim ? 'stop' : 'animate'
+    }
+
+    // каждый кадр опции пересчитываются, ползунки едут за ними, пример пересобирается;
+    // правка ползунка посреди перехода будет перезаписана
+    _startAnim () {
+        this._setAnimState(true)
+        const run = this._animRun
+        let from = clone(this._opts)
+        let to = this._randomOpts()
+        let t0 = performance.now()
+        const tick = (now: number) => {
+            if (run !== this._animRun) return
+            const k = Math.min(1, (now - t0) / ANIM_MS)
+            const next = lerpOpts(from, to, k * k * (3 - 2 * k)) as T_Opts
+            if (assignInPlace(this._opts, next)) this._refreshers.forEach(f => f())
+            else this._renderForm()
+            if (k >= 1) {
+                from = to
+                to = this._randomOpts()
+                t0 = now
+            }
+            this._emit()
+            requestAnimationFrame(tick)
+        }
+        requestAnimationFrame(tick)
+    }
+
+    _stopAnim () {
+        this._setAnimState(false)
+        this._renderForm()
     }
 
     setStats (text: string, isError = false) {
@@ -178,6 +278,7 @@ export class OptsPanel {
         b.textContent = text
         b.onclick = onClick
         parent.appendChild(b)
+        return b
     }
 
     // границы ползунка всегда включают текущее значение: опции из JSON могут выходить за randomOpts
@@ -210,6 +311,10 @@ export class OptsPanel {
             val.textContent = fmt(x)
             this._emit()
         }
+        this._refreshers.push(() => {
+            inp.value = String(o[key])
+            val.textContent = fmt(o[key])
+        })
         row.appendChild(inp)
         row.appendChild(val)
     }
@@ -263,6 +368,10 @@ export class OptsPanel {
                 val.textContent = inp.value
                 this._emit()
             }
+            this._refreshers.push(() => {
+                inp.value = rgbToHex(v)
+                val.textContent = inp.value
+            })
             const row = this._row(parent, label)
             row.appendChild(inp)
             row.appendChild(val)
