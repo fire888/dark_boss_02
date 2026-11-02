@@ -106,6 +106,9 @@ async function init(root: Root) {
 
     const mapAtlas = textureLoader.load(atlas00Img)
     mapAtlas.colorSpace = THREE.SRGBColorSpace
+    // чёткие пиксели; без мипмапов соседние тайлы атласа не подмешиваются вдали
+    mapAtlas.magFilter = THREE.NearestFilter
+    mapAtlas.minFilter = THREE.NearestFilter
     const mapAo = textureLoader.load(atlasAo00Img)
     // aoMap читает uv2 геометрии: в three 0.173 это канал 2
     mapAo.channel = 2
