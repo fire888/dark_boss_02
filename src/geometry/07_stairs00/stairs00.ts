@@ -41,8 +41,8 @@ type T = {
     arcStep?: number, // шаг разбиения дуги видимой геометрии
     arcStepCollide?: number, // то же для прокси, грубее
     colWall?: A3,   // базовые цвета до запечённого освещения; умножаются на тайл атласа
-    colStep?: A3,
-    colTop?: A3,
+    colStep?: A3,   // подступенки
+    colTop?: A3,    // площадка и проступи
 }
 
 export const DEFAULT_OPTS: Required<T> = {
@@ -85,12 +85,12 @@ export const randomOpts = (): T => {
         const a = Math.PI / 2 + turn(Math.PI / 2 - off - w / r / 2 - .5 / r)
         stairs.push({ angle: a - off, w }, { angle: a + off, w })
     }
-    // бетон бортиков: серый с лёгким оттенком, чаще холодным; ступени и площадка — множитель тайла около 1
-    const g = rand(.55, .75)
-    const cool = rand(-.03, .05)
-    const tone = (): A3 => {
-        const v = rand(.85, 1)
-        return [v, v, v * rand(.95, 1)]
+    // приглушённый оттенок: яркость v, тон — случайный, насыщенность до sat
+    const tint = (vMin: number, vMax: number, sat: number): A3 => {
+        const v = rand(vMin, vMax)
+        const s = rand(0, sat)
+        const h = rand(0, Math.PI * 2)
+        return [0, 1, 2].map(i => Math.min(1, Math.max(0, v + s * Math.cos(h - i * Math.PI * 2 / 3)))) as A3
     }
     return {
         r,
@@ -102,9 +102,10 @@ export const randomOpts = (): T => {
         stairs,
         wTile: rand(.35, .7),
         arcStep: rand(.3, 1),
-        colWall: [g - cool, g, g + cool],
-        colStep: tone(),
-        colTop: tone(),
+        // бортики — бетон с оттенком, подступенки и площадка с проступями — тонированный множитель тайла
+        colWall: tint(.5, .8, .12),
+        colStep: tint(.75, .95, .15),
+        colTop: tint(.75, .95, .15),
     }
 }
 
@@ -314,7 +315,7 @@ export const stairs00 = (opts: T = {}): IBuffersGeom => {
                         const y = (i + 1) * sh
                         quad(
                             P(s0, rad, y), P(s1, rad, y), P(s1, rad - sd, y), P(s0, rad - sd, y),
-                            UP, UV_SLAB_TREAD, AO_CD, colStep,
+                            UP, UV_SLAB_TREAD, AO_CD, colTop,
                         )
                     }
                 }

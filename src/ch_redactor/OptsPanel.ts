@@ -123,6 +123,18 @@ const rgbToHex = (c: number[]) =>
     '#' + c.map(x => Math.round(Math.min(1, Math.max(0, x)) * 255).toString(16).padStart(2, '0')).join('')
 const hexToRgb = (hex: string) =>
     [1, 3, 5].map(i => +(parseInt(hex.slice(i, i + 2), 16) / 255).toFixed(3))
+// яркий цвет любого тона: HSV, насыщенность .4–.85, яркость .85–1 — цвет ещё умножается
+// на тайл и запечённый свет, поэтому тёмные значения на геометрии уходят почти в чёрный
+const randomVividColor = (): number[] => {
+    const h = Math.random() * 6
+    const s = .4 + Math.random() * .45
+    const v = .85 + Math.random() * .15
+    const f = (n: number) => {
+        const k = (n + h) % 6
+        return v - v * s * Math.max(0, Math.min(k, 4 - k, 1))
+    }
+    return [f(5), f(3), f(1)]
+}
 
 export class OptsPanel {
     dom: HTMLDivElement
@@ -225,6 +237,15 @@ export class OptsPanel {
         return { ...clone(this._entry.defaultOpts), ...clone(this._entry.randomOpts()) }
     }
 
+    // цель анимации: randomOpts, но цвета col* — яркие любого тона, сильно разные между переходами
+    _animTarget (): T_Opts {
+        const opts = this._randomOpts()
+        for (const key of Object.keys(opts)) {
+            if (isColor(key, opts[key])) opts[key] = randomVividColor()
+        }
+        return opts
+    }
+
     _setAnimState (isAnim: boolean) {
         this._isAnim = isAnim
         ++this._animRun
@@ -237,7 +258,7 @@ export class OptsPanel {
         this._setAnimState(true)
         const run = this._animRun
         let from = clone(this._opts)
-        let to = this._randomOpts()
+        let to = this._animTarget()
         let t0 = performance.now()
         const tick = (now: number) => {
             if (run !== this._animRun) return
@@ -247,7 +268,7 @@ export class OptsPanel {
             else this._renderForm()
             if (k >= 1) {
                 from = to
-                to = this._randomOpts()
+                to = this._animTarget()
                 t0 = now
             }
             this._emit()
