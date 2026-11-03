@@ -12,6 +12,7 @@ import {
 // стенка, поднятая над площадкой парапетом. В разрывах дуги — лестницы, врезанные
 // в площадку: ступени — кольцевые секторы, поднимаются от внешнего радиуса к центру.
 // По краю площадки — полоса плитки вдоль парапета, щёк лестниц и верхних ступеней.
+// Без бортика (hasWall = false) площадка доходит до r, кончается полосой плитки и сразу обрывается.
 // Здание — по линии z = pos[2], дуга выпирает в +z.
 // Угол a: точка = pos + [cos(a) * rad, y, sin(a) * rad]; 0 — справа (+x), PI — слева.
 //
@@ -34,6 +35,7 @@ type T = {
     t?: number,     // толщина стенки
     hP?: number,    // высота площадки
     hW?: number,    // высота парапета над площадкой
+    hasWall?: boolean, // подпорная стенка с парапетом; без неё площадка обрывается краем
     stepH?: number, // целевая высота и глубина ступени; высота подгоняется, чтобы целое число ступеней дало hP
     stepD?: number,
     stairs?: T_Stair[],
@@ -51,6 +53,7 @@ export const DEFAULT_OPTS: Required<T> = {
     t: .4,
     hP: 1.2,
     hW: 1,
+    hasWall: true,
     stepH: .2,
     stepD: .35,
     stairs: [
@@ -68,14 +71,23 @@ export const DEFAULT_OPTS: Required<T> = {
 // случайные опции из диапазона, в котором модуль используется; по ним гоняют check:geom и стенд
 export const randomOpts = (): T => {
     const rand = (min: number, max: number) => min + Math.random() * (max - min)
-    const r = rand(3, 8)
+    const r = rand(3, 10)
     const stairs: T_Stair[] = []
-    // разворот от «на зрителя» (+z) — не больше 0.35 рад и с запасом стенки 0.5 у здания
-    const turn = (room: number) => rand(-1, 1) * Math.min(.35, Math.max(0, room))
-    if (r < 5 || Math.random() < .5) {
+    // разворот от «на зрителя» (+z) — не больше 0.5 рад и с запасом стенки 0.5 у здания
+    const turn = (room: number) => rand(-1, 1) * Math.min(.5, Math.max(0, room))
+    if (r < 4 || Math.random() < .35) {
         // малое крыльцо — одна широкая лестница, примерно на зрителя
         const w = r * rand(.9, 1.2)
         stairs.push({ angle: Math.PI / 2 + turn(Math.PI / 2 - w / r / 2 - .5 / r), w })
+    } else if (r >= 5 && Math.random() < .5) {
+        // самое большое — три лестницы: на зрителя и две по бокам, тройка развёрнута целиком.
+        // Боковые своей ширины и на своём удалении; центральная — с запасом стенки 1 до боковых.
+        // Стенка у здания может быть узкой, но боковая в здание не заходит
+        const off = Math.PI * rand(.28, .4)
+        const wS = Math.min(r * rand(.35, .7), 2 * (Math.PI / 2 - off) * r)
+        const wC = Math.min(r * rand(.4, .9), 2 * (off * r - wS / 2 - 1))
+        const a = Math.PI / 2 + turn(Math.PI / 2 - off - wS / r / 2)
+        stairs.push({ angle: a, w: wC }, { angle: a - off, w: wS }, { angle: a + off, w: wS })
     } else {
         // большое — две широкие справа и слева, пара развёрнута целиком; ширина — с запасом стенки
         // между пролётами и у здания
@@ -97,6 +109,7 @@ export const randomOpts = (): T => {
         t: rand(.3, .6),
         hP: rand(.6, 2),
         hW: rand(.5, 1.4),
+        hasWall: Math.random() < .7,
         stepH: rand(.15, .25),
         stepD: rand(.28, .45),
         stairs,
@@ -111,14 +124,14 @@ export const randomOpts = (): T => {
 
 export const stairs00 = (opts: T = {}): IBuffersGeom => {
     const {
-        pos, r, t, hP, hW, stepH, stepD, stairs, wTile, arcStep, arcStepCollide,
+        pos, r, t, hP, hW, hasWall, stepH, stepD, stairs, wTile, arcStep, arcStepCollide,
         colWall, colStep, colTop,
     }: Required<T> = { ...DEFAULT_OPTS, ...opts }
 
     const B = _GM.createGeomBuilder()
     const { quad, tri, collideQuad, collideTri } = B
 
-    const H = hP + hW
+    const H = hasWall ? hP + hW : hP
     const n = Math.max(1, Math.round(hP / stepH))
     const sh = hP / n
     // последняя ступень — сама площадка, поэтому проступей n - 1; пролёт обязан пробить стенку
@@ -204,11 +217,13 @@ export const stairs00 = (opts: T = {}): IBuffersGeom => {
     // У парапета на площадку ложится тень шириной hW: тайл AO ложится на hW, как на внутренней
     // стенке над площадкой, поэтому полосы тени по обе стороны угла одной ширины
 
-    const rWall = r - t
+    // внутренний край стенки; без бортика площадка идёт до самого края
+    const rWall = hasWall ? r - t : r
     const wT = Math.min(wTile, rIn / 2)
     const rBand0 = rIn - wT
-    // доля тени на радиусе rad
-    const aoQ = (rad: number) => Math.max(0, 1 - (rWall - rad) / hW)
+    // доля тени на радиусе rad; без парапета угла нет и тени тоже
+    const aoQ = (rad: number) => hasWall ? Math.max(0, 1 - (rWall - rad) / hW) : 0
+    const shadeCuts = hasWall ? [rWall - hW] : []
 
     // ячейка площадки — сектор [s0, s1] × [ra, rb], при ra = 0 — треугольник веера.
     // Граница тени rWall - hW всегда среди границ ячеек, поэтому тень внутри ячейки линейна
@@ -240,7 +255,7 @@ export const stairs00 = (opts: T = {}): IBuffersGeom => {
         const count = Math.max(1, Math.round((p1 - p0) * (rEnd - wT / 2) / wT))
         const tileA = (p1 - p0) / count
         const sub = Math.max(1, Math.ceil(tileA * rEnd / arcStep))
-        const rr = radii(rEnd, isShaded ? [rS, rWall - hW] : [rS])
+        const rr = radii(rEnd, isShaded ? [rS, ...shadeCuts] : [rS])
         for (let j = 0; j < count; ++j) {
             const t0 = p0 + j * tileA
             const tileUv = (a: number, rad: number) =>
@@ -259,7 +274,7 @@ export const stairs00 = (opts: T = {}): IBuffersGeom => {
     const bandPiece = (b0: number, b1: number) => {
         const count = Math.max(1, Math.round((rWall - rBand0) / wT))
         const tileR = (rWall - rBand0) / count
-        const cuts = [rBand0, rIn, rWall - hW]
+        const cuts = [rBand0, rIn, ...shadeCuts]
         for (let j = 1; j < count; ++j) cuts.push(rBand0 + j * tileR)
         const rr = radii(rWall, cuts)
         for (let i = 0; i < rr.length - 1; ++i) {
@@ -330,6 +345,7 @@ export const stairs00 = (opts: T = {}): IBuffersGeom => {
             const m = (s0 + s1) / 2
             // тень внизу: снаружи — низ у земли, изнутри — угол с площадкой
             quad(P(s0, r, 0), P(s1, r, 0), P(s1, r, H), P(s0, r, H), R_(m), UV_WHITE_Q, AO_AB, colWall, radOut)
+            if (!hasWall) continue
             quad(
                 P(s0, r - t, hP), P(s1, r - t, hP), P(s1, r - t, H), P(s0, r - t, H), neg(R_(m)),
                 UV_WHITE_Q, AO_AB, colWall, radIn,
@@ -337,16 +353,16 @@ export const stairs00 = (opts: T = {}): IBuffersGeom => {
             quad(P(s0, r - t, H), P(s1, r - t, H), P(s1, r, H), P(s0, r, H), UP, UV_WHITE_Q, UV_AO_NONE_Q, colWall)
         }
 
-        // торцы: у здания — во всю глубину площадки, у пролёта — щека лестницы от верхней ступени;
-        // тень внизу — низ у земли
+        // торцы у пролёта — щека лестницы от верхней ступени; у здания торцы смотрят в стену
+        // и не видны — не рисуются. Тень внизу — низ у земли
         const caps: { a: number, nrm: A3, isOuter: boolean }[] = [
             { a: a0, nrm: neg(T_(a0)), isOuter: si === 0 },
             { a: a1, nrm: T_(a1), isOuter: si === spans.length - 1 },
         ]
         for (const { a, nrm, isOuter } of caps) {
-            const rLow = isOuter ? 0 : rIn
-            quad(P(a, rLow, 0), P(a, r - t, 0), P(a, r - t, hP), P(a, rLow, hP), nrm, UV_WHITE_Q, AO_AB, colWall)
-            quad(P(a, r - t, 0), P(a, r, 0), P(a, r, H), P(a, r - t, H), nrm, UV_WHITE_Q, AO_AB, colWall)
+            if (isOuter) continue
+            quad(P(a, rIn, 0), P(a, rWall, 0), P(a, rWall, hP), P(a, rIn, hP), nrm, UV_WHITE_Q, AO_AB, colWall)
+            if (hasWall) quad(P(a, r - t, 0), P(a, r, 0), P(a, r, H), P(a, r - t, H), nrm, UV_WHITE_Q, AO_AB, colWall)
         }
     }
 
@@ -354,7 +370,7 @@ export const stairs00 = (opts: T = {}): IBuffersGeom => {
 
     for (const { a0, a1, isStair } of spans) {
         const segs = split(a0, a1, arcStepCollide)
-        const rTop = isStair ? rIn : r - t
+        const rTop = isStair ? rIn : rWall
         for (let k = 0; k < segs.length - 1; ++k) {
             const s0 = segs[k]
             const s1 = segs[k + 1]
@@ -363,7 +379,7 @@ export const stairs00 = (opts: T = {}): IBuffersGeom => {
                 collideQuad(P(s0, r, 0), P(s1, r, 0), P(s1, rIn, hP), P(s0, rIn, hP))
             } else {
                 collideQuad(P(s0, r, 0), P(s1, r, 0), P(s1, r, H), P(s0, r, H))
-                collideQuad(P(s0, r - t, hP), P(s1, r - t, hP), P(s1, r - t, H), P(s0, r - t, H))
+                if (hasWall) collideQuad(P(s0, r - t, hP), P(s1, r - t, hP), P(s1, r - t, H), P(s0, r - t, H))
             }
         }
     }
