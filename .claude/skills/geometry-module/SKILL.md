@@ -21,7 +21,7 @@ description: Use when creating, editing or reviewing a geometry factory in src/g
 | грани | `_GM.createGeomBuilder()` — `quad`, `tri`, `collideQuad`, `collideTri` |
 | `uv` | `atlases/atlas00/atlas00` — `UV_*_Q`, `_GM.rectPoint(RECT_*)` |
 | `uv2` | `atlases/atlasAo00/atlasAo00` — затенение внутренних углов и низа у земли |
-| `c` | запечённый свет — считает сборщик от `nHint` или `nrmAt` |
+| `c` | запечённый свет — считает сборщик от `outwardNormal` или `normalAt` |
 | импорт | `import { stairs00 } from 'geometry/07_stairs00/stairs00'` (от `baseUrl: ./src`) |
 | эталон | **`07_stairs00/stairs00.ts`** |
 
@@ -29,6 +29,19 @@ description: Use when creating, editing or reviewing a geometry factory in src/g
 (без неё Node не загрузит модуль и `check:geom` не запустится). `_H` (`_CORE/_M/_helpers`) в фабрику не импортировать.
 Устаревшее — `_CORE/_M/_m`, `chapterNN/geometry/_m.ts`, `GeomTypes`, `_00trash_geometry/**`: не импортировать,
 не копировать, не сверяться.
+
+## Имена и комментарии
+
+Код фабрик и `_GM` читают люди, которые его не писали. Поэтому:
+
+- **Имена развёрнутые, по смыслу**: `radius`, `platformHeight`, `treadDepth`, `pointAt`, `normalOutward`, а не
+  `r`, `hP`, `sd`, `P`, `radOut`. Это касается и опций `T` — по ним стенд подписывает ползунки.
+  Однобуквенные допустимы только для счётчиков коротких циклов (`i`, `k`) и координат (`x`, `y`, `z`, `dx`).
+- Имена массивов `IBuffersGeom` (`v`, `uv`, `uv2`, `c`, `index`, `vCollide`) и экспортов `_GM` — общий
+  контракт со старыми главами, их не переименовывать.
+- **Комментарий объясняет зачем и что означает**: единицы и систему координат, термин (подступенок,
+  проступь, щека), почему стоит ограничение или запас, к какому ребру ложится тень. У каждой опции `T` —
+  комментарий, что она задаёт. Пересказывать код словами не нужно.
 
 ## Порядок
 
@@ -43,25 +56,29 @@ description: Use when creating, editing or reviewing a geometry factory in src/g
 ## Сборщик — `_GM.createGeomBuilder(light?)`
 
 ```ts
-const B = _GM.createGeomBuilder()   // необязательно: { light, ambient, diffuse } — по умолчанию общий свет уровня
-B.quad(a, b, cc, dd, nHint, uvQ, uv2Q, base, nrmAt?)  // uvQ, uv2Q — по 8 чисел
-B.tri(a, b, cc, nHint, uvT, uv2T, base, nrmAt?)       // uvT, uv2T — по 6 чисел, в порядке a, b, cc
-B.collideQuad(a, b, cc, dd)                            // 18 чисел в vCollide
-B.collideTri(a, b, cc)                                 // 9 чисел
-B.g                                                    // IBuffersGeom — вернуть из фабрики
+const builder = _GM.createGeomBuilder()  // необязательно: { light, ambient, diffuse } — по умолчанию общий свет уровня
+builder.quad(bottomStart, bottomEnd, topEnd, topStart, outwardNormal, uvQuad, aoUvQuad, baseColor, normalAt?)
+                                         // uvQuad, aoUvQuad — по 8 чисел
+builder.tri(point0, point1, point2, outwardNormal, uvTri, aoUvTri, baseColor, normalAt?)
+                                         // uvTri, aoUvTri — по 6 чисел, в порядке point0, point1, point2
+builder.collideQuad(point0, point1, point2, point3)  // 18 чисел в vCollide
+builder.collideTri(point0, point1, point2)           // 9 чисел
+builder.g                                            // IBuffersGeom — вернуть из фабрики
 ```
 
-- **Квад** — a, b — низ тайла, cc, dd — верх, по контуру. Своя четвёрка вершин на каждый вызов:
-  4 вершины и 6 индексов `ind, ind+1, ind+2, ind, ind+2, ind+3`.
-- **Обход** выбирается по нормали-подсказке `nHint` (`_GM.facesTo`), руками его не выписывают. `nHint` смотрит
-  наружу от тела: у внутренней стенки — внутрь кольца, у торца — наружу от торца. При смене обхода
-  сборщик меняет местами b и dd (у `tri` — b и cc) **вместе с их `uv` и `uv2`**, иначе ориентированный тайл
-  ляжет транспонированным. Ошибку в `nHint` валидатор не видит — только экран.
-- **Свет** — `min(1, base × (AMBIENT + DIFFUSE · max(0, n·LIGHT)))`, один на все фабрики уровня, чтобы
-  форма читалась на `MeshBasicMaterial`. Тайл атласа нейтральный, оттенок даёт `base` — опции модуля
-  (`colWall`, `colStep`, …). `n` — `nHint` у плоской грани, `nrmAt(p)` у изогнутой — нормаль в самой
-  вершине (`radOut`/`radIn` в эталоне): тогда изгиб виден без источника света.
-- Отдельный `push` в `B.g.v` мимо сборщика запрещён: рассинхрон `v`/`uv`/`uv2`/`c`/`index` начинается там.
+- **Квад** — вершины по контуру: `bottomStart`, `bottomEnd` ложатся на нижний край тайла, `topEnd`, `topStart` —
+  на верхний. Своя четвёрка вершин на каждый вызов: 4 вершины и 6 индексов
+  `first, first+1, first+2, first, first+2, first+3`.
+- **Обход** выбирается по нормали-подсказке `outwardNormal` (`_GM.facesTo`), руками его не выписывают.
+  `outwardNormal` смотрит наружу от тела: у внутренней стенки — внутрь кольца, у торца — наружу от торца.
+  При смене обхода сборщик меняет местами `bottomEnd` и `topStart` (у `tri` — `point1` и `point2`)
+  **вместе с их `uv` и `uv2`**, иначе ориентированный тайл ляжет транспонированным. Ошибку в `outwardNormal`
+  валидатор не видит — только экран.
+- **Свет** — `min(1, baseColor × (AMBIENT + DIFFUSE · max(0, normal · LIGHT)))`, один на все фабрики уровня, чтобы
+  форма читалась на `MeshBasicMaterial`. Тайл атласа нейтральный, оттенок даёт `baseColor` — опции модуля
+  (`colorWall`, `colorRiser`, …). `normal` — `outwardNormal` у плоской грани, `normalAt(point)` у изогнутой —
+  нормаль в самой вершине (`normalOutward`/`normalInward` в эталоне): тогда изгиб виден без источника света.
+- Отдельный `push` в `builder.g.v` мимо сборщика запрещён: рассинхрон `v`/`uv`/`uv2`/`c`/`index` начинается там.
 
 ## Шаблон
 
@@ -70,66 +87,77 @@ import { _GM, type IBuffersGeom, type A3 } from "_CORE/_M/_gm"
 import { UV_GRAY_Q, UV_MOSS_Q } from "atlases/atlas00/atlas00"
 import { UV_AO_NONE_Q, UV_AO_TOP_Q } from "atlases/atlasAo00/atlasAo00"
 
+// Коробка у стены: передняя грань смотрит в +z, задняя стоит в стене и не рисуется
 type T = {
-    pos?: A3,
-    w?: number, h?: number, d?: number,
-    col?: A3,       // базовый цвет до запечённого освещения; умножается на тайл атласа
+    pos?: A3,       // левый нижний задний угол
+    width?: number, // по x
+    height?: number,
+    depth?: number, // по z, от стены к зрителю
+    color?: A3,     // базовый цвет до запечённого освещения; умножается на тайл атласа
 }
 
 export const DEFAULT_OPTS: Required<T> = {
     pos: [0, 0, 0],
-    w: 2, h: 3, d: 2,
-    col: [.95, .8, .58],
+    width: 2, height: 3, depth: 2,
+    color: [.95, .8, .58],
 }
 
 // случайные опции из диапазона, в котором модуль используется; по ним гоняют check:geom и стенд
 export const randomOpts = (): T => {
     const rand = (min: number, max: number) => min + Math.random() * (max - min)
-    return { w: rand(1, 4), h: rand(2, 5), d: rand(1, 3) }
+    return { width: rand(1, 4), height: rand(2, 5), depth: rand(1, 3) }
 }
 
 export const thing00 = (opts: T = {}): IBuffersGeom => {
-    const { pos, w, h, d, col }: Required<T> = { ...DEFAULT_OPTS, ...opts }
+    const { pos, width, height, depth, color }: Required<T> = { ...DEFAULT_OPTS, ...opts }
 
-    const B = _GM.createGeomBuilder()
-    const { quad, collideQuad } = B
+    const builder = _GM.createGeomBuilder()
+    const { quad, collideQuad } = builder
 
+    // семейство тайлов — одно на инстанс
     const TYPE = Math.random() < .5 ? 'STONE' : 'MOSS'
     const uvMain = TYPE === 'STONE' ? UV_GRAY_Q : UV_MOSS_Q
 
-    // тень верха тайла AO_TOP: UV_AO_TOP_Q как есть — на ребре cc, dd, перевёрнутый — на a, b
-    const AO_AB = _GM.flipUvQ(UV_AO_TOP_Q)
+    // тень по верхнему краю тайла AO_TOP: UV_AO_TOP_Q как есть кладёт её на верхнее ребро квада,
+    // перевёрнутый — на нижнее
+    const AO_SHADOW_AT_BOTTOM = _GM.flipUvQ(UV_AO_TOP_Q)
 
-    const P = (x: number, y: number, z: number): A3 => [pos[0] + x, pos[1] + y, pos[2] + z]
+    const pointAt = (x: number, y: number, z: number): A3 => [pos[0] + x, pos[1] + y, pos[2] + z]
 
     // передняя стенка: тень внизу — низ у земли
-    quad(P(0, 0, d), P(w, 0, d), P(w, h, d), P(0, h, d), [0, 0, 1], uvMain, AO_AB, col)
+    quad(
+        pointAt(0, 0, depth), pointAt(width, 0, depth), pointAt(width, height, depth), pointAt(0, height, depth),
+        [0, 0, 1], uvMain, AO_SHADOW_AT_BOTTOM, color,
+    )
     // крыша: открыта
-    quad(P(0, h, d), P(w, h, d), P(w, h, 0), P(0, h, 0), [0, 1, 0], uvMain, UV_AO_NONE_Q, col)
+    quad(
+        pointAt(0, height, depth), pointAt(width, height, depth), pointAt(width, height, 0), pointAt(0, height, 0),
+        [0, 1, 0], uvMain, UV_AO_NONE_Q, color,
+    )
 
     // прокси — проще рендер-геометрии
-    collideQuad(P(0, 0, d), P(w, 0, d), P(w, h, d), P(0, h, d))
+    collideQuad(pointAt(0, 0, depth), pointAt(width, 0, depth), pointAt(width, height, depth), pointAt(0, height, depth))
 
-    return B.g
+    return builder.g
 }
 ```
 
 Чего в шаблоне нет, а в эталоне есть и нужно повторять, когда форма того требует:
 
-- **изогнутая поверхность** — `quad(..., nrmAt)` с нормалью в вершине; геометрия остаётся плоскими квадами;
+- **изогнутая поверхность** — `quad(..., normalAt)` с нормалью в вершине; геометрия остаётся плоскими квадами;
 - **неквадная грань** — `tri`: веер из центра, своя тройка вершин на треугольник, `uv` — плоская проекция
-  через `_GM.rectPoint(RECT_*, s, q)` с зажатыми `s, q`;
+  через `_GM.rectPoint(RECT_*, fractionX, fractionY)` с долями, зажатыми в [0, 1];
 - **тень одной ширины по обе стороны угла** — см. ниже;
-- **прокси со своим шагом** (`arcStepCollide`) и упрощённой формой.
+- **прокси со своим шагом** (`collideArcSegmentLength`) и упрощённой формой.
 
 ## Массивы и инварианты
 
 | массив | на квад | на треугольник | откуда |
 |---|---|---|---|
 | `v` | 12 | 9 | |
-| `uv` | 8 | 6 | `UV_*_Q`, внутри тайла — `_GM.rectPoint(RECT_*, s, q)` |
+| `uv` | 8 | 6 | `UV_*_Q`, внутри тайла — `_GM.rectPoint(RECT_*, fractionX, fractionY)` |
 | `uv2` | 8 | 6 | `UV_AO_*_Q`, `_GM.flipUvQ`, `_GM.rectPoint(RECT_AO_*, …)` |
-| `c` | 12 | 9 | сборщик, `lit(base, n)` |
+| `c` | 12 | 9 | сборщик, `lit(baseColor, normal)` |
 | `index` | 6 | 3 | |
 | `vCollide` | 18 | 9 | без индекса |
 
@@ -145,8 +173,9 @@ export const thing00 = (opts: T = {}): IBuffersGeom => {
 
 ## Атласы
 
-Хелперы — в `_GM`: `tileRect(size, x, y, w, h)` (регион в пикселях, отступ 2 px), `rectUvQ` (8 чисел: a, b — низ,
-c, d — верх), `flipUvQ`, `rectPoint`, тип `T_TileRect`.
+Хелперы — в `_GM`: `tileRect(atlasSize, x, y, width, height)` (регион в пикселях, отступ 2 px), `rectUvQ`
+(8 чисел: первые две вершины — низ тайла, вторые две — верх), `flipUvQ` (тайл вверх ногами),
+`rectPoint(rect, fractionX, fractionY)` (точка внутри тайла по долям), тип `T_TileRect` — `[uLeft, vBottom, uRight, vTop]`.
 
 - `atlas00` (цвет, `512.jpg`, сетка 64 px): `WHITE`, `MOSS`, `RED` (2:1), `GRAY`, `GRAY_WIDE` (2:1).
 - `atlasAo00` (затенение, `512Ao.jpg`): `AO_NONE`, `AO_TOP` (тень по верхнему краю), `AO_TOP_BOTTOM`, `AO_ROUND`.
@@ -166,14 +195,17 @@ c, d — верх), `flipUvQ`, `rectPoint`, тип `T_TileRect`.
   подступенка, площадка у парапета;
 - **низ, который будет примыкать к земле** — низ наружной стенки, торцов, нижнего подступенка.
 
-Такая грань получает `UV_AO_TOP_Q` (тень на ребре cc, dd) или `_GM.flipUvQ(UV_AO_TOP_Q)` (на ребре a, b) —
+Такая грань получает `UV_AO_TOP_Q` (тень на верхнем ребре `topEnd`, `topStart`) или `_GM.flipUvQ(UV_AO_TOP_Q)`
+(на нижнем `bottomStart`, `bottomEnd`) —
 тенью к ребру угла или к нижнему ребру. Открытые грани — `UV_AO_NONE_Q`.
 
 **Ширина тени у угла одинакова с обеих сторон.** Тайл AO растягивается на грань, тень в метрах — доля тайла ×
 размер грани поперёк ребра, поэтому обе грани угла ложатся на тайл в одном масштабе. В эталоне площадка
-у парапета — кольцо шириной `hW` с `UV_AO_TOP_Q`, как стенка высотой `hW` над ней; веер внутри кольца — `AO_NONE`.
-Если кольцо доходит до центра, веер получает `_GM.rectPoint(RECT_AO_TOP, .5, q)` с `q = 1 - rTop / hW` в центре.
-Исключение в эталоне — угол ступени: подступенок (`sh`) и проступь (`sd`) разной глубины, тени разной ширины.
+у парапета — кольцо шириной `parapetHeight` с тенью, как стенка высотой `parapetHeight` над ней; веер внутри
+кольца — `AO_NONE`. Доля тени на расстоянии от центра — `parapetShadowAt(distance)`, в uv2 —
+`_GM.rectPoint(RECT_AO_TOP, .5, parapetShadowAt(distance))`; если кольцо доходит до центра, в центре тень уже не ноль.
+Исключение в эталоне — угол ступени: подступенок (`riserHeight`) и проступь (`treadDepth`) разной глубины,
+тени разной ширины.
 
 На материале — `aoMap` с `channel = 2` (three 0.173), пример — `src/ch_redactor/index.ts`.
 
@@ -216,7 +248,8 @@ c, d — верх), `flipUvQ`, `rectPoint`, тип `T_TileRect`.
 - [ ] импорты — из `_CORE/_M/_gm`, типы с `type`; нет `_H`, `_M`, `GeomTypes`, `_00trash_*`
 - [ ] нет `Mesh`/`Material`/`Texture`/DOM/`Root`
 - [ ] `uv` — из `atlas00`, `uv2` — из `atlasAo00`, сырых координат нет
-- [ ] у изогнутых граней передан `nrmAt`
+- [ ] у изогнутых граней передан `normalAt`
 - [ ] внутренние углы и низ у земли затенены, тень у нужного ребра и одной ширины по обе стороны угла
-- [ ] `nHint` смотрит наружу — проверить глазами
+- [ ] `outwardNormal` смотрит наружу — проверить глазами
+- [ ] имена развёрнутые, у опций и неочевидных мест — комментарии (раздел «Имена и комментарии»)
 - [ ] `vCollide` упрощён относительно рендера

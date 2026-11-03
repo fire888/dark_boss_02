@@ -59,7 +59,7 @@ const sampleRanges = (entry: T_GeomEntry): Map<string, T_Range> => {
 }
 
 // поле, которое randomOpts не меняет: ноль (pos) — ±10, доли (цвета) — [0, 1], иначе — от четверти до удвоенного.
-// Ноль в диапазон шага (arcStepCollide) не попадает: на нулевом шаге разбиение дуги не кончится
+// Ноль в диапазон шага (collideArcSegmentLength) не попадает: на нулевом шаге разбиение дуги не кончится
 const rangeFallback = (v: number): T_Range => {
     if (v === 0) return { min: -10, max: 10, isInt: false }
     if (v > 0 && v <= 1) return { min: 0, max: 1, isInt: false }
@@ -117,7 +117,7 @@ const assignInPlace = (dst: Record<string, unknown>, src: Record<string, unknown
 
 const fmt = (v: number) => String(+v.toFixed(3))
 
-// цвет — тройка 0..1 в поле col*: colWall, colStep, colTop. По одним значениям не узнать — pos [0, 0, 0] тоже в [0, 1]
+// цвет — тройка 0..1 в поле col*: colorWall, colorRiser, colorTop. По одним значениям не узнать — pos [0, 0, 0] тоже в [0, 1]
 const isColor = (key: string | number, v: unknown): v is number[] =>
     typeof key === 'string' && /^col/.test(key) && isNumArr(v) && v.length === 3
 const rgbToHex = (c: number[]) =>

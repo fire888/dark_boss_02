@@ -5,8 +5,16 @@ import { Matrix4, Vector3 } from "three"
 // Рендер-хелперы (createMesh, createBufferGeometry, createLabel, createLine, getAngleDirY, waitClick*)
 // — в _helpers.ts (_H).
 
+// точка или вектор в 3D и точка в uv
 export type A3 = [number, number, number]
 export type A2 = [number, number]
+// Массивы геометрии; любой может отсутствовать, кроме v.
+//   v        — координаты вершин, по 3 числа на вершину
+//   index    — номера вершин, по 3 на треугольник; без index каждые 3 вершины v — треугольник
+//   uv       — координаты в атласе цвета, по 2 на вершину
+//   uv2      — координаты в атласе затенения (aoMap), по 2 на вершину
+//   c        — цвет вершины с запечённым светом, по 3 на вершину (r, g, b в [0, 1])
+//   vCollide — прокси для физики: triangle soup без index, по 9 чисел на треугольник
 export type IArraysGeom = {
     index?: number[],
     v: number[],
@@ -41,7 +49,7 @@ export type IDebugArraysResult = {
     errors: string[]
 }
 
-// Регион тайла атласа в uv: [u0, v0, u1, v1], v0 — низ. Текстура грузится с flipY,
+// Регион тайла атласа в uv: [uLeft, vBottom, uRight, vTop]. Текстура грузится с flipY,
 // поэтому верх картинки — v = 1.
 export type T_TileRect = [number, number, number, number]
 
@@ -50,33 +58,45 @@ const TILE_INSET = 2
 
 // #region builder
 
-// нормаль в точке поверхности — для изогнутых граней свет запекается от нормали в самой вершине
-export type F_Nrm = (p: A3) => A3
+// Нормаль поверхности в заданной точке. Для изогнутых граней свет запекается от нормали в самой
+// вершине, а не от одной нормали на грань, — так изгиб читается плавным
+export type F_Nrm = (point: A3) => A3
 
 export type T_LightOpts = {
-    light?: A3,     // направление на «солнце», нормируется
-    ambient?: number,
-    diffuse?: number,
+    light?: A3,       // направление на «солнце», нормируется
+    ambient?: number, // заполняющий свет: доля яркости, которая есть у грани в тени
+    diffuse?: number, // доля яркости от «солнца» у грани, повёрнутой прямо к нему
 }
 
-// Сборщик индексированной геометрии по контракту src/geometry
+// Сборщик индексированной геометрии по контракту src/geometry. Один вызов quad/tri — одна грань
+// со своими вершинами; все массивы растут вместе и не расходятся
 export type T_GeomBuilder = {
     // все шесть массивов; фабрика возвращает его как есть
     g: IBuffersGeom,
-    // квад a -> b -> cc -> dd по контуру: a, b — низ тайла, cc, dd — верх; uvQ, uv2Q — по 8 чисел
-    quad: (a: A3, b: A3, cc: A3, dd: A3, nHint: A3, uvQ: number[], uv2Q: number[], base: A3, nrmAt?: F_Nrm) => void,
-    // треугольная грань; uvT, uv2T — по 6 чисел, в порядке a, b, cc
-    tri: (a: A3, b: A3, cc: A3, nHint: A3, uvT: number[], uv2T: number[], base: A3, nrmAt?: F_Nrm) => void,
-    // прокси: triangle soup без index
-    collideQuad: (a: A3, b: A3, cc: A3, dd: A3) => void,
-    collideTri: (a: A3, b: A3, cc: A3) => void,
+    // Четырёхугольная грань, вершины по контуру: bottomStart -> bottomEnd -> topEnd -> topStart.
+    // bottomStart, bottomEnd ложатся на нижний край тайла, topEnd, topStart — на верхний.
+    // outwardNormal — куда грань смотрит наружу от тела; по нему выбирается обход и считается свет.
+    // uvQuad, aoUvQuad — по 8 чисел (uv четырёх вершин в том же порядке) для атласа цвета и затенения.
+    // baseColor — цвет до освещения. normalAt — нормаль в вершине для изогнутой грани
+    quad: (
+        bottomStart: A3, bottomEnd: A3, topEnd: A3, topStart: A3, outwardNormal: A3,
+        uvQuad: number[], aoUvQuad: number[], baseColor: A3, normalAt?: F_Nrm,
+    ) => void,
+    // Треугольная грань; uvTri, aoUvTri — по 6 чисел в порядке point0, point1, point2
+    tri: (
+        point0: A3, point1: A3, point2: A3, outwardNormal: A3,
+        uvTri: number[], aoUvTri: number[], baseColor: A3, normalAt?: F_Nrm,
+    ) => void,
+    // прокси для физики: дописывают треугольники в vCollide (triangle soup без index), обход не важен
+    collideQuad: (point0: A3, point1: A3, point2: A3, point3: A3) => void,
+    collideTri: (point0: A3, point1: A3, point2: A3) => void,
     // запечённый свет с настройками этого сборщика
-    lit: (base: A3, nrm: A3) => A3,
+    lit: (baseColor: A3, normal: A3) => A3,
 }
 
-const normalize3 = (l: A3): A3 => {
-    const len = Math.hypot(...l)
-    return [l[0] / len, l[1] / len, l[2] / len]
+const normalize3 = (vector: A3): A3 => {
+    const length = Math.hypot(...vector)
+    return [vector[0] / length, vector[1] / length, vector[2] / length]
 }
 
 // Освещение запекается в цвет вершин, чтобы форма читалась и на MeshBasicMaterial:
@@ -85,21 +105,30 @@ const LIGHT: A3 = normalize3([.6, .7, .45])
 const AMBIENT = .4
 const DIFFUSE = .6
 
-// обход выбирается по нормали-подсказке, чтобы не выписывать его для каждой грани руками
-const facesTo = (a: A3, b: A3, cc: A3, nHint: A3): boolean => {
-    const e1 = [b[0] - a[0], b[1] - a[1], b[2] - a[2]]
-    const e2 = [cc[0] - a[0], cc[1] - a[1], cc[2] - a[2]]
-    const nx = e1[1] * e2[2] - e1[2] * e2[1]
-    const ny = e1[2] * e2[0] - e1[0] * e2[2]
-    const nz = e1[0] * e2[1] - e1[1] * e2[0]
-    return nx * nHint[0] + ny * nHint[1] + nz * nHint[2] >= 0
+// Смотрит ли треугольник point0 -> point1 -> point2 (против часовой стрелки — лицевая сторона)
+// туда же, куда outwardNormal. Обход выбирается по этой подсказке, чтобы не выписывать его руками
+const facesTo = (point0: A3, point1: A3, point2: A3, outwardNormal: A3): boolean => {
+    const edge1 = [point1[0] - point0[0], point1[1] - point0[1], point1[2] - point0[2]]
+    const edge2 = [point2[0] - point0[0], point2[1] - point0[1], point2[2] - point0[2]]
+    // нормаль треугольника — векторное произведение рёбер edge1 × edge2
+    const normalX = edge1[1] * edge2[2] - edge1[2] * edge2[1]
+    const normalY = edge1[2] * edge2[0] - edge1[0] * edge2[2]
+    const normalZ = edge1[0] * edge2[1] - edge1[1] * edge2[0]
+    return normalX * outwardNormal[0] + normalY * outwardNormal[1] + normalZ * outwardNormal[2] >= 0
 }
 
-// min(1, base × (ambient + diffuse · max(0, n·light)))
-const lit = (base: A3, nrm: A3, light: A3 = LIGHT, ambient: number = AMBIENT, diffuse: number = DIFFUSE): A3 => {
-    const d = Math.max(0, nrm[0] * light[0] + nrm[1] * light[1] + nrm[2] * light[2])
-    const k = ambient + diffuse * d
-    return [Math.min(1, base[0] * k), Math.min(1, base[1] * k), Math.min(1, base[2] * k)]
+// цвет вершины: min(1, baseColor × (ambient + diffuse · max(0, normal · light)))
+const lit = (
+    baseColor: A3, normal: A3, light: A3 = LIGHT, ambient: number = AMBIENT, diffuse: number = DIFFUSE,
+): A3 => {
+    // освещённость от «солнца»: косинус угла между нормалью и направлением на него, обратная сторона — 0
+    const sunAmount = Math.max(0, normal[0] * light[0] + normal[1] * light[1] + normal[2] * light[2])
+    const brightness = ambient + diffuse * sunAmount
+    return [
+        Math.min(1, baseColor[0] * brightness),
+        Math.min(1, baseColor[1] * brightness),
+        Math.min(1, baseColor[2] * brightness),
+    ]
 }
 
 // Каждая грань — один вызов: push-и в v, uv, uv2, c, index идут вместе, своя четвёрка (тройка)
@@ -113,49 +142,58 @@ const createGeomBuilder = (opts: T_LightOpts = {}): T_GeomBuilder => {
     const g: IBuffersGeom = { index: [], v: [], uv: [], uv2: [], c: [], vCollide: [] }
     const { index, v, uv, uv2, c, vCollide } = g
 
-    const litB = (base: A3, nrm: A3): A3 => lit(base, nrm, light, ambient, diffuse)
+    const litWithOwnLight = (baseColor: A3, normal: A3): A3 => lit(baseColor, normal, light, ambient, diffuse)
 
-    const push = (pts: A3[], order: number[], uvs: number[], uv2s: number[], base: A3, nrmAt: F_Nrm) => {
-        for (let k = 0; k < pts.length; ++k) {
-            const o = order[k]
-            v.push(...pts[k])
-            uv.push(uvs[o * 2], uvs[o * 2 + 1])
-            uv2.push(uv2s[o * 2], uv2s[o * 2 + 1])
-            c.push(...litB(base, nrmAt(pts[k])))
+    // Дописывает вершины грани. points — уже в итоговом обходе, uvOrder[i] — номер исходной вершины
+    // для points[i]: по нему берутся её uv и uv2 из массивов в исходном порядке
+    const pushVertices = (
+        points: A3[], uvOrder: number[], uvs: number[], aoUvs: number[], baseColor: A3, normalAt: F_Nrm,
+    ) => {
+        for (let i = 0; i < points.length; ++i) {
+            const source = uvOrder[i]
+            v.push(...points[i])
+            uv.push(uvs[source * 2], uvs[source * 2 + 1])
+            uv2.push(aoUvs[source * 2], aoUvs[source * 2 + 1])
+            c.push(...litWithOwnLight(baseColor, normalAt(points[i])))
         }
     }
 
     return {
         g,
-        quad: (a, b, cc, dd, nHint, uvQ, uv2Q, base, nrmAt = () => nHint) => {
-            let pts = [a, b, cc, dd]
-            let order = [0, 1, 2, 3]
-            if (!facesTo(a, b, cc, nHint)) {
-                pts = [a, dd, cc, b]
-                order = [0, 3, 2, 1]
+        quad: (
+            bottomStart, bottomEnd, topEnd, topStart, outwardNormal,
+            uvQuad, aoUvQuad, baseColor, normalAt = () => outwardNormal,
+        ) => {
+            let points = [bottomStart, bottomEnd, topEnd, topStart]
+            let uvOrder = [0, 1, 2, 3]
+            // обход смотрит не туда — идём по контуру в обратную сторону от той же первой вершины
+            if (!facesTo(bottomStart, bottomEnd, topEnd, outwardNormal)) {
+                points = [bottomStart, topStart, topEnd, bottomEnd]
+                uvOrder = [0, 3, 2, 1]
             }
-            const ind = v.length / 3
-            push(pts, order, uvQ, uv2Q, base, nrmAt)
-            index.push(ind, ind + 1, ind + 2, ind, ind + 2, ind + 3)
+            const firstIndex = v.length / 3
+            pushVertices(points, uvOrder, uvQuad, aoUvQuad, baseColor, normalAt)
+            // два треугольника веером из первой вершины
+            index.push(firstIndex, firstIndex + 1, firstIndex + 2, firstIndex, firstIndex + 2, firstIndex + 3)
         },
-        tri: (a, b, cc, nHint, uvT, uv2T, base, nrmAt = () => nHint) => {
-            let pts = [a, b, cc]
-            let order = [0, 1, 2]
-            if (!facesTo(a, b, cc, nHint)) {
-                pts = [a, cc, b]
-                order = [0, 2, 1]
+        tri: (point0, point1, point2, outwardNormal, uvTri, aoUvTri, baseColor, normalAt = () => outwardNormal) => {
+            let points = [point0, point1, point2]
+            let uvOrder = [0, 1, 2]
+            if (!facesTo(point0, point1, point2, outwardNormal)) {
+                points = [point0, point2, point1]
+                uvOrder = [0, 2, 1]
             }
-            const ind = v.length / 3
-            push(pts, order, uvT, uv2T, base, nrmAt)
-            index.push(ind, ind + 1, ind + 2)
+            const firstIndex = v.length / 3
+            pushVertices(points, uvOrder, uvTri, aoUvTri, baseColor, normalAt)
+            index.push(firstIndex, firstIndex + 1, firstIndex + 2)
         },
-        collideQuad: (a, b, cc, dd) => {
-            vCollide.push(...a, ...b, ...cc, ...a, ...cc, ...dd)
+        collideQuad: (point0, point1, point2, point3) => {
+            vCollide.push(...point0, ...point1, ...point2, ...point0, ...point2, ...point3)
         },
-        collideTri: (a, b, cc) => {
-            vCollide.push(...a, ...b, ...cc)
+        collideTri: (point0, point1, point2) => {
+            vCollide.push(...point0, ...point1, ...point2)
         },
-        lit: litB,
+        lit: litWithOwnLight,
     }
 }
 
@@ -167,36 +205,52 @@ export const _GM = {
     lit,
     createGeomBuilder,
     // #endregion
+
+    // #region legacy — функции старых глав: неиндексированные массивы, по 6 вершин на квад.
+    // Новые фабрики src/geometry их не используют; смысл не менять — на них стоят главы
+
+    // квад v0 -> v1 -> v2 -> v3 как два треугольника (v0, v1, v2) и (v0, v2, v3) — 18 чисел
     createPolygon: function(v0: A3, v1: A3, v2: A3, v3: A3) { return  [...v0, ...v1, ...v2, ...v0, ...v2, ...v3] },
     createPolygonV: function(v0: Vector3, v1: Vector3, v2: Vector3, v3: Vector3) { return  [
         ...v0.toArray(), ...v1.toArray(), ...v2.toArray(), ...v0.toArray(), ...v2.toArray(), ...v3.toArray()
     ]},
+    // один цвет на 6 вершин квада из createPolygon
     fillColorFace: (c: A3) => [...c, ...c, ...c, ...c, ...c, ...c],
+    // uv четырёх углов квада, разложенные на 6 вершин в порядке createPolygon
     createUv: (v1: A2, v2: A2, v3: A2, v4: A2) => [...v1, ...v2, ...v3, ...v1, ...v3, ...v4],
+
+    // #endregion
 
     // #region atlas
 
-    // регион в пикселях картинки (x вправо, y вниз от левого верхнего угла)
-    tileRect: (size: number, x: number, y: number, w: number, h: number): T_TileRect => [
-        (x + TILE_INSET) / size,
-        1 - (y + h - TILE_INSET) / size,
-        (x + w - TILE_INSET) / size,
-        1 - (y + TILE_INSET) / size,
+    // Регион тайла по его положению в пикселях картинки атласа размером atlasSize × atlasSize:
+    // x вправо, y вниз от левого верхнего угла, width × height — размер тайла
+    tileRect: (atlasSize: number, x: number, y: number, width: number, height: number): T_TileRect => [
+        (x + TILE_INSET) / atlasSize,
+        1 - (y + height - TILE_INSET) / atlasSize,
+        (x + width - TILE_INSET) / atlasSize,
+        1 - (y + TILE_INSET) / atlasSize,
     ],
-    // 12 чисел — квад из 6 вершин
-    rectUv: (r: T_TileRect): number[] =>
-        _GM.createUv([r[0], r[1]], [r[2], r[1]], [r[2], r[3]], [r[0], r[3]]),
-    // 8 чисел — индексированный квад a, b, c, d: a, b — низ тайла, c, d — верх
-    rectUvQ: (r: T_TileRect): number[] =>
-        [r[0], r[1], r[2], r[1], r[2], r[3], r[0], r[3]],
-    // квад с тайлом, перевёрнутым по вертикали: верх картинки ложится на ребро a, b
-    flipUvQ: (uvQ: number[]): number[] =>
-        [uvQ[6], uvQ[7], uvQ[4], uvQ[5], uvQ[2], uvQ[3], uvQ[0], uvQ[1]],
-    // точка внутри региона: s — доля слева направо, q — снизу вверх
-    rectPoint: (r: T_TileRect, s: number, q: number): A2 =>
-        [r[0] + (r[2] - r[0]) * s, r[1] + (r[3] - r[1]) * q],
+    // 12 чисел — неиндексированный квад из 6 вершин (старый формат, для глав)
+    rectUv: (rect: T_TileRect): number[] =>
+        _GM.createUv([rect[0], rect[1]], [rect[2], rect[1]], [rect[2], rect[3]], [rect[0], rect[3]]),
+    // 8 чисел — индексированный квад bottomStart, bottomEnd, topEnd, topStart: первые две — низ тайла,
+    // вторые две — верх
+    rectUvQ: (rect: T_TileRect): number[] =>
+        [rect[0], rect[1], rect[2], rect[1], rect[2], rect[3], rect[0], rect[3]],
+    // тот же квад с тайлом, перевёрнутым по вертикали: верх картинки ложится на нижнее ребро квада
+    flipUvQ: (uvQuad: number[]): number[] =>
+        [uvQuad[6], uvQuad[7], uvQuad[4], uvQuad[5], uvQuad[2], uvQuad[3], uvQuad[0], uvQuad[1]],
+    // точка внутри региона: fractionX — доля ширины слева направо, fractionY — доля высоты снизу вверх
+    rectPoint: (rect: T_TileRect, fractionX: number, fractionY: number): A2 =>
+        [rect[0] + (rect[2] - rect[0]) * fractionX, rect[1] + (rect[3] - rect[1]) * fractionY],
 
     // #endregion
+
+    // #region legacy
+
+    // Боковые стенки призмы высотой height над четырёхугольником v0..v3 в основании;
+    // isCap — добавить крышку сверху
     createBevel4P: function (v0: A3, v1: A3, v2: A3, v3: A3, height: number = 1, isCap: boolean = false): number[] {
         const v: number[] = []
         v.push(
@@ -233,6 +287,7 @@ export const _GM = {
         )
         return v
     },
+    // применяет матрицу к каждой тройке координат массива на месте
     applyMatrixToArray(m: Matrix4, arr: number[]) {
         const v3 = new Vector3()
         for (let i = 0; i < arr.length; i += 3) {
@@ -243,6 +298,7 @@ export const _GM = {
             arr[i + 2] = v3.z
         }
     },
+    // сдвиг и повороты вокруг осей — на месте, по каждой тройке координат
     translateVertices(v: number[], x: number, y: number, z: number) {
         const m4 = new Matrix4().makeTranslation(x, y, z)
         _GM.applyMatrixToArray(m4, v)
@@ -259,6 +315,7 @@ export const _GM = {
         const m4 = new Matrix4().makeRotationZ(angle)
         _GM.applyMatrixToArray(m4, v)
     },
+    // угол точки (x, y) от оси x в [0, 2PI)
     angleFromCoords (x: number, y: number) {
         let rad = Math.atan(y / x)
         x < 0 && y > 0 && (rad = Math.PI - Math.abs(rad))
@@ -267,11 +324,13 @@ export const _GM = {
         rad = rad % (Math.PI * 2)
         return rad
     },
+    // угол точки (x, z) в плоскости пола от оси x в [0, 2PI), рост — от +x к −z
     angleFromCoords2 (x: number, z: number) {
         let angle = Math.atan2(-z, x)
         if (angle < 0) angle += 2 * Math.PI
         return angle
     },
+    // дописывает в массив треугольников их отражение по z (с обратным обходом)
     mirrorZ: (arr: number[]) => {
         const arr2 = []
 
@@ -286,6 +345,7 @@ export const _GM = {
         }
         arr.push(...arr2)
     },
+    // uv по координатам x, y вершин, растянутым на [0, 1] по габаритам
     getUvByLen: (arr: number[]) => {
         const uv = []
         let minX = 1000
@@ -317,12 +377,14 @@ export const _GM = {
         }
         return uv
     },
+    // ran(max) — случайное в [0, max), ran(min, max) — в [min, max)
     ran: function (start: number, end: number | null = null) {
         if (end === null) {
             return Math.random() * start;
         } 
         return start + Math.random() * (end - start) 
     },
+    // цвета для createFaceWithSquare: c1 — внутренний квадрат, c2 — четыре квада рамки
     fillColorFaceWithSquare: function(c1: A3, c2: A3){ return [
         ...this.fillColorFace(c1),
         ...this.fillColorFace(c2),
@@ -330,6 +392,7 @@ export const _GM = {
         ...this.fillColorFace(c2),
         ...this.fillColorFace(c2),
     ]},
+    // плоская грань v1..v4 в плоскости xy: случайный квадрат внутри и рамка из 4 квадов вокруг
     createFaceWithSquare: function (v1: A3, v2: A3, v3: A3, v4: A3, color1: A3, color2: A3) {
         const maxW = v2[0] - v1[0]
         const maxH = v3[1] - v1[1]
@@ -392,6 +455,7 @@ export const _GM = {
         ]
         return { vArr, cArr, uArr }
     },
+    // коробка по 8 углам: v1..v4 — передняя грань, v5..v8 — задняя
     createBox: (
         v1: A3, v2: A3, v3: A3, v4: A3,
         v5: A3, v6: A3, v7: A3, v8: A3,
@@ -410,6 +474,7 @@ export const _GM = {
         }
     },
 
+    // растягивает ключевые пути, профили и цвета на n шагов, линейно интерполируя между соседними ключами
     interpolateArrays: (data: { 
         paths: A3[][], 
         forms: number[][], 
@@ -501,10 +566,12 @@ export const _GM = {
         return { paths: pathsReal, forms: formsReal, colors: colorsReal }
     },
 
+    // расстояние между точками на плоскости
     dist (v1: [number, number], v2: [number, number]) {
         return Math.sqrt((v1[0] - v2[0]) * (v1[0] - v2[0]) + (v1[1] - v2[1]) * (v1[1] - v2[1]))
     },
 
+    // канал цвета [0, 1] в две hex-цифры
     componentToHex (c: number) {
         c *= 256
         c = Math.floor(c) - 1
@@ -513,6 +580,7 @@ export const _GM = {
         return hex.length == 1 ? "0" + hex : hex;
     },
 
+    // цвет [0, 1] в строку '#rrggbb' и обратно
     normRGBtoHex(r: number, g: number, b: number): string {
         const rN = _GM.componentToHex(r)
         const gN = _GM.componentToHex(g)
@@ -532,6 +600,7 @@ export const _GM = {
         return [r, g, b];
     },
 
+    // площадь многоугольника на плоскости (формула шнурования)
     area (vertices: [number, number][]) {
         var total = 0;
     
@@ -548,6 +617,7 @@ export const _GM = {
         return Math.abs(total)
     },
 
+    // центр масс многоугольника на плоскости
     center: (points: [number, number][]): [number, number] => {
         let area = 0
         let Cx = 0
@@ -576,6 +646,7 @@ export const _GM = {
         return [Cx, Cy]
     },
 
+    // последняя точка пути p1 и первая точка пути p2 — 6 чисел
     getLastAndFirstCoordsPath: (p1: number[], p2: number[]): number[] => {
         return [
             p1[p1.length - 3],
@@ -587,6 +658,7 @@ export const _GM = {
         ]
     },
 
+    // профиль [[z, y], ...] в плоские координаты [0, y, z, ...]
     convertSimpleProfileToV3: (path: number[][]): number[] => {
         const path0 = []
         for (let i = 0; i < path.length; ++i) {
@@ -595,10 +667,13 @@ export const _GM = {
         return path0
     },
 
+    // совпадают ли две точки, заданные покомпонентно
     isEqualsV3: (v1_1: any, v1_2: any, v1_3: any, v2_1: any, v2_2: any , v2_3: any): boolean => {
         return (v1_1 === v2_1 && v1_2 === v2_2 && v1_3 === v2_3)
     }, 
 
+    // Стенка между профилем path1 и профилем pathR, сдвинутым на l по x; высокие куски режутся
+    // по maxH, чтобы текстура не тянулась
     fillPoligonsV3: (
         path1: number[],
         pathR: number[], 
@@ -672,6 +747,8 @@ export const _GM = {
         return { v, uv, c }
     },
 
+    // Тело вращения: профиль [[радиус, высота], ...] поворачивается вокруг оси y за resolution шагов,
+    // сверху — крышка
     lathePath: (path: [number, number][], resolution: number, color: A3, uvTile: number[]): { v: number[], uv: number[], c: number[] } => {
         const v: number[] = []
         const uv: number[] = []
@@ -747,8 +824,10 @@ export const _GM = {
         return { v, uv, c }
     },
 
+    // число, близкое к нулю, — ровно 0
     toleranceToZero: (num: number, tolerance = 1e-10) => Math.abs(num) < tolerance ? 0 : num,
 
+    // дописывает отражение по x для неиндексированных квадов (по 18 чисел) с цветами и uv
     appendMirrorX: (v: number[], c: number[] = [], uv: number[] = []) => {
         const copyV = []
         const copyC = []
@@ -782,6 +861,7 @@ export const _GM = {
         uv.push(...copyUV)
     },
 
+    // uv по координатам x, z вершин, растянутым на [0, 1] по габаритам
     fillUvByPositionsXZ (v: number[]) {
         let minX = Infinity
         let maxX = -Infinity
@@ -815,6 +895,7 @@ export const _GM = {
         return uv1
     },
 
+    // нормаль каждого треугольника, повторённая на его три вершины
     computeNormals: (vertices: number[]) => {
         const normals = [];
 
@@ -853,18 +934,21 @@ export const _GM = {
         return normals;
     },
 
+    // дописывает src в конец tgt
     fill(src: number[], tgt: number[]) {
         for (let i = 0; i < src.length; i++) {
             tgt.push(src[i])
         }
     },
 
+    // записывает src в начало tgt поверх старых значений
     fillStart(src: number[], tgt: any) {
         for (let i = 0; i < src.length; i++) {
             tgt[i] = src[i]
         }
     },
 
+    // как fillStart, а хвост tgt за src заполняет 1000 — уносит лишние вершины из вида
     fillStartAndThousandLast(src: number[], tgt: any) {
         let n = 0
         for (let i = 0; i < src.length; i++) {
@@ -879,6 +963,7 @@ export const _GM = {
         }
     },
 
+    // копия массива
     clone(src: number[]) {
         const a = []
         for (let i = 0; i < src.length; i++) {
@@ -887,47 +972,55 @@ export const _GM = {
         return a
     },
 
-    mergeIndexedArrays: (arrsTarget: IArraysGeom, arrsNew: IArraysGeom): IArraysGeom => {
-        if (arrsTarget.index && arrsNew.index) {
-            let currMax = -1
-            for (let i = 0; i < arrsTarget.index.length; i++) {
-                if (currMax < arrsTarget.index[i]) {
-                    currMax = arrsTarget.index[i]
+    // #endregion
+
+    // Дописывает геометрию part в target и возвращает target. Номера вершин part в index сдвигаются
+    // на число вершин, уже занятых в target (наибольший номер + 1). Массив дописывается, только если
+    // он есть у обоих
+    mergeIndexedArrays: (target: IArraysGeom, part: IArraysGeom): IArraysGeom => {
+        if (target.index && part.index) {
+            let maxIndex = -1
+            for (let i = 0; i < target.index.length; i++) {
+                if (maxIndex < target.index[i]) {
+                    maxIndex = target.index[i]
                 }
             }
 
-            const add = currMax + 1
-            for (let i = 0; i < arrsNew.index.length; i++) {
-                arrsTarget.index.push(arrsNew.index[i] + add)
+            const indexOffset = maxIndex + 1
+            for (let i = 0; i < part.index.length; i++) {
+                target.index.push(part.index[i] + indexOffset)
             }
         }
-        for (let i = 0; i < arrsNew.v.length; i++) {
-            arrsTarget.v.push(arrsNew.v[i])
+        for (let i = 0; i < part.v.length; i++) {
+            target.v.push(part.v[i])
         }
-        if (arrsNew.c && arrsTarget.c) {
-            for (let i = 0; i < arrsNew.c.length; i++) {
-                arrsTarget.c.push(arrsNew.c[i])
+        if (part.c && target.c) {
+            for (let i = 0; i < part.c.length; i++) {
+                target.c.push(part.c[i])
             }
         }
-        if (arrsNew.uv && arrsTarget.uv) {
-            for (let i = 0; i < arrsNew.uv.length; i++) {
-                arrsTarget.uv.push(arrsNew.uv[i])
+        if (part.uv && target.uv) {
+            for (let i = 0; i < part.uv.length; i++) {
+                target.uv.push(part.uv[i])
             }
         }
-        if (arrsNew.uv2 && arrsTarget.uv2) {
-            for (let i = 0; i < arrsNew.uv2.length; i++) {
-                arrsTarget.uv2.push(arrsNew.uv2[i])
+        if (part.uv2 && target.uv2) {
+            for (let i = 0; i < part.uv2.length; i++) {
+                target.uv2.push(part.uv2[i])
             }
         }
         // vCollide — triangle soup без index, поэтому склеивается простым дописыванием, без смещения
-        if (arrsNew.vCollide && arrsTarget.vCollide) {
-            for (let i = 0; i < arrsNew.vCollide.length; i++) {
-                arrsTarget.vCollide.push(arrsNew.vCollide[i])
+        if (part.vCollide && target.vCollide) {
+            for (let i = 0; i < part.vCollide.length; i++) {
+                target.vCollide.push(part.vCollide[i])
             }
         }
-        return arrsTarget
+        return target
     },
 
+    // #region legacy
+
+    // то же, что computeNormals, через Vector3
     computeNormalsV: (v: number[]): number[] => { 
         const n = []
         const pA = new Vector3()
@@ -967,6 +1060,9 @@ export const _GM = {
         return n
     },
 
+    // #endregion
+
+    // разворачивает индексированные вершины в неиндексированный triangle soup
     vToNonIndexed(v: number[], index: number[]): number[] {
         const r: number[] = []
         for (let i = 0; i < index.length; ++i) {
@@ -976,11 +1072,13 @@ export const _GM = {
         return r
     },
 
+    // Проверка согласованности массивов: index ссылается на существующие вершины без пропусков,
+    // длины c, uv, uv2 соответствуют числу вершин. Ошибки печатаются и возвращаются списком
     debugArrays: (g: IArraysGeom, message: string = 'result'): IDebugArraysResult => {
         const errors: string[] = []
-        const fail = (m: string) => {
-            errors.push(m)
-            console.log(m)
+        const fail = (errorText: string) => {
+            errors.push(errorText)
+            console.log(errorText)
         }
         const failCount = (name: string, need: number, curr: number) => {
             fail(`${name}: false, curr: ${curr.toFixed(2)}, need: ${need}`)
@@ -988,7 +1086,7 @@ export const _GM = {
 
         console.log('---- start: ' + message)
 
-        const l = g.v.length / 3
+        const vertexCount = g.v.length / 3
 
         if (g.index) {
             // проверяем что в v есть вершина на которую ссылается index
@@ -1030,14 +1128,14 @@ export const _GM = {
         }
 
         // проверяем что v кратно 3
-        if (l % 1 !== 0) fail('v need step 3')
+        if (vertexCount % 1 !== 0) fail('v need step 3')
 
         // проверяем что c кратно соответствует v
-        if (g.c && g.c.length / 3 !== l) failCount('c', l, g.c.length / 3)
+        if (g.c && g.c.length / 3 !== vertexCount) failCount('c', vertexCount, g.c.length / 3)
         // проверяем что uv кратно соответствует v
-        if (g.uv && g.uv.length / 2 !== l) failCount('uv', l, g.uv.length / 2)
+        if (g.uv && g.uv.length / 2 !== vertexCount) failCount('uv', vertexCount, g.uv.length / 2)
         // проверяем что uv2 кратно соответствует v
-        if (g.uv2 && g.uv2.length / 2 !== l) failCount('uv2', l, g.uv2.length / 2)
+        if (g.uv2 && g.uv2.length / 2 !== vertexCount) failCount('uv2', vertexCount, g.uv2.length / 2)
 
         const ok = errors.length === 0
         console.log(`---- complete: ${message}: ${ok ? 'ok' : 'error'}`)
