@@ -33,12 +33,6 @@ export interface Root extends Core {
     //debug: Debug
 }
 
-const studioConf: StudioConf = {
-    cameraPos: new THREE.Vector3(0, 30, 35),
-    cameraLookAt: new THREE.Vector3(0, 0, 0),
-}
-
-
 window.addEventListener("DOMContentLoaded", async () => {
     // @ts-ignore:next-line
     console.log("branch:" + __GIT_CURRENT_BRANCH__ + ' commit:' + __HASH_COMMIT__)
@@ -49,9 +43,17 @@ window.addEventListener("DOMContentLoaded", async () => {
         keyboard: new Keyboard(),
         ui: new Ui(),
         audio: new AudioManager(),
-        studioConf,
+
+        studioConf: {
+            cameraPos: new THREE.Vector3(0, 30, 35),
+            cameraLookAt: new THREE.Vector3(0, 0, 0),
+        },
         studio: new Studio(),
 
+        controlsConf: { 
+            walkerCameraAddY: 1,
+            playerSpeedForward: 15,
+        },
         controls: new ControlsSystem(),
 
         deviceData: new DeviceData(),

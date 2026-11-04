@@ -65,6 +65,7 @@ export type StudioConf = {
 }
 
 export type ControlsConf = {
+    walkerCameraAddY?: number
     playerSpeedForward?: number
     amplitudeLeftRightWalk?: number
     jumpSpeed?: number
@@ -73,6 +74,7 @@ export type ControlsConf = {
 
 export interface Core {
     assets: T_assets
+    
     studioConf: StudioConf
     studio: Studio
     

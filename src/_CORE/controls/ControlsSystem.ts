@@ -17,8 +17,9 @@ export class ControlsSystem {
 
     _jumpSpeed = 6
 
-    _amplitudeLeftRightWalk = 0.002
-    _currentSpeedForward = 0.
+    _amplitudeLeftRightWalk = 0.0002
+
+    _currentSpeedForward = 1
     _maxSpeedForward = 5.
     _tweenSpeedForward: Tween<any> | null = null
 
@@ -29,6 +30,8 @@ export class ControlsSystem {
     _timeRot = 0 
     _eulerRot = new THREE.Euler(0, 0, 0, 'YXZ')
     _strengthIdle = 1
+
+    _walkerCameraAddY = 0
     
     init (root: Core, isStartOrbit: boolean) {
         this._root = root
@@ -46,6 +49,9 @@ export class ControlsSystem {
         }
         if (controlsConf && controlsConf.jumpSpeed) {
             this._jumpSpeed = controlsConf.jumpSpeed
+        }
+        if (controlsConf?.walkerCameraAddY) {
+            this._walkerCameraAddY = controlsConf.walkerCameraAddY
         }
 
         this._orbit = new ControlsOrbit()
@@ -192,7 +198,7 @@ export class ControlsSystem {
 
         // применяем результат физики к позиции камеры
         camera.position.x = playerBody.position.x
-        camera.position.y = playerBody.position.y
+        camera.position.y = playerBody.position.y + this._walkerCameraAddY
         camera.position.z = playerBody.position.z
 
         // camera debounce
