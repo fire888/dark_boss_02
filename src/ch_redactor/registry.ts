@@ -3,7 +3,7 @@ import type { IBuffersGeom } from '_CORE/_M/_gm'
 import * as floor00 from 'geometry/00_floor00/floor00'
 import * as stairs00 from 'geometry/07_stairs00/stairs00'
 import * as stairs01 from 'geometry/07_stairs01/stairs01'
-import stairs01Ref from 'geometry/07_stairs01/ref.jpg'
+//import stairs01Ref from 'geometry/07_stairs01/ref.jpg'
 
 // Фабрики, которые можно открыть на стенде. Новая фабрика src/geometry добавляется сюда одной записью.
 // Панель строит инпуты по форме defaultOpts: числа, булевы, строки, массивы чисел (pos, цвета),
@@ -40,6 +40,5 @@ export const GEOM_REGISTRY: T_GeomEntry[] = [
         factory: stairs01.stairs01,
         randomOpts: stairs01.randomOpts,
         defaultOpts: stairs01.DEFAULT_OPTS,
-        ref: stairs01Ref,
     },
 ]
