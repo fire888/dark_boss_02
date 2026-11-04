@@ -247,6 +247,101 @@ export const _GM = {
 
     // #endregion
 
+    // #region polygon 2d — плоские многоугольники: точка [x, y], в фабриках обычно [x, z]
+
+    // Удвоенная ориентированная площадь: > 0, если обход против часовой стрелки в осях
+    // «первая координата вправо, вторая вверх»
+    polygonArea2: (points: A2[]): number => {
+        let area2 = 0
+        for (let i = 0; i < points.length; ++i) {
+            const [x0, y0] = points[i]
+            const [x1, y1] = points[(i + 1) % points.length]
+            area2 += x0 * y1 - x1 * y0
+        }
+        return area2
+    },
+
+    // Триангуляция простого (без самопересечений) многоугольника отсечением ушей.
+    // Обход — против часовой стрелки (polygonArea2 > 0). Возвращает тройки индексов точек,
+    // каждая тройка — тоже против часовой стрелки. Вырожденные (коллинеарные) вершины пропускаются
+    triangulatePolygon: (points: A2[]): number[] => {
+        const cross = (a: A2, b: A2, c: A2) => (b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0])
+        // строго внутри треугольника abc или на его стороне
+        const isInside = (p: A2, a: A2, b: A2, c: A2) =>
+            cross(a, b, p) >= 0 && cross(b, c, p) >= 0 && cross(c, a, p) >= 0
+        const remaining = points.map((_, i) => i)
+        const triangles: number[] = []
+        // защита от зацикливания на кривом входе: если за полный обход ухо не нашлось — выходим
+        let attemptsWithoutEar = 0
+        let i = 0
+        while (remaining.length > 3 && attemptsWithoutEar < remaining.length) {
+            const count = remaining.length
+            const prev = remaining[(i + count - 1) % count]
+            const current = remaining[i % count]
+            const next = remaining[(i + 1) % count]
+            const a = points[prev], b = points[current], c = points[next]
+            const turn = cross(a, b, c)
+            if (Math.abs(turn) < 1e-12) {
+                // коллинеарная вершина: убрать без треугольника
+                remaining.splice(i % count, 1)
+                attemptsWithoutEar = 0
+                continue
+            }
+            let isEar = turn > 0
+            if (isEar) {
+                for (const other of remaining) {
+                    if (other === prev || other === current || other === next) continue
+                    if (isInside(points[other], a, b, c)) { isEar = false; break }
+                }
+            }
+            if (isEar) {
+                triangles.push(prev, current, next)
+                remaining.splice(i % count, 1)
+                attemptsWithoutEar = 0
+                i = i % remaining.length
+            } else {
+                i = (i + 1) % count
+                ++attemptsWithoutEar
+            }
+        }
+        if (remaining.length === 3) {
+            const [a, b, c] = remaining
+            if (Math.abs(cross(points[a], points[b], points[c])) > 1e-12) triangles.push(a, b, c)
+        }
+        return triangles
+    },
+
+    // Обрезка многоугольника по прямоугольнику [xMin, xMax] × [yMin, yMax] (Сазерленд — Ходжман).
+    // Выпуклый вход даёт выпуклый выход; пустой массив — нет пересечения. Обход сохраняется
+    clipPolygonToRect: (points: A2[], xMin: number, yMin: number, xMax: number, yMax: number): A2[] => {
+        // отсечение полуплоскостью: inside(point) — точка остаётся, cut(a, b) — пересечение ребра с границей
+        const clipBy = (input: A2[], inside: (p: A2) => boolean, cut: (a: A2, b: A2) => A2): A2[] => {
+            const output: A2[] = []
+            for (let k = 0; k < input.length; ++k) {
+                const current = input[k]
+                const previous = input[(k + input.length - 1) % input.length]
+                const isCurrentInside = inside(current)
+                if (isCurrentInside !== inside(previous)) output.push(cut(previous, current))
+                if (isCurrentInside) output.push(current)
+            }
+            return output
+        }
+        const atX = (x: number) => (a: A2, b: A2): A2 => [x, a[1] + (b[1] - a[1]) * (x - a[0]) / (b[0] - a[0])]
+        const atY = (y: number) => (a: A2, b: A2): A2 => [a[0] + (b[0] - a[0]) * (y - a[1]) / (b[1] - a[1]), y]
+        let result = points
+        result = clipBy(result, p => p[0] >= xMin, atX(xMin))
+        if (result.length) result = clipBy(result, p => p[0] <= xMax, atX(xMax))
+        if (result.length) result = clipBy(result, p => p[1] >= yMin, atY(yMin))
+        if (result.length) result = clipBy(result, p => p[1] <= yMax, atY(yMax))
+        // совпадающие соседние точки (вершина на самой границе) — убрать
+        return result.filter((p, k) => {
+            const q = result[(k + 1) % result.length]
+            return Math.abs(p[0] - q[0]) > 1e-9 || Math.abs(p[1] - q[1]) > 1e-9
+        })
+    },
+
+    // #endregion
+
     // #region legacy
 
     // Боковые стенки призмы высотой height над четырёхугольником v0..v3 в основании;
