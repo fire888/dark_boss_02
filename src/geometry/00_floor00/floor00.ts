@@ -28,6 +28,9 @@ type T = {
     borderOffset?: number,   // отступ кантика от края плиты внутрь
     borderWidth?: number,    // ширина кантика, она же сторона одной плитки
     groundTileSize?: number, // сторона клетки сетки, на которую ложится один тайл земли
+    // разброс яркости земли по клеткам сетки, доля: клетка темнее или светлее colorGround до этой доли.
+    // Без него плоский пол одного цвета — свет на одной нормали не даёт оттенков
+    groundColorJitter?: number,
     // базовые цвета до запечённого освещения; умножаются на тайл атласа
     colorGround?: A3,        // земля
     colorBorder?: A3,        // плитка кантика
@@ -45,6 +48,7 @@ export const DEFAULT_OPTS: Required<T> = {
     borderOffset: .3,
     borderWidth: .4,
     groundTileSize: 1.5,
+    groundColorJitter: .3,
     colorGround: [1, 1, 1],
     colorBorder: [1, 1, 1],
     colorSide: [.64, .67, .7],
@@ -92,6 +96,7 @@ export const randomOpts = (): T => {
         borderOffset: Math.random() < .2 ? 0 : rand(.1, .6),
         borderWidth: rand(.25, .6),
         groundTileSize: rand(.8, 2.5),
+        groundColorJitter: rand(.15, .4),
         colorGround: tint(.75, .95, .15),
         colorBorder: tint(.75, .95, .15),
         colorSide: tint(.5, .8, .12),
@@ -100,7 +105,7 @@ export const randomOpts = (): T => {
 
 export const floor00 = (opts: T = {}): IBuffersGeom => {
     const {
-        pos, contour, height, borderOffset, borderWidth, groundTileSize, colorGround, colorBorder, colorSide,
+        pos, contour, height, groundColorJitter, borderOffset, borderWidth, groundTileSize, colorGround, colorBorder, colorSide,
     }: Required<T> = { ...DEFAULT_OPTS, ...opts }
 
     const builder = _GM.createGeomBuilder()
@@ -185,6 +190,11 @@ export const floor00 = (opts: T = {}): IBuffersGeom => {
                 const cellLeft = cellX * groundTileSize, cellBottom = cellY * groundTileSize
                 const cellPart = _GM.clipPolygonToRect(piece, cellLeft, cellBottom, cellLeft + groundTileSize, cellBottom + groundTileSize)
                 if (cellPart.length < 3) continue
+                // яркость клетки — от её номера, а не от Math.random(): на пересборке не мигает
+                const brightness = 1 + groundColorJitter * (2 * _GM.hash2(cellX, cellY) - 1)
+                // Сверху не зажимается: при colorGround = 1 светлые клетки иначе срезались бы до него же и разброс
+                // остался бы только в тёмную сторону. Итоговый цвет зажимает сборщик после освещения
+                const cellColor = colorGround.map(channel => Math.max(0, channel * brightness)) as A3
                 const uvAt = (point: A2) => _GM.rectPoint(
                     RECT_EARTH,
                     clamp01((point[0] - cellLeft) / groundTileSize),
@@ -198,7 +208,7 @@ export const floor00 = (opts: T = {}): IBuffersGeom => {
                         worldAt(a, height), worldAt(b, height), worldAt(c, height), UP,
                         [...uvAt(a), ...uvAt(b), ...uvAt(c)],
                         [...AO_UNSHADED_POINT, ...AO_UNSHADED_POINT, ...AO_UNSHADED_POINT],
-                        colorGround,
+                        cellColor,
                     )
                 }
             }

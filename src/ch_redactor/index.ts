@@ -150,17 +150,22 @@ async function init(root: Root) {
         return m.name
     }
 
-    // ---- пол: видимая плоскость чуть ниже нуля, чтобы не мерцать с низом геометрии, физика — на нуле
+    // ---- пол: видимая плоскость и сетка — фон, физика — на нуле.
+    // Рисуются первыми (renderOrder) и не пишут глубину: геометрия на уровне земли (пол с height = 0)
+    // ложится поверх на любом расстоянии, без мерцания. Ниже нуля на стенде ничего нет — прятать под ними нечего
 
     const FLOOR_SIZE = 400
     const floor = new THREE.Mesh(
         new THREE.PlaneGeometry(FLOOR_SIZE, FLOOR_SIZE).rotateX(-Math.PI / 2),
-        new THREE.MeshBasicMaterial({ color: 0x2a2a33 }),
+        new THREE.MeshBasicMaterial({ color: 0x2a2a33, depthWrite: false }),
     )
     floor.position.y = -.01
+    floor.renderOrder = -2
     studio.add(floor)
     const floorGrid = new THREE.GridHelper(FLOOR_SIZE, FLOOR_SIZE / 2, 0x555566, 0x3a3a44)
     floorGrid.position.y = -.005
+    floorGrid.renderOrder = -1
+    ;(floorGrid.material as THREE.Material).depthWrite = false
     studio.add(floorGrid)
     const S = FLOOR_SIZE / 2
     replaceCollision(null, [-S, 0, -S, -S, 0, S, S, 0, S, -S, 0, -S, S, 0, S, S, 0, -S], new THREE.Vector3())
