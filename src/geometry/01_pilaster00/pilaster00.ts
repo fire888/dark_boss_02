@@ -2,7 +2,7 @@ import { _GM, type IBuffersGeom, type A2, type A3, type T_SweepProfilePoint } fr
 import { RECT_WHITE } from "atlases/atlas00/atlas00"
 import { RECT_AO_NONE, RECT_AO_TOP } from "atlases/atlasAo00/atlasAo00"
 
-// Пилястра: выступ из стены — ствол, внизу база, вверху капитель (см. ref.jpg).
+// Пилястра: выступ из стены — ствол, внизу база, вверху капитель.
 //
 // Путь. Ствол задаётся ломаной в плане: она выходит из стены, обходит пилястру и возвращается в стену
 // (обычно П: от стены вперёд, вдоль, назад к стене). Путь — это лицо ствола; все профили базы и капители
