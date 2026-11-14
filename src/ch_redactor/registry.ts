@@ -3,6 +3,8 @@ import type { IBuffersGeom } from '_CORE/_M/_gm'
 import * as floor00 from 'geometry/00_floor00/floor00'
 import * as floor01 from 'geometry/00_floor01/floor01'
 import * as pilaster00 from 'geometry/01_pilaster00/pilaster00'
+import * as portal00 from 'geometry/02_portal00/portal00'
+import * as lintel00 from 'geometry/03_lintel00/lintel00'
 import * as stairs00 from 'geometry/07_stairs00/stairs00'
 import * as stairs01 from 'geometry/07_stairs01/stairs01'
 //import stairs01Ref from 'geometry/07_stairs01/ref.jpg'
@@ -42,6 +44,18 @@ export const GEOM_REGISTRY: T_GeomEntry[] = [
         factory: pilaster00.pilaster00,
         randomOpts: pilaster00.randomOpts,
         defaultOpts: pilaster00.DEFAULT_OPTS,
+    },
+    {
+        name: 'portal00',
+        factory: portal00.portal00,
+        randomOpts: portal00.randomOpts,
+        defaultOpts: portal00.DEFAULT_OPTS,
+    },
+    {
+        name: 'lintel00',
+        factory: lintel00.lintel00,
+        randomOpts: lintel00.randomOpts,
+        defaultOpts: lintel00.DEFAULT_OPTS,
     },
     {
         name: 'stairs00',

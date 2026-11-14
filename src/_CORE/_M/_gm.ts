@@ -199,11 +199,181 @@ const createGeomBuilder = (opts: T_LightOpts = {}): T_GeomBuilder => {
 
 // #endregion
 
+// #region profile sweep — профиль (сечение), протянутый вдоль ломаной в плане: пилястры, карнизы, перемычки
+
+// Точка профиля: вынос от пути наружу и высота над origin. color — цвет отрезка, который начинается в этой точке
+export type T_SweepProfilePoint = { projection: number, y: number, color: A3 }
+
+export type T_SweepOpts = {
+    // сечение снизу вверх; тело — со стороны пути (меньшего выноса)
+    profile: T_SweepProfilePoint[],
+    // число рёбер пути; ребро edge идёт от точки edge к точке edge + 1
+    edgeCount: number,
+    // нормаль наружу каждого ребра в плане [x, z]
+    edgeNormals: A2[],
+    // точка пути pointIndex (0..edgeCount), вынесенная наружу на distance — со стыковкой рёбер на изломах.
+    // У замкнутого пути точка edgeCount — та же, что 0
+    offsetPoint: (pointIndex: number, distance: number) => A2,
+    // начало координат плана; y профиля отсчитывается от origin[1]
+    origin: A3,
+    // длина, на которую растягивается тайл тени у внутреннего угла профиля
+    aoLength: number,
+    // начало профиля стоит на земле — у низа первого отрезка тень
+    shadowAtStart: boolean,
+    // тайл цвета (растянут на каждый отрезок), тайл без тени и тайл с тенью у верхнего края
+    uvRect: T_TileRect,
+    aoRectNone: T_TileRect,
+    aoRectShadow: T_TileRect,
+}
+
+// Каждый отрезок профиля протягивается вдоль каждого ребра пути — квад на отрезок и ребро.
+// Внутренние углы профиля острее 120° и низ у земли затеняются полосой aoLength по обе стороны угла
+const sweepProfile = (builder: T_GeomBuilder, opts: T_SweepOpts): void => {
+    const { edgeCount, edgeNormals, offsetPoint, origin, aoLength, shadowAtStart, uvRect, aoRectNone, aoRectShadow } = opts
+    const clamp01 = (x: number) => Math.min(1, Math.max(0, x))
+    const aoUnshadedPoint = _GM.rectPoint(aoRectNone, .5, .5)
+
+    // нулевые высоты и выносы дают совпадающие точки — отрезок нулевой длины выбрасывается;
+    // цвет остаётся от точки, с которой начинается настоящий отрезок
+    const profile: T_SweepProfilePoint[] = []
+    for (const point of opts.profile) {
+        const last = profile[profile.length - 1]
+        if (last && Math.hypot(point.projection - last.projection, point.y - last.y) < 1e-6) {
+            last.color = point.color
+            continue
+        }
+        profile.push({ ...point })
+    }
+    const segmentCount = profile.length - 1
+    if (segmentCount < 1 || edgeCount < 1) return
+
+    // направление отрезка профиля в осях (вынос, высота), единичное
+    const segmentDirection = (segment: number): A2 => {
+        const dProjection = profile[segment + 1].projection - profile[segment].projection
+        const dy = profile[segment + 1].y - profile[segment].y
+        const length = Math.hypot(dProjection, dy)
+        return [dProjection / length, dy / length]
+    }
+    // Внутренний угол профиля в точке pointIndex — между отрезками pointIndex − 1 и pointIndex.
+    // Профиль идёт снизу вверх, тело — слева от него, поэтому поворот направо (векторное < 0) — вогнутый угол.
+    // Тупые вогнутые углы (скат к полочке, 135°) почти не затенены — тень только у углов острее 120°
+    const isShadowCorner = (pointIndex: number): boolean => {
+        if (pointIndex === 0) return shadowAtStart
+        if (pointIndex >= segmentCount) return false
+        const [ax, ay] = segmentDirection(pointIndex - 1)
+        const [bx, by] = segmentDirection(pointIndex)
+        return ax * by - ay * bx < 0 && ax * bx + ay * by < .5
+    }
+    // uv2 на расстоянии distance от затеняющего угла: тень у верхнего края тайла (v = 1) — у самого угла
+    const shadowUvAt = (distance: number): A2 => _GM.rectPoint(aoRectShadow, .5, clamp01(1 - distance / aoLength))
+    const worldAt = ([x, z]: A2, y: number): A3 => [origin[0] + x, origin[1] + y, origin[2] + z]
+
+    for (let segment = 0; segment < segmentCount; ++segment) {
+        const start = profile[segment]
+        const end = profile[segment + 1]
+        const length = Math.hypot(end.projection - start.projection, end.y - start.y)
+        const [directionProjection, directionY] = segmentDirection(segment)
+        // нормаль отрезка в осях (вынос, высота): направление, повёрнутое направо — от тела
+        const normalProjection = directionY
+        const normalY = -directionProjection
+
+        // Отрезок режется на куски по длине: у затеняющего угла — полоса aoLength с тенью, середина — без.
+        // Если отрезок короче двух полос, тени с обоих концов встречаются посередине
+        const shadowAtSegmentStart = isShadowCorner(segment)
+        const shadowAtSegmentEnd = isShadowCorner(segment + 1)
+        const bandLength = shadowAtSegmentStart && shadowAtSegmentEnd
+            ? Math.min(aoLength, length / 2) : Math.min(aoLength, length)
+        type T_Piece = { from: number, to: number, shadow: 'start' | 'end' | 'none' }
+        const pieces: T_Piece[] = []
+        const bandFraction = bandLength / length
+        const middleFrom = shadowAtSegmentStart ? bandFraction : 0
+        const middleTo = shadowAtSegmentEnd ? 1 - bandFraction : 1
+        if (shadowAtSegmentStart) pieces.push({ from: 0, to: bandFraction, shadow: 'start' })
+        if (middleTo - middleFrom > 1e-6) pieces.push({ from: middleFrom, to: middleTo, shadow: 'none' })
+        if (shadowAtSegmentEnd) pieces.push({ from: 1 - bandFraction, to: 1, shadow: 'end' })
+
+        const aoUvAt = (fraction: number, shadow: T_Piece['shadow']): A2 => {
+            if (shadow === 'start') return shadowUvAt(fraction * length)
+            if (shadow === 'end') return shadowUvAt((1 - fraction) * length)
+            return aoUnshadedPoint
+        }
+        const profileAt = (fraction: number) => ({
+            projection: start.projection + (end.projection - start.projection) * fraction,
+            y: start.y + (end.y - start.y) * fraction,
+        })
+
+        for (let edge = 0; edge < edgeCount; ++edge) {
+            const [edgeNormalX, edgeNormalZ] = edgeNormals[edge]
+            const outwardNormal: A3 = [edgeNormalX * normalProjection, normalY, edgeNormalZ * normalProjection]
+            for (const { from, to, shadow } of pieces) {
+                const bottom = profileAt(from)
+                const top = profileAt(to)
+                builder.quad(
+                    worldAt(offsetPoint(edge, bottom.projection), bottom.y),
+                    worldAt(offsetPoint(edge + 1, bottom.projection), bottom.y),
+                    worldAt(offsetPoint(edge + 1, top.projection), top.y),
+                    worldAt(offsetPoint(edge, top.projection), top.y),
+                    outwardNormal,
+                    // тайл: вдоль ребра — горизонталь, вдоль отрезка профиля — вертикаль
+                    [
+                        ..._GM.rectPoint(uvRect, 0, from), ..._GM.rectPoint(uvRect, 1, from),
+                        ..._GM.rectPoint(uvRect, 1, to), ..._GM.rectPoint(uvRect, 0, to),
+                    ],
+                    [...aoUvAt(from, shadow), ...aoUvAt(from, shadow), ...aoUvAt(to, shadow), ...aoUvAt(to, shadow)],
+                    start.color,
+                )
+            }
+        }
+    }
+}
+
+// Горизонтальная грань по контуру в плане [x, z] (простой многоугольник, обход любой) на высоте y над origin:
+// верх (facingUp) или низ. Тайл uvRect — плоская проекция контура целиком, uv2 — одна точка aoPoint
+const fillPlanPolygon = (
+    builder: T_GeomBuilder, outline: A2[], origin: A3, y: number, facingUp: boolean,
+    uvRect: T_TileRect, aoPoint: A2, color: A3,
+): void => {
+    if (outline.length < 3) return
+    const clamp01 = (x: number) => Math.min(1, Math.max(0, x))
+    // в осях [x, −z] обход против часовой стрелки — положительная площадь, как ждёт triangulatePolygon
+    const flat: A2[] = outline.map(([x, z]) => [x, -z])
+    if (_GM.polygonArea2(flat) < 0) flat.reverse()
+    let xMin = Infinity, yMin = Infinity, xMax = -Infinity, yMax = -Infinity
+    for (const [x, planY] of flat) {
+        xMin = Math.min(xMin, x); xMax = Math.max(xMax, x)
+        yMin = Math.min(yMin, planY); yMax = Math.max(yMax, planY)
+    }
+    const uvAt = ([x, planY]: A2) => _GM.rectPoint(
+        uvRect,
+        clamp01((x - xMin) / Math.max(1e-6, xMax - xMin)),
+        clamp01((planY - yMin) / Math.max(1e-6, yMax - yMin)),
+    )
+    const worldAt = ([x, planY]: A2): A3 => [origin[0] + x, origin[1] + y, origin[2] - planY]
+    const normal: A3 = facingUp ? [0, 1, 0] : [0, -1, 0]
+    const triangles = _GM.triangulatePolygon(flat)
+    for (let k = 0; k < triangles.length; k += 3) {
+        const a = flat[triangles[k]], b = flat[triangles[k + 1]], c = flat[triangles[k + 2]]
+        builder.tri(
+            worldAt(a), worldAt(b), worldAt(c), normal,
+            [...uvAt(a), ...uvAt(b), ...uvAt(c)],
+            [...aoPoint, ...aoPoint, ...aoPoint],
+            color,
+        )
+    }
+}
+
+// #endregion
+
 export const _GM = {
     // #region builder
     facesTo,
     lit,
     createGeomBuilder,
+    // #endregion
+
+    // #region profile sweep
+    sweepProfile,
+    fillPlanPolygon,
     // #endregion
 
     // #region legacy — функции старых глав: неиндексированные массивы, по 6 вершин на квад.

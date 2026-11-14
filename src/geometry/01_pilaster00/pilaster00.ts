@@ -1,4 +1,4 @@
-import { _GM, type IBuffersGeom, type A2, type A3 } from "_CORE/_M/_gm"
+import { _GM, type IBuffersGeom, type A2, type A3, type T_SweepProfilePoint } from "_CORE/_M/_gm"
 import { RECT_WHITE } from "atlases/atlas00/atlas00"
 import { RECT_AO_NONE, RECT_AO_TOP } from "atlases/atlasAo00/atlasAo00"
 
@@ -12,12 +12,13 @@ import { RECT_AO_NONE, RECT_AO_TOP } from "atlases/atlasAo00/atlasAo00"
 //   база     — плинт (брусок у земли), над ним полка, скат внутрь, полочка, полка к стволу;
 //   ствол    — вынос 0, по самому пути;
 //   капитель — полочка, скат наружу, полка под абакой, абака (верхний брусок), её верх до стены.
-// Каждый отрезок профиля протягивается вдоль каждого ребра пути — получается квад; на изломах пути
-// профиль стыкуется усом (биссектрисой угла). Сечения у стены уходят в стену и не рисуются, низ у земли — тоже.
+// Каждый отрезок профиля протягивается вдоль каждого ребра пути — получается квад (_GM.sweepProfile); на изломах
+// пути профиль стыкуется усом (биссектрисой угла). Сечения у стены уходят в стену и не рисуются, низ у земли — тоже.
 //
-// Система координат. Стена — по линии z = const, на которой лежат концы пути (обычно z = 0 от pos);
-// пилястра выступает в +z, к зрителю. Точки пути — { x, z } относительно pos, pos[1] — земля.
-// Путь можно задавать в любую сторону: фабрика сама разворачивает его так, чтобы профили шли от стены.
+// Система координат. Точки пути — { x, z } относительно pos, pos[1] — земля; пилястра выступает от стены.
+// Стена у каждого конца пути — прямая через эту точку в направлении startWallDirection / endWallDirection
+// (обычно одна стена вдоль x, z = const). Путь можно задавать в любую сторону: фабрика сама разворачивает его
+// так, чтобы профили шли от стены.
 //
 // Атласы. uv — atlas00, белый тайл под цвет colorShaft / colorMolding, растянут на каждый отрезок профиля.
 // uv2 — atlasAo00: тень во внутренних углах профиля (ствол над полкой базы и под полочкой капители,
@@ -29,10 +30,8 @@ type T_PathPoint = {
     z: number,
 }
 
-type T = {
-    pos?: A3,            // начало координат пути; pos[1] — уровень земли
-    path?: T_PathPoint[], // лицо ствола в плане: от стены, вокруг пилястры, обратно в стену
-    height?: number,     // полная высота пилястры от земли до верха абаки
+// Профиль пилястры — всё, кроме положения, пути и высоты: её «тип», его берут составные фабрики (portal00)
+export type T_PilasterProfile = {
     // база, высоты — снизу вверх; выносы — от пути наружу
     plinthHeight?: number,         // высота плинта
     plinthProjection?: number,     // вынос плинта
@@ -54,11 +53,17 @@ type T = {
     colorMolding?: A3, // база и капитель
 }
 
-export const DEFAULT_OPTS: Required<T> = {
-    pos: [0, 0, 0],
-    // П: ствол 0.6 вдоль стены, выступ 0.2
-    path: [{ x: -.3, z: 0 }, { x: -.3, z: .2 }, { x: .3, z: .2 }, { x: .3, z: 0 }],
-    height: 3,
+type T = T_PilasterProfile & {
+    pos?: A3,             // начало координат пути; pos[1] — уровень земли
+    path?: T_PathPoint[], // лицо ствола в плане: от стены, вокруг пилястры, обратно в стену
+    height?: number,      // полная высота пилястры от земли до верха абаки
+    // Направление стены в плане [x, z] у первой и у последней точки пути: по нему срезаются профили у стены.
+    // Обычно стена одна, вдоль x — [1, 0]; у пилона в проёме (portal00) концы пути — на двух плоскостях стены
+    startWallDirection?: A2,
+    endWallDirection?: A2,
+}
+
+export const DEFAULT_PROFILE: Required<T_PilasterProfile> = {
     plinthHeight: .3,
     plinthProjection: .12,
     baseSlopeHeight: .12,
@@ -76,15 +81,62 @@ export const DEFAULT_OPTS: Required<T> = {
     colorMolding: [.75, .73, .7],
 }
 
+export const DEFAULT_OPTS: Required<T> = {
+    pos: [0, 0, 0],
+    // П: ствол 0.6 вдоль стены, выступ 0.2
+    path: [{ x: -.3, z: 0 }, { x: -.3, z: .2 }, { x: .3, z: .2 }, { x: .3, z: 0 }],
+    height: 3,
+    startWallDirection: [1, 0],
+    endWallDirection: [1, 0],
+    ...DEFAULT_PROFILE,
+}
+
+// Случайный профиль из диапазона, в котором пилястры используются; длины рёбер пути вызывающий подбирает
+// по plinthProjection и abacusProjection
+export const randomProfile = (): Required<T_PilasterProfile> => {
+    const rand = (min: number, max: number) => min + Math.random() * (max - min)
+
+    // приглушённый оттенок: серый яркости brightness, сдвинутый к случайному тону
+    const tint = (brightnessMin: number, brightnessMax: number, saturationMax: number): A3 => {
+        const brightness = rand(brightnessMin, brightnessMax)
+        const saturation = rand(0, saturationMax)
+        const hue = rand(0, Math.PI * 2)
+        return [0, 1, 2].map(channel =>
+            Math.min(1, Math.max(0, brightness + saturation * Math.cos(hue - channel * Math.PI * 2 / 3)))) as A3
+    }
+
+    // выносы убывают от плинта и абаки к стволу
+    const plinthProjection = rand(.06, .16)
+    const abacusProjection = rand(.06, .18)
+    const baseSlopeProjection = plinthProjection * rand(.4, .9)
+    const capitalSlopeProjection = abacusProjection * rand(.4, .9)
+    return {
+        plinthHeight: rand(.15, .4),
+        plinthProjection,
+        baseSlopeHeight: rand(.05, .2),
+        baseSlopeProjection,
+        baseFilletHeight: rand(.02, .08),
+        baseFilletProjection: baseSlopeProjection * rand(0, .6),
+        abacusHeight: rand(.1, .3),
+        abacusProjection,
+        capitalSlopeHeight: rand(.05, .25),
+        capitalSlopeProjection,
+        capitalFilletHeight: rand(.02, .08),
+        capitalFilletProjection: capitalSlopeProjection * rand(0, .6),
+        aoLength: rand(.25, .5),
+        colorShaft: tint(.7, .95, .12),
+        colorMolding: tint(.6, .9, .12),
+    }
+}
+
 // случайные опции из диапазона, в котором модуль используется; по ним гоняют check:geom и стенд
 export const randomOpts = (): T => {
     const rand = (min: number, max: number) => min + Math.random() * (max - min)
 
-    const plinthProjection = rand(.06, .16)
-    const abacusProjection = rand(.06, .18)
+    const profile = randomProfile()
     // Рёбра пути с внутренним (вогнутым) изломом при выносе укорачиваются на вынос с каждой вогнутой стороны,
     // поэтому они не короче minEdge — иначе профиль вывернется
-    const minEdge = 2 * Math.max(plinthProjection, abacusProjection) + .05
+    const minEdge = 2 * Math.max(profile.plinthProjection, profile.abacusProjection) + .05
 
     const width = rand(.3, 1.2)
     const depth = rand(.1, .5)
@@ -111,37 +163,7 @@ export const randomOpts = (): T => {
     // иногда — путь в обратную сторону: фабрика обязана развернуть его сама
     if (Math.random() < .2) path.reverse()
 
-    // приглушённый оттенок: серый яркости brightness, сдвинутый к случайному тону
-    const tint = (brightnessMin: number, brightnessMax: number, saturationMax: number): A3 => {
-        const brightness = rand(brightnessMin, brightnessMax)
-        const saturation = rand(0, saturationMax)
-        const hue = rand(0, Math.PI * 2)
-        return [0, 1, 2].map(channel =>
-            Math.min(1, Math.max(0, brightness + saturation * Math.cos(hue - channel * Math.PI * 2 / 3)))) as A3
-    }
-
-    // выносы убывают от плинта и абаки к стволу
-    const baseSlopeProjection = plinthProjection * rand(.4, .9)
-    const capitalSlopeProjection = abacusProjection * rand(.4, .9)
-    return {
-        path,
-        height: rand(2, 5),
-        plinthHeight: rand(.15, .4),
-        plinthProjection,
-        baseSlopeHeight: rand(.05, .2),
-        baseSlopeProjection,
-        baseFilletHeight: rand(.02, .08),
-        baseFilletProjection: baseSlopeProjection * rand(0, .6),
-        abacusHeight: rand(.1, .3),
-        abacusProjection,
-        capitalSlopeHeight: rand(.05, .25),
-        capitalSlopeProjection,
-        capitalFilletHeight: rand(.02, .08),
-        capitalFilletProjection: capitalSlopeProjection * rand(0, .6),
-        aoLength: rand(.25, .5),
-        colorShaft: tint(.7, .95, .12),
-        colorMolding: tint(.6, .9, .12),
-    }
+    return { path, height: rand(2, 5), ...profile }
 }
 
 export const pilaster00 = (opts: T = {}): IBuffersGeom => {
@@ -149,10 +171,7 @@ export const pilaster00 = (opts: T = {}): IBuffersGeom => {
     const { pos, path, height, aoLength, colorShaft, colorMolding } = o
 
     const builder = _GM.createGeomBuilder()
-    const { quad, tri, collideQuad } = builder
-
-    const clamp01 = (x: number) => Math.min(1, Math.max(0, x))
-    const AO_UNSHADED_POINT = _GM.rectPoint(RECT_AO_NONE, .5, .5)
+    const { collideQuad } = builder
 
     // ---- путь: без повторяющихся соседних точек, обход такой, чтобы «наружу» было от стены
 
@@ -163,9 +182,19 @@ export const pilaster00 = (opts: T = {}): IBuffersGeom => {
         if (!last || Math.hypot(x - last[0], z - last[1]) > 1e-6) pathPoints.push([x, z])
     }
     if (pathPoints.length < 2 || height <= 0) return builder.g
+    // направление стены у концов пути, единичное; нулевое — стена вдоль x
+    const unitWall = ([x, z]: A2): A2 => {
+        const length = Math.hypot(x, z)
+        return length > 1e-6 ? [x / length, z / length] : [1, 0]
+    }
+    let startWall = unitWall(o.startWallDirection)
+    let endWall = unitWall(o.endWallDirection)
     // Путь, замкнутый стеной, обходит тело ствола. Нормаль ребра наружу берётся как (−dz, dx) — она смотрит
-    // от тела, если площадь в осях [x, z] отрицательна; иначе путь разворачивается
-    if (_GM.polygonArea2(pathPoints) > 0) pathPoints.reverse()
+    // от тела, если площадь в осях [x, z] отрицательна; иначе путь разворачивается (а с ним — стены концов)
+    if (_GM.polygonArea2(pathPoints) > 0) {
+        pathPoints.reverse()
+        ;[startWall, endWall] = [endWall, startWall]
+    }
     const pointCount = pathPoints.length
     const edgeCount = pointCount - 1
 
@@ -186,11 +215,15 @@ export const pilaster00 = (opts: T = {}): IBuffersGeom => {
     const offsetPoint = (pointIndex: number, distance: number): A2 => {
         const [x, z] = pathPoints[pointIndex]
         if (pointIndex === 0 || pointIndex === pointCount - 1) {
-            const edge = pointIndex === 0 ? 0 : edgeCount - 1
+            const isStart = pointIndex === 0
+            const edge = isStart ? 0 : edgeCount - 1
             const [normalX, normalZ] = edgeNormals[edge]
             const [directionX, directionZ] = edgeDirections[edge]
-            // сдвиг вдоль ребра, возвращающий вынесенную точку на линию стены z = const
-            const alongEdge = Math.abs(directionZ) > .1 ? -normalZ * distance / directionZ : 0
+            const [wallX, wallZ] = isStart ? startWall : endWall
+            // сдвиг вдоль ребра, возвращающий вынесенную точку на линию стены: (нормаль·distance + ребро·t) ∥ стене
+            const edgeAcrossWall = directionX * wallZ - directionZ * wallX
+            const normalAcrossWall = normalX * wallZ - normalZ * wallX
+            const alongEdge = Math.abs(edgeAcrossWall) > .1 ? -distance * normalAcrossWall / edgeAcrossWall : 0
             return [x + normalX * distance + directionX * alongEdge, z + normalZ * distance + directionZ * alongEdge]
         }
         const [normal1X, normal1Z] = edgeNormals[pointIndex - 1]
@@ -221,155 +254,37 @@ export const pilaster00 = (opts: T = {}): IBuffersGeom => {
 
     const baseTop = plinthHeight + baseSlopeHeight + baseFilletHeight
     const capitalBottom = height - abacusHeight - capitalSlopeHeight - capitalFilletHeight
-    // isShaft — точка, с которой начинается отрезок ствола (красится colorShaft)
-    type T_ProfilePoint = { projection: number, y: number, isShaft?: boolean }
-    const rawProfile: T_ProfilePoint[] = [
-        { projection: plinthProjection, y: 0 },
-        { projection: plinthProjection, y: plinthHeight },
-        { projection: baseSlopeProjection, y: plinthHeight },
-        { projection: baseFilletProjection, y: plinthHeight + baseSlopeHeight },
-        { projection: baseFilletProjection, y: baseTop },
-        { projection: 0, y: baseTop, isShaft: true },
-        { projection: 0, y: capitalBottom },
-        { projection: capitalFilletProjection, y: capitalBottom },
-        { projection: capitalFilletProjection, y: capitalBottom + capitalFilletHeight },
-        { projection: capitalSlopeProjection, y: height - abacusHeight },
-        { projection: abacusProjection, y: height - abacusHeight },
-        { projection: abacusProjection, y: height },
+    // цвет точки — у отрезка, который с неё начинается: ствол — colorShaft, остальное — colorMolding
+    const profile: T_SweepProfilePoint[] = [
+        { projection: plinthProjection, y: 0, color: colorMolding },
+        { projection: plinthProjection, y: plinthHeight, color: colorMolding },
+        { projection: baseSlopeProjection, y: plinthHeight, color: colorMolding },
+        { projection: baseFilletProjection, y: plinthHeight + baseSlopeHeight, color: colorMolding },
+        { projection: baseFilletProjection, y: baseTop, color: colorMolding },
+        { projection: 0, y: baseTop, color: colorShaft },
+        { projection: 0, y: capitalBottom, color: colorMolding },
+        { projection: capitalFilletProjection, y: capitalBottom, color: colorMolding },
+        { projection: capitalFilletProjection, y: capitalBottom + capitalFilletHeight, color: colorMolding },
+        { projection: capitalSlopeProjection, y: height - abacusHeight, color: colorMolding },
+        { projection: abacusProjection, y: height - abacusHeight, color: colorMolding },
+        { projection: abacusProjection, y: height, color: colorMolding },
     ]
-    // нулевые высоты и выносы дают совпадающие точки — отрезок нулевой длины выбрасывается
-    const profile: T_ProfilePoint[] = []
-    for (const point of rawProfile) {
-        const last = profile[profile.length - 1]
-        if (last && Math.hypot(point.projection - last.projection, point.y - last.y) < 1e-6) {
-            last.isShaft = last.isShaft || point.isShaft
-            continue
-        }
-        profile.push({ ...point })
-    }
-    const segmentCount = profile.length - 1
 
-    // ---- тени профиля
+    // ---- грани: каждый отрезок профиля вдоль каждого ребра пути; низ плинта стоит на земле — с тенью
 
-    // Направление отрезка профиля в осях (вынос, высота), единичное
-    const segmentDirection = (segment: number): A2 => {
-        const dProjection = profile[segment + 1].projection - profile[segment].projection
-        const dy = profile[segment + 1].y - profile[segment].y
-        const length = Math.hypot(dProjection, dy)
-        return [dProjection / length, dy / length]
-    }
-    // Внутренний угол профиля в точке pointIndex — между отрезками pointIndex − 1 и pointIndex.
-    // Профиль идёт снизу вверх, тело — слева от него, поэтому поворот направо (векторное < 0) — вогнутый угол.
-    // Тупые вогнутые углы (скат к полочке, 135°) почти не затенены — тень только у углов острее 120°.
-    // Начало профиля стоит на земле — там тоже угол
-    const isShadowCorner = (pointIndex: number): boolean => {
-        if (pointIndex === 0) return true
-        if (pointIndex >= segmentCount) return false
-        const [ax, ay] = segmentDirection(pointIndex - 1)
-        const [bx, by] = segmentDirection(pointIndex)
-        return ax * by - ay * bx < 0 && ax * bx + ay * by < .5
-    }
-
-    // uv2 точки на расстоянии distance от затеняющего угла: тайл AO_TOP растянут на aoLength,
-    // тень у его верхнего края (v = 1) — у самого угла
-    const shadowUvAt = (distance: number): A2 => _GM.rectPoint(RECT_AO_TOP, .5, clamp01(1 - distance / aoLength))
-
-    // ---- грани: каждый отрезок профиля вдоль каждого ребра пути
-
-    for (let segment = 0; segment < segmentCount; ++segment) {
-        const start = profile[segment]
-        const end = profile[segment + 1]
-        const length = Math.hypot(end.projection - start.projection, end.y - start.y)
-        const [directionProjection, directionY] = segmentDirection(segment)
-        // нормаль отрезка в осях (вынос, высота): направление, повёрнутое направо — от тела
-        const normalProjection = directionY
-        const normalY = -directionProjection
-        const color = start.isShaft ? colorShaft : colorMolding
-
-        // Отрезок режется на куски по длине: у затеняющего угла — полоса aoLength с тенью, середина — без.
-        // Если отрезок короче двух полос, тени с обоих концов встречаются посередине
-        const shadowAtStart = isShadowCorner(segment)
-        const shadowAtEnd = isShadowCorner(segment + 1)
-        const bandLength = shadowAtStart && shadowAtEnd ? Math.min(aoLength, length / 2) : Math.min(aoLength, length)
-        // куски: доли отрезка [from, to] и тень у начала, у конца или нет
-        type T_Piece = { from: number, to: number, shadow: 'start' | 'end' | 'none' }
-        const pieces: T_Piece[] = []
-        const bandFraction = bandLength / length
-        const middleFrom = shadowAtStart ? bandFraction : 0
-        const middleTo = shadowAtEnd ? 1 - bandFraction : 1
-        if (shadowAtStart) pieces.push({ from: 0, to: bandFraction, shadow: 'start' })
-        if (middleTo - middleFrom > 1e-6) pieces.push({ from: middleFrom, to: middleTo, shadow: 'none' })
-        if (shadowAtEnd) pieces.push({ from: 1 - bandFraction, to: 1, shadow: 'end' })
-
-        // uv2 на доле fraction отрезка в куске с тенью shadow
-        const aoUvAt = (fraction: number, shadow: T_Piece['shadow']): A2 => {
-            if (shadow === 'start') return shadowUvAt(fraction * length)
-            if (shadow === 'end') return shadowUvAt((1 - fraction) * length)
-            return AO_UNSHADED_POINT
-        }
-        // точка профиля на доле fraction
-        const profileAt = (fraction: number) => ({
-            projection: start.projection + (end.projection - start.projection) * fraction,
-            y: start.y + (end.y - start.y) * fraction,
-        })
-
-        for (let edge = 0; edge < edgeCount; ++edge) {
-            const [edgeNormalX, edgeNormalZ] = edgeNormals[edge]
-            const outwardNormal: A3 = [edgeNormalX * normalProjection, normalY, edgeNormalZ * normalProjection]
-            for (const { from, to, shadow } of pieces) {
-                const bottom = profileAt(from)
-                const top = profileAt(to)
-                quad(
-                    worldAt(offsetPoint(edge, bottom.projection), bottom.y),
-                    worldAt(offsetPoint(edge + 1, bottom.projection), bottom.y),
-                    worldAt(offsetPoint(edge + 1, top.projection), top.y),
-                    worldAt(offsetPoint(edge, top.projection), top.y),
-                    outwardNormal,
-                    // тайл: вдоль ребра — горизонталь, вдоль отрезка профиля — вертикаль
-                    [
-                        ..._GM.rectPoint(RECT_WHITE, 0, from), ..._GM.rectPoint(RECT_WHITE, 1, from),
-                        ..._GM.rectPoint(RECT_WHITE, 1, to), ..._GM.rectPoint(RECT_WHITE, 0, to),
-                    ],
-                    [...aoUvAt(from, shadow), ...aoUvAt(from, shadow), ...aoUvAt(to, shadow), ...aoUvAt(to, shadow)],
-                    color,
-                )
-            }
-        }
-    }
+    _GM.sweepProfile(builder, {
+        profile, edgeCount, edgeNormals, offsetPoint,
+        origin: pos, aoLength, shadowAtStart: true,
+        uvRect: RECT_WHITE, aoRectNone: RECT_AO_NONE, aoRectShadow: RECT_AO_TOP,
+    })
 
     // ---- верх абаки: вынесенный на abacusProjection путь, замкнутый по стене
 
-    {
-        // в осях плана [x, −z] обход против часовой стрелки — положительная площадь, как ждёт триангуляция
-        const topOutline: A2[] = []
-        for (let i = 0; i < pointCount; ++i) {
-            const [x, z] = offsetPoint(i, abacusProjection)
-            topOutline.push([x, -z])
-        }
-        if (_GM.polygonArea2(topOutline) < 0) topOutline.reverse()
-        let xMin = Infinity, yMin = Infinity, xMax = -Infinity, yMax = -Infinity
-        for (const [x, y] of topOutline) {
-            xMin = Math.min(xMin, x); xMax = Math.max(xMax, x)
-            yMin = Math.min(yMin, y); yMax = Math.max(yMax, y)
-        }
-        // тайл — плоская проекция верха целиком
-        const topUvAt = ([x, y]: A2) => _GM.rectPoint(
-            RECT_WHITE,
-            clamp01((x - xMin) / Math.max(1e-6, xMax - xMin)),
-            clamp01((y - yMin) / Math.max(1e-6, yMax - yMin)),
-        )
-        const topAt = ([x, y]: A2): A3 => [pos[0] + x, pos[1] + height, pos[2] - y]
-        const triangles = _GM.triangulatePolygon(topOutline)
-        for (let k = 0; k < triangles.length; k += 3) {
-            const a = topOutline[triangles[k]], b = topOutline[triangles[k + 1]], c = topOutline[triangles[k + 2]]
-            tri(
-                topAt(a), topAt(b), topAt(c), [0, 1, 0],
-                [...topUvAt(a), ...topUvAt(b), ...topUvAt(c)],
-                [...AO_UNSHADED_POINT, ...AO_UNSHADED_POINT, ...AO_UNSHADED_POINT],
-                colorMolding,
-            )
-        }
-    }
+    const topOutline: A2[] = []
+    for (let i = 0; i < pointCount; ++i) topOutline.push(offsetPoint(i, abacusProjection))
+    _GM.fillPlanPolygon(
+        builder, topOutline, pos, height, true, RECT_WHITE, _GM.rectPoint(RECT_AO_NONE, .5, .5), colorMolding,
+    )
 
     // ---- прокси физики: призма по контуру плинта во всю высоту, без профилей и верха —
     // на пилястру не забираются, в неё упираются, а дальше всего у ног выступает плинт
