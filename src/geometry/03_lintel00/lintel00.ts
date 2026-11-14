@@ -15,6 +15,8 @@ import { RECT_AO_NONE, RECT_AO_TOP } from "atlases/atlasAo00/atlasAo00"
 // Профиль протягивается вдоль каждого ребра контура (_GM.sweepProfile), углы стыкуются усом.
 //
 // Система координат: точки контура — { x, z } относительно pos, pos[1] — низ балки (софит).
+// Профиль выступает вправо от хода контура, если смотреть сверху (x вправо, +z к зрителю), — по нормали ребра
+// (−dz, dx). Фабрика контур не разворачивает: против часовой стрелки — карниз наружу, по часовой — вывернут внутрь.
 //
 // Атласы. uv — atlas00, белый тайл под цвет colorFascia / colorCornice. uv2 — atlasAo00: тень во внутренних
 // углах профиля (архитрав под карнизом, когда скат крутой); софит и верх — без тени.
@@ -56,8 +58,8 @@ export const DEFAULT_PROFILE: Required<T_LintelProfile> = {
 
 export const DEFAULT_OPTS: Required<T> = {
     pos: [0, 0, 0],
-    // балка 2.4 × 0.8
-    outline: [{ x: -1.2, z: -.4 }, { x: 1.2, z: -.4 }, { x: 1.2, z: .4 }, { x: -1.2, z: .4 }],
+    // балка 2.4 × 0.8, обход против часовой стрелки — карниз наружу
+    outline: [{ x: -1.2, z: -.4 }, { x: -1.2, z: .4 }, { x: 1.2, z: .4 }, { x: 1.2, z: -.4 }],
     ...DEFAULT_PROFILE,
 }
 
@@ -89,16 +91,20 @@ export const randomProfile = (): Required<T_LintelProfile> => {
 export const randomOpts = (): T => {
     const rand = (min: number, max: number) => min + Math.random() * (max - min)
     // четырёхугольник: прямоугольник, у которого углы сдвинуты — как над косым проёмом
+    const profile = randomProfile()
+    // Иногда — обход по часовой стрелке: карниз вывернут внутрь и уходит с обеих сторон на corniceProjection,
+    // поэтому балка тогда глубже двух выносов
+    const inward = Math.random() < .3
     const halfWidth = rand(.6, 2.5)
-    const halfDepth = rand(.2, .7)
+    const halfDepth = inward ? rand(profile.corniceProjection + .1, .7 + profile.corniceProjection) : rand(.2, .7)
     const jitter = () => rand(-.15, .15)
+    // против часовой стрелки сверху
     const outline: T_PlanPoint[] = [
-        { x: -halfWidth + jitter(), z: -halfDepth }, { x: halfWidth + jitter(), z: -halfDepth },
-        { x: halfWidth + jitter(), z: halfDepth }, { x: -halfWidth + jitter(), z: halfDepth },
+        { x: -halfWidth + jitter(), z: -halfDepth }, { x: -halfWidth + jitter(), z: halfDepth },
+        { x: halfWidth + jitter(), z: halfDepth }, { x: halfWidth + jitter(), z: -halfDepth },
     ]
-    // иногда — обход в обратную сторону: фабрика обязана развернуть его сама
-    if (Math.random() < .3) outline.reverse()
-    return { outline, ...randomProfile() }
+    if (inward) outline.reverse()
+    return { outline, ...profile }
 }
 
 export const lintel00 = (opts: T = {}): IBuffersGeom => {
@@ -108,7 +114,7 @@ export const lintel00 = (opts: T = {}): IBuffersGeom => {
     const builder = _GM.createGeomBuilder()
     const { collideQuad, collideTri } = builder
 
-    // ---- контур: без повторяющихся соседних точек, обход такой, чтобы нормаль (−dz, dx) смотрела наружу
+    // ---- контур: без повторяющихся соседних точек; обход не меняется — он задаёт сторону профиля
 
     const points: A2[] = []
     for (const { x, z } of outline) {
@@ -119,10 +125,9 @@ export const lintel00 = (opts: T = {}): IBuffersGeom => {
         points.pop()
     }
     if (points.length < 3) return builder.g
-    // нормаль ребра наружу (−dz, dx) смотрит от тела, если площадь в осях [x, z] отрицательна
-    if (_GM.polygonArea2(points) > 0) points.reverse()
     const pointCount = points.length
 
+    // нормаль ребра — вправо от хода, (−dz, dx): наружу у обхода против часовой стрелки
     const edgeNormals: A2[] = []
     for (let i = 0; i < pointCount; ++i) {
         const [x0, z0] = points[i]

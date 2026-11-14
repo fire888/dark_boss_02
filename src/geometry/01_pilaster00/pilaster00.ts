@@ -17,8 +17,9 @@ import { RECT_AO_NONE, RECT_AO_TOP } from "atlases/atlasAo00/atlasAo00"
 //
 // Система координат. Точки пути — { x, z } относительно pos, pos[1] — земля; пилястра выступает от стены.
 // Стена у каждого конца пути — прямая через эту точку в направлении startWallDirection / endWallDirection
-// (обычно одна стена вдоль x, z = const). Путь можно задавать в любую сторону: фабрика сама разворачивает его
-// так, чтобы профили шли от стены.
+// (обычно одна стена вдоль x, z = const). Профили выступают вправо от хода пути, если смотреть сверху (x вправо,
+// +z к зрителю), — по нормали ребра (−dz, dx). Фабрика путь не разворачивает: против часовой стрелки — профили
+// наружу, от стены; по часовой — профили вывернуты внутрь.
 //
 // Атласы. uv — atlas00, белый тайл под цвет colorShaft / colorMolding, растянут на каждый отрезок профиля.
 // uv2 — atlasAo00: тень во внутренних углах профиля (ствол над полкой базы и под полочкой капители,
@@ -138,10 +139,13 @@ export const randomOpts = (): T => {
     // поэтому они не короче minEdge — иначе профиль вывернется
     const minEdge = 2 * Math.max(profile.plinthProjection, profile.abacusProjection) + .05
 
-    const width = rand(.3, 1.2)
-    const depth = rand(.1, .5)
+    // Иногда — путь по часовой стрелке: профили вывернуты внутрь, выпуклые изломы П становятся вогнутыми.
+    // Тогда только П, и лицо не короче minEdge, бока — не короче половины: их вогнутый излом лишь с одной стороны
+    const inward = Math.random() < .2
+    const width = inward ? rand(minEdge, minEdge + .8) : rand(.3, 1.2)
+    const depth = inward ? rand(minEdge / 2 + .02, minEdge / 2 + .4) : rand(.1, .5)
     let path: T_PathPoint[]
-    const shapeRoll = Math.random()
+    const shapeRoll = inward ? 0 : Math.random()
     if (shapeRoll < .5) {
         // П: прямоугольный выступ
         path = [{ x: -width / 2, z: 0 }, { x: -width / 2, z: depth }, { x: width / 2, z: depth }, { x: width / 2, z: 0 }]
@@ -160,8 +164,7 @@ export const randomOpts = (): T => {
         const frontWidth = width * rand(.4, .85)
         path = [{ x: -width / 2, z: 0 }, { x: -frontWidth / 2, z: depth }, { x: frontWidth / 2, z: depth }, { x: width / 2, z: 0 }]
     }
-    // иногда — путь в обратную сторону: фабрика обязана развернуть его сама
-    if (Math.random() < .2) path.reverse()
+    if (inward) path.reverse()
 
     return { path, height: rand(2, 5), ...profile }
 }
@@ -173,7 +176,7 @@ export const pilaster00 = (opts: T = {}): IBuffersGeom => {
     const builder = _GM.createGeomBuilder()
     const { collideQuad } = builder
 
-    // ---- путь: без повторяющихся соседних точек, обход такой, чтобы «наружу» было от стены
+    // ---- путь: без повторяющихся соседних точек; обход не меняется — он задаёт сторону профилей
 
     // точки пути в плане [x, z]
     const pathPoints: A2[] = []
@@ -187,18 +190,12 @@ export const pilaster00 = (opts: T = {}): IBuffersGeom => {
         const length = Math.hypot(x, z)
         return length > 1e-6 ? [x / length, z / length] : [1, 0]
     }
-    let startWall = unitWall(o.startWallDirection)
-    let endWall = unitWall(o.endWallDirection)
-    // Путь, замкнутый стеной, обходит тело ствола. Нормаль ребра наружу берётся как (−dz, dx) — она смотрит
-    // от тела, если площадь в осях [x, z] отрицательна; иначе путь разворачивается (а с ним — стены концов)
-    if (_GM.polygonArea2(pathPoints) > 0) {
-        pathPoints.reverse()
-        ;[startWall, endWall] = [endWall, startWall]
-    }
+    const startWall = unitWall(o.startWallDirection)
+    const endWall = unitWall(o.endWallDirection)
     const pointCount = pathPoints.length
     const edgeCount = pointCount - 1
 
-    // направление и нормаль наружу каждого ребра в плане
+    // направление и нормаль каждого ребра в плане; нормаль — вправо от хода, (−dz, dx)
     const edgeDirections: A2[] = []
     const edgeNormals: A2[] = []
     for (let i = 0; i < edgeCount; ++i) {

@@ -142,19 +142,27 @@ export const portal00 = (opts: T = {}): IBuffersGeom => {
         const pierBack = shifted(jamb, pierWidth)
         const frontFace = shifted(frontWall, pierProtrusion)
         const backFace = shifted(backWall, pierProtrusion)
-        const path = [
+        const pathPoints = [
             intersect(frontWall, pierBack), // в передней плоскости стены
             intersect(frontFace, pierBack), // выступ из стены
             intersect(frontFace, jamb),     // угол у проёма спереди
             intersect(backFace, jamb),      // угол у проёма сзади
             intersect(backFace, pierBack),
             intersect(backWall, pierBack),  // в задней плоскости стены
-        ].map(toPoint)
+        ]
+        let startWallDirection = frontWall.direction
+        let endWallDirection = backWall.direction
+        // pilaster00 путь не разворачивает, профили — вправо от хода. Пилон обходится против часовой стрелки
+        // сверху (площадь в осях [x, z] < 0), чтобы база и капитель шли наружу; у правого откоса, у зеркальной
+        // раскладки точек — путь разворачивается, а с ним и стены концов
+        if (_GM.polygonArea2(pathPoints) > 0) {
+            pathPoints.reverse()
+            ;[startWallDirection, endWallDirection] = [endWallDirection, startWallDirection]
+        }
         _GM.mergeIndexedArrays(result, pilaster00({
             ...pilaster,
-            pos, path, height,
-            startWallDirection: frontWall.direction,
-            endWallDirection: backWall.direction,
+            pos, path: pathPoints.map(toPoint), height,
+            startWallDirection, endWallDirection,
         }))
     }
 
@@ -172,17 +180,19 @@ export const portal00 = (opts: T = {}): IBuffersGeom => {
     const lintelBack = shifted(backWall, pierProtrusion + lintelSetback)
     const lintelLeft = shifted(leftJamb, pierWidth + lintelSetback)
     const lintelRight = shifted(rightJamb, pierWidth + lintelSetback)
-    const outline = [
+    const outlinePoints = [
         intersect(lintelFront, lintelLeft),
         intersect(lintelFront, lintelRight),
         intersect(lintelBack, lintelRight),
         intersect(lintelBack, lintelLeft),
-    ].map(toPoint)
+    ]
+    // lintel00 контур не разворачивает: против часовой стрелки сверху — карниз наружу
+    if (_GM.polygonArea2(outlinePoints) > 0) outlinePoints.reverse()
     _GM.mergeIndexedArrays(result, lintel00({
         ...lintel,
         corniceProjection,
         pos: [pos[0], pos[1] + height, pos[2]],
-        outline,
+        outline: outlinePoints.map(toPoint),
     }))
 
     return result
