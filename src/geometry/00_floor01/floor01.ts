@@ -6,8 +6,11 @@ import { RECT_AO_NONE, UV_AO_TOP_Q } from "atlases/atlasAo00/atlasAo00"
 // по сетке тайлов. То же, что floor00, без полосы плитки вдоль края.
 //
 // Контур — замкнутая ломаная: каждая точка соединяется со следующей, последняя — с первой.
-// Обход — против часовой стрелки при взгляде сверху (x вправо, −z вверх, как на карте уровня);
-// контур по часовой разворачивается. Самопересечений быть не должно, контур может быть невыпуклым.
+// Обход — против часовой стрелки при взгляде сверху (x вправо, −z вверх, как на карте уровня).
+// Фабрика контур не разворачивает: по часовой стрелке верх смотрит вниз — пол становится потолком.
+// Бока смотрят наружу, если знак высоты совпадает с направлением обхода (против часовой и height > 0 —
+// плита, по часовой и height < 0 — плита, свисающая с потолка), иначе внутрь (яма в полу, ниша в потолке).
+// Самопересечений быть не должно, контур может быть невыпуклым.
 //
 // План. Вся плоская математика идёт в координатах плана [x, −z]: в них обход «против часовой
 // при взгляде сверху» — это положительная площадь _GM.polygonArea2, и работает _GM.triangulatePolygon.
@@ -22,8 +25,8 @@ type T_Point = {
 
 type T = {
     pos?: A3,                // смещение контура; pos[1] — уровень земли под плитой
-    contour?: T_Point[],     // точки контура относительно pos, против часовой стрелки сверху
-    height?: number,         // высота верха плиты над землёй; 0 — без боков, только верх
+    contour?: T_Point[],     // точки контура относительно pos, против часовой стрелки сверху; по часовой — верх вниз
+    height?: number,         // высота верха плиты над землёй; < 0 — верх ниже земли (яма); 0 — без боков, только верх
     groundTileSize?: number, // сторона клетки сетки, на которую ложится один тайл земли
     // разброс яркости земли по клеткам сетки, доля: клетка темнее или светлее colorGround до этой доли.
     // Без него плоский пол одного цвета — свет на одной нормали не даёт оттенков
@@ -73,7 +76,7 @@ export const randomOpts = (): T => {
             plan.push([Math.cos(angle) * distance, Math.sin(angle) * distance])
         }
     }
-    // иногда — обход по часовой: фабрика обязана его развернуть
+    // иногда — обход по часовой: верх смотрит вниз, фабрика контур не разворачивает
     if (Math.random() < .2) plan.reverse()
     // приглушённый оттенок: серый яркости brightness, сдвинутый к случайному тону
     const tint = (brightnessMin: number, brightnessMax: number, saturationMax: number): A3 => {
@@ -85,7 +88,8 @@ export const randomOpts = (): T => {
     }
     return {
         contour: plan.map(([x, minusZ]) => ({ x, z: -minusZ })),
-        height: Math.random() < .2 ? 0 : rand(.05, .4),
+        // иногда 0 — без боков, иногда отрицательная — яма, бока внутрь
+        height: Math.random() < .2 ? 0 : rand(.05, .4) * (Math.random() < .2 ? -1 : 1),
         groundTileSize: rand(.8, 2.5),
         groundColorJitter: rand(.15, .4),
         colorGround: tint(.75, .95, .15),
@@ -99,12 +103,11 @@ export const floor01 = (opts: T = {}): IBuffersGeom => {
     const builder = _GM.createGeomBuilder()
     const { quad, tri, collideTri } = builder
 
-    const UP: A3 = [0, 1, 0]
     const AO_SHADOW_AT_BOTTOM = _GM.flipUvQ(UV_AO_TOP_Q)
     const AO_UNSHADED_POINT = _GM.rectPoint(RECT_AO_NONE, .5, .5)
     const clamp01 = (x: number) => Math.min(1, Math.max(0, x))
 
-    // ---- контур в плане: без повторяющихся соседних точек, против часовой стрелки
+    // ---- контур в плане: без повторяющихся соседних точек
 
     const plan: A2[] = []
     for (const { x, z } of contour) {
@@ -115,7 +118,17 @@ export const floor01 = (opts: T = {}): IBuffersGeom => {
         plan.pop()
     }
     if (plan.length < 3 || Math.abs(_GM.polygonArea2(plan)) < 1e-9) return builder.g
-    if (_GM.polygonArea2(plan) < 0) plan.reverse()
+    // Вся плоская математика ниже идёт на контуре против часовой стрелки, поэтому обход по часовой
+    // разворачивается здесь, а исходное направление остаётся только в нормалях граней
+    const clockwise = _GM.polygonArea2(plan) < 0
+    if (clockwise) plan.reverse()
+    // верх смотрит вверх у контура против часовой, вниз — у контура по часовой
+    const TOP_NORMAL: A3 = [0, clockwise ? -1 : 1, 0]
+    // +1 — бока наружу, −1 — внутрь: по часовой стрелке и при отрицательной высоте сторона меняется
+    const sideFacing = (clockwise ? -1 : 1) * Math.sign(height)
+    // Тень боков — у ребра, которое упирается в соседнюю плоскость: у наружных — у земли (y = 0),
+    // у внутренних — у верха плиты (y = height), который у ямы и ниши в потолке лежит за боками
+    const AO_SIDE = sideFacing > 0 ? AO_SHADOW_AT_BOTTOM : UV_AO_TOP_Q
     const pointCount = plan.length
 
     // точка плана на высоте над землёй — в мир
@@ -155,7 +168,7 @@ export const floor01 = (opts: T = {}): IBuffersGeom => {
                     const a = cellPart[0], b = cellPart[k], c = cellPart[k + 1]
                     if (Math.abs(_GM.polygonArea2([a, b, c])) < 1e-9) continue
                     tri(
-                        worldAt(a, height), worldAt(b, height), worldAt(c, height), UP,
+                        worldAt(a, height), worldAt(b, height), worldAt(c, height), TOP_NORMAL,
                         [...uvAt(a), ...uvAt(b), ...uvAt(c)],
                         [...AO_UNSHADED_POINT, ...AO_UNSHADED_POINT, ...AO_UNSHADED_POINT],
                         cellColor,
@@ -165,16 +178,17 @@ export const floor01 = (opts: T = {}): IBuffersGeom => {
         }
     }
 
-    // ---- бока плиты: по квадру на ребро, нормаль наружу — вправо от направления обхода; тень внизу — низ у земли
-    if (height > 1e-6) {
+    // ---- бока плиты: по квадру на ребро от земли до верха; нормаль — наружу (вправо от направления обхода
+    // против часовой) или внутрь, по sideFacing
+    if (Math.abs(height) > 1e-6) {
         for (let i = 0; i < pointCount; ++i) {
             const start = plan[i], end = plan[(i + 1) % pointCount]
             const length = Math.hypot(end[0] - start[0], end[1] - start[1])
             // направление ребра в плане (dx, dy) — наружу (dy, −dx), в мире z = −y плана
-            const outwardNormal: A3 = [(end[1] - start[1]) / length, 0, (end[0] - start[0]) / length]
+            const sideNormal: A3 = [(end[1] - start[1]) / length * sideFacing, 0, (end[0] - start[0]) / length * sideFacing]
             quad(
                 worldAt(start, 0), worldAt(end, 0), worldAt(end, height), worldAt(start, height),
-                outwardNormal, UV_WHITE_Q, AO_SHADOW_AT_BOTTOM, colorSide,
+                sideNormal, UV_WHITE_Q, AO_SIDE, colorSide,
             )
         }
     }
