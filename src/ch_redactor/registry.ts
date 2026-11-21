@@ -10,6 +10,7 @@ import * as room00 from 'geometry/05_room00/room00'
 import * as complex00 from 'geometry/06_complex00/complex00'
 import * as stairs00 from 'geometry/07_stairs00/stairs00'
 import * as stairs01 from 'geometry/07_stairs01/stairs01'
+import * as wall00 from 'geometry/08_wall00/wall00'
 //import stairs01Ref from 'geometry/07_stairs01/ref.jpg'
 
 // Фабрики, которые можно открыть на стенде. Новая фабрика src/geometry добавляется сюда одной записью.
@@ -92,5 +93,11 @@ export const GEOM_REGISTRY: T_GeomEntry[] = [
         factory: stairs01.stairs01,
         randomOpts: stairs01.randomOpts,
         defaultOpts: stairs01.DEFAULT_OPTS,
+    },
+    {
+        name: 'wall00',
+        factory: wall00.wall00,
+        randomOpts: wall00.randomOpts,
+        defaultOpts: wall00.DEFAULT_OPTS,
     },
 ]

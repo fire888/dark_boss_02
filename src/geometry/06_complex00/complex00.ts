@@ -87,6 +87,7 @@ export const DEFAULT_OPTS: Required<T> = {
     maxStepUp: .4,
     aoLength: .5,
     colorWall: [.82, .8, .76],
+    //colorWall: [0, 0, 0],
 }
 
 const isInsidePolygon = ([x, z]: A2, polygon: A2[]): boolean => {

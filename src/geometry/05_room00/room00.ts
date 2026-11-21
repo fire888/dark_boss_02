@@ -10,6 +10,7 @@ import { portal00 } from "geometry/02_portal00/portal00"
 import { DEFAULT_PROFILE as LINTEL_DEFAULT_PROFILE } from "geometry/03_lintel00/lintel00"
 import { profile00 } from "geometry/04_profile00/profile00"
 import { stairs00 } from "geometry/07_stairs00/stairs00"
+import { wall00 } from "geometry/08_wall00/wall00"
 
 // Комната: толстые стены по периметру, в стенах — порталы (portal00), пол и потолок — floor00 или floor01.
 //
@@ -51,7 +52,9 @@ import { stairs00 } from "geometry/07_stairs00/stairs00"
 // Свободные куски стены — между углами и порталами; пилястры встают на оба конца каждого куска (у углов и по бокам
 // порталов) и равномерно между ними.
 //
-// Атласы. uv — atlas00, белый тайл под colorWall, растянут на каждый кусок стены. uv2 — atlasAo00: тень полосой
+// Атласы. uv — atlas00. Стены изнутри (и общая стена с соседом с обеих сторон) — кладка wall00 под colorMasonry,
+// между пилястрами и над порталами, тайл не растянут; снаружи, верх стен и пороги — белый тайл под colorWall,
+// растянут на каждый кусок. uv2 — atlasAo00: тень полосой
 // aoLength у пола изнутри (и у потолка, если профиля нет) и у земли снаружи; вертикальные углы стен не затеняются.
 
 export type T_PerimeterPoint = {
@@ -104,6 +107,10 @@ type T = {
     aoLength?: number,
     // базовый цвет стен до запечённого освещения; умножается на тайл атласа
     colorWall?: A3,
+    // сторона тайла кладки wall00 на стенах изнутри, в метрах
+    masonryTileSize?: number,
+    // базовый цвет кладки до запечённого освещения; по умолчанию — серо-лиловый, без рыжины, в тон полу и потолку
+    colorMasonry?: A3,
 }
 
 export const DEFAULT_OPTS: Required<T> = {
@@ -136,6 +143,8 @@ export const DEFAULT_OPTS: Required<T> = {
     maxStepUp: .4,
     aoLength: .5,
     colorWall: [.82, .8, .76],
+    masonryTileSize: 1.2,
+    colorMasonry: [.22, .2, .36],
 }
 
 // точка внутри многоугольника в плане [x, z] — по чётности пересечений луча; обход любой
@@ -245,6 +254,8 @@ export const randomOpts = (): T => {
         maxStepUp: rand(.3, .5),
         aoLength: rand(.3, .7),
         colorWall: [rand(.65, .9), rand(.65, .9), rand(.65, .9)],
+        masonryTileSize: rand(.8, 1.8),
+        colorMasonry: [rand(.72, .88), rand(.66, .8), rand(.66, .82)],
     }
 }
 
@@ -401,6 +412,31 @@ export const room00 = (opts: T = {}): IBuffersGeom => {
         }
     }
 
+    // Кусок стены, видимый из комнаты, — кладка wall00. Лицо wall00 смотрит вправо от хода start → end:
+    // если normal смотрит в другую сторону, концы меняются местами. Сетка кладки привязана к проекции на направление
+    // стены и к верху пола, поэтому куски одной стены (по бокам и над проёмом) продолжают одну кладку.
+    // Прокси wall00 не берётся — у стены свой, во всю высоту до потолка
+    const masonryTileSize = Math.max(.1, o.masonryTileSize)
+    const masonryPiece = (start: A2, end: A2, yFrom: number, yTo: number, normal: A2, shadowBottom: boolean, shadowTop: boolean) => {
+        const length = Math.hypot(end[0] - start[0], end[1] - start[1])
+        if (yTo - yFrom < 1e-6 || length < 1e-6) return
+        const facesNormal = -(end[1] - start[1]) * normal[0] + (end[0] - start[0]) * normal[1] > 0
+        const [wallStart, wallEnd] = facesNormal ? [start, end] : [end, start]
+        const wallDirection: A2 = [(wallEnd[0] - wallStart[0]) / length, (wallEnd[1] - wallStart[1]) / length]
+        const piece = wall00({
+            pos: [pos[0], pos[1] + yFrom, pos[2]],
+            start: wallStart, end: wallEnd,
+            height: yTo - yFrom,
+            tileSize: masonryTileSize,
+            tileOffsetX: wallStart[0] * wallDirection[0] + wallStart[1] * wallDirection[1],
+            tileOffsetY: yFrom - floorTop,
+            shadowBottom, shadowTop, aoLength,
+            colorWall: o.colorMasonry,
+        })
+        piece.vCollide = []
+        _GM.mergeIndexedArrays(result, piece)
+    }
+
     for (let edge = 0; edge < pointCount; ++edge) {
         const innerStart = pointAt(edge), innerEnd = pointAt(edge + 1)
         const outerStart = outerPoints[edge], outerEnd = outerPoints[(edge + 1) % pointCount]
@@ -414,11 +450,11 @@ export const room00 = (opts: T = {}): IBuffersGeom => {
 
         if (!hole) {
             // внутреннее лицо — в комнату, от пола до потолка
-            wallPiece(innerStart, innerEnd, floorTop, profileBottom, inwardNormal, true, !hasProfile)
+            masonryPiece(innerStart, innerEnd, floorTop, profileBottom, inwardNormal, true, !hasProfile)
             collideQuad(worldAt(innerStart, floorTop), worldAt(innerEnd, floorTop), worldAt(innerEnd, ceilingBottom), worldAt(innerStart, ceilingBottom))
             if (shared) {
                 // наружное — внутреннее лицо соседней комнаты
-                wallPiece(outerStart, outerEnd, floorTop, profileBottom, normal, true, !hasProfile)
+                masonryPiece(outerStart, outerEnd, floorTop, profileBottom, normal, true, !hasProfile)
                 collideQuad(worldAt(outerStart, floorTop), worldAt(outerEnd, floorTop), worldAt(outerEnd, ceilingBottom), worldAt(outerStart, ceilingBottom))
             } else {
                 // наружное — от земли до верха стен
@@ -430,18 +466,18 @@ export const room00 = (opts: T = {}): IBuffersGeom => {
             const outerFrom = along(innerFrom, normal, wallThickness), outerTo = along(innerTo, normal, wallThickness)
 
             // внутреннее лицо: по бокам дыры — во всю высоту, над дырой — от низа перемычки до потолка
-            wallPiece(innerStart, innerFrom, floorTop, profileBottom, inwardNormal, true, !hasProfile)
-            wallPiece(innerTo, innerEnd, floorTop, profileBottom, inwardNormal, true, !hasProfile)
-            wallPiece(innerFrom, innerTo, floorTop + portalHeight, profileBottom, inwardNormal, false, !hasProfile)
+            masonryPiece(innerStart, innerFrom, floorTop, profileBottom, inwardNormal, true, !hasProfile)
+            masonryPiece(innerTo, innerEnd, floorTop, profileBottom, inwardNormal, true, !hasProfile)
+            masonryPiece(innerFrom, innerTo, floorTop + portalHeight, profileBottom, inwardNormal, false, !hasProfile)
             collideQuad(worldAt(innerStart, floorTop), worldAt(innerFrom, floorTop), worldAt(innerFrom, ceilingBottom), worldAt(innerStart, ceilingBottom))
             collideQuad(worldAt(innerTo, floorTop), worldAt(innerEnd, floorTop), worldAt(innerEnd, ceilingBottom), worldAt(innerTo, ceilingBottom))
             collideQuad(worldAt(innerFrom, floorTop + portalHeight), worldAt(innerTo, floorTop + portalHeight), worldAt(innerTo, ceilingBottom), worldAt(innerFrom, ceilingBottom))
 
             if (shared) {
                 // наружное лицо — внутреннее лицо соседней комнаты, режется так же, как своё внутреннее
-                wallPiece(outerStart, outerFrom, floorTop, profileBottom, normal, true, !hasProfile)
-                wallPiece(outerTo, outerEnd, floorTop, profileBottom, normal, true, !hasProfile)
-                wallPiece(outerFrom, outerTo, floorTop + portalHeight, profileBottom, normal, false, !hasProfile)
+                masonryPiece(outerStart, outerFrom, floorTop, profileBottom, normal, true, !hasProfile)
+                masonryPiece(outerTo, outerEnd, floorTop, profileBottom, normal, true, !hasProfile)
+                masonryPiece(outerFrom, outerTo, floorTop + portalHeight, profileBottom, normal, false, !hasProfile)
                 collideQuad(worldAt(outerStart, floorTop), worldAt(outerFrom, floorTop), worldAt(outerFrom, ceilingBottom), worldAt(outerStart, ceilingBottom))
                 collideQuad(worldAt(outerTo, floorTop), worldAt(outerEnd, floorTop), worldAt(outerEnd, ceilingBottom), worldAt(outerTo, ceilingBottom))
                 collideQuad(worldAt(outerFrom, floorTop + portalHeight), worldAt(outerTo, floorTop + portalHeight), worldAt(outerTo, ceilingBottom), worldAt(outerFrom, ceilingBottom))
