@@ -1,6 +1,4 @@
 import { _GM, type IBuffersGeom, type A2, type A3 } from "_CORE/_M/_gm"
-import { RECT_WHITE } from "atlases/atlas00/atlas00"
-import { RECT_AO_NONE, RECT_AO_TOP } from "atlases/atlasAo00/atlasAo00"
 import { floor00 } from "geometry/00_floor00/floor00"
 import { floor01 } from "geometry/00_floor01/floor01"
 import {
@@ -36,7 +34,8 @@ import { wall00 } from "geometry/08_wall00/wall00"
 // или floor01 (без), пустая строка — случайный на каждой сборке.
 //
 // Высоты, снизу вверх от pos[1]: земля — верх пола (floorThickness) — низ потолка (+ height) — верх стен
-// (+ ceilingThickness). Стены изнутри видны от пола до низа профиля, снаружи — от земли до верха, сверху закрыты.
+// (+ ceilingThickness). Стены изнутри видны от пола до низа профиля;
+// наружного лица у своих стен и верха стен нет — снаружи и сверху комнату не видно.
 //
 // Профиль под потолком — profile00 (полоса стены с пояском и карнизом) высотой profileHeight по всему периметру,
 // выступает в комнату; поверх дыр порталов тоже — перемычки порталов всегда ниже него.
@@ -46,9 +45,9 @@ import { wall00 } from "geometry/08_wall00/wall00"
 // порталов) и равномерно между ними.
 //
 // Атласы. uv — atlas00. Стены изнутри (и общая стена с соседом с обеих сторон) — кладка wall00 под colorMasonry,
-// между пилястрами и над порталами, тайл не растянут; снаружи, верх стен и пороги — белый тайл под colorWall,
-// растянут на каждый кусок. uv2 — atlasAo00: тень полосой
-// aoLength у пола изнутри (и у потолка, если профиля нет) и у земли снаружи; вертикальные углы стен не затеняются.
+// между пилястрами и над порталами, тайл не растянут; пороги — земля пола floor01, той же сеткой, что пол.
+// uv2 — atlasAo00: тень полосой aoLength у пола изнутри (и у потолка, если профиля нет);
+// вертикальные углы стен не затеняются.
 
 export type T_PerimeterPoint = {
     x: number,
@@ -306,46 +305,7 @@ export const room00 = (opts: T = {}): IBuffersGeom => {
     // ---- стены
 
     const builder = _GM.createGeomBuilder()
-    const { quad, collideQuad } = builder
-    const clamp01 = (x: number) => Math.min(1, Math.max(0, x))
-    const aoUnshadedPoint = _GM.rectPoint(RECT_AO_NONE, .5, .5)
-    // uv2 на расстоянии distance от затеняющего ребра: тень у верхнего края тайла — у самого ребра
-    const shadowUvAt = (distance: number): A2 => _GM.rectPoint(RECT_AO_TOP, .5, clamp01(1 - distance / aoLength))
-
-    // Вертикальный кусок стены от start до end в плане, по высоте от yFrom до yTo. Режется по высоте на полосы:
-    // у затеняющего ребра (низ — пол или земля, верх — потолок) полоса aoLength с тенью, середина — без,
-    // поэтому тень у любого куска одной ширины
-    const wallPiece = (start: A2, end: A2, yFrom: number, yTo: number, normal: A2, shadowBottom: boolean, shadowTop: boolean) => {
-        const pieceHeight = yTo - yFrom
-        if (pieceHeight < 1e-6 || Math.hypot(end[0] - start[0], end[1] - start[1]) < 1e-6) return
-        const bandHeight = shadowBottom && shadowTop ? Math.min(aoLength, pieceHeight / 2) : Math.min(aoLength, pieceHeight)
-        type T_Band = { from: number, to: number, shadow: 'bottom' | 'top' | 'none' }
-        const bands: T_Band[] = []
-        const middleFrom = shadowBottom ? yFrom + bandHeight : yFrom
-        const middleTo = shadowTop ? yTo - bandHeight : yTo
-        if (shadowBottom) bands.push({ from: yFrom, to: middleFrom, shadow: 'bottom' })
-        if (middleTo - middleFrom > 1e-6) bands.push({ from: middleFrom, to: middleTo, shadow: 'none' })
-        if (shadowTop) bands.push({ from: middleTo, to: yTo, shadow: 'top' })
-        const aoUvAt = (y: number, shadow: T_Band['shadow']): A2 => {
-            if (shadow === 'bottom') return shadowUvAt(y - yFrom)
-            if (shadow === 'top') return shadowUvAt(yTo - y)
-            return aoUnshadedPoint
-        }
-        const outwardNormal: A3 = [normal[0], 0, normal[1]]
-        for (const { from, to, shadow } of bands) {
-            const fractionFrom = (from - yFrom) / pieceHeight, fractionTo = (to - yFrom) / pieceHeight
-            quad(
-                worldAt(start, from), worldAt(end, from), worldAt(end, to), worldAt(start, to),
-                outwardNormal,
-                [
-                    ..._GM.rectPoint(RECT_WHITE, 0, fractionFrom), ..._GM.rectPoint(RECT_WHITE, 1, fractionFrom),
-                    ..._GM.rectPoint(RECT_WHITE, 1, fractionTo), ..._GM.rectPoint(RECT_WHITE, 0, fractionTo),
-                ],
-                [...aoUvAt(from, shadow), ...aoUvAt(from, shadow), ...aoUvAt(to, shadow), ...aoUvAt(to, shadow)],
-                colorWall,
-            )
-        }
-    }
+    const { collideQuad } = builder
 
     // Кусок стены, видимый из комнаты, — кладка wall00. Лицо wall00 смотрит вправо от хода start → end:
     // если normal смотрит в другую сторону, концы меняются местами. Сетка кладки привязана к проекции на направление
@@ -388,12 +348,9 @@ export const room00 = (opts: T = {}): IBuffersGeom => {
             masonryPiece(innerStart, innerEnd, floorTop, profileBottom, inwardNormal, true, !hasProfile)
             collideQuad(worldAt(innerStart, floorTop), worldAt(innerEnd, floorTop), worldAt(innerEnd, ceilingBottom), worldAt(innerStart, ceilingBottom))
             if (shared) {
-                // наружное — внутреннее лицо соседней комнаты
+                // наружное — внутреннее лицо соседней комнаты; у своей стены наружного лица нет
                 masonryPiece(outerStart, outerEnd, floorTop, profileBottom, normal, true, !hasProfile)
                 collideQuad(worldAt(outerStart, floorTop), worldAt(outerEnd, floorTop), worldAt(outerEnd, ceilingBottom), worldAt(outerStart, ceilingBottom))
-            } else {
-                // наружное — от земли до верха стен
-                wallPiece(outerStart, outerEnd, 0, wallTop, normal, true, false)
             }
         } else {
             // края дыры на внутреннем и наружном лице
@@ -409,34 +366,29 @@ export const room00 = (opts: T = {}): IBuffersGeom => {
             collideQuad(worldAt(innerFrom, floorTop + portalHeight), worldAt(innerTo, floorTop + portalHeight), worldAt(innerTo, ceilingBottom), worldAt(innerFrom, ceilingBottom))
 
             if (shared) {
-                // наружное лицо — внутреннее лицо соседней комнаты, режется так же, как своё внутреннее
+                // наружное лицо — внутреннее лицо соседней комнаты, режется так же, как своё внутреннее;
+                // у своей стены наружного лица нет
                 masonryPiece(outerStart, outerFrom, floorTop, profileBottom, normal, true, !hasProfile)
                 masonryPiece(outerTo, outerEnd, floorTop, profileBottom, normal, true, !hasProfile)
                 masonryPiece(outerFrom, outerTo, floorTop + portalHeight, profileBottom, normal, false, !hasProfile)
                 collideQuad(worldAt(outerStart, floorTop), worldAt(outerFrom, floorTop), worldAt(outerFrom, ceilingBottom), worldAt(outerStart, ceilingBottom))
                 collideQuad(worldAt(outerTo, floorTop), worldAt(outerEnd, floorTop), worldAt(outerEnd, ceilingBottom), worldAt(outerTo, ceilingBottom))
                 collideQuad(worldAt(outerFrom, floorTop + portalHeight), worldAt(outerTo, floorTop + portalHeight), worldAt(outerTo, ceilingBottom), worldAt(outerFrom, ceilingBottom))
-            } else {
-                // наружное лицо: по бокам — во всю высоту, под порогом — от земли, над дырой — до верха стен
-                wallPiece(outerStart, outerFrom, 0, wallTop, normal, true, false)
-                wallPiece(outerTo, outerEnd, 0, wallTop, normal, true, false)
-                wallPiece(outerFrom, outerTo, 0, floorTop, normal, true, false)
-                wallPiece(outerFrom, outerTo, floorTop + portalHeight, wallTop, normal, false, false)
             }
 
-            // порог — пол в проёме на уровне верха пола, сквозь толщу стены
-            quad(
-                worldAt(innerFrom, floorTop), worldAt(innerTo, floorTop), worldAt(outerTo, floorTop), worldAt(outerFrom, floorTop),
-                [0, 1, 0], _GM.rectUvQ(RECT_WHITE), _GM.rectUvQ(RECT_AO_NONE), colorWall,
-            )
+            // Порог — пол в проёме на уровне верха пола, сквозь толщу стены: верх floor01 без боков (высота 0).
+            // Сетка тайлов привязана к тому же pos, что у пола комнаты, — клетки порога продолжают пол.
+            // Прокси floor01 не берётся — у порога свой квад ниже
+            const thresholdPlan: A2[] = [innerFrom, outerFrom, outerTo, innerTo]
+            // floor01 ждёт обход против часовой стрелки сверху — положительную площадь в осях [x, −z]
+            if (_GM.polygonArea2(thresholdPlan.map(([x, z]): A2 => [x, -z])) < 0) thresholdPlan.reverse()
+            const threshold = floor01({
+                pos: [pos[0], pos[1] + floorTop, pos[2]], contour: thresholdPlan.map(toPoint), height: 0,
+            })
+            threshold.vCollide = []
+            _GM.mergeIndexedArrays(result, threshold)
             collideQuad(worldAt(innerFrom, floorTop), worldAt(innerTo, floorTop), worldAt(outerTo, floorTop), worldAt(outerFrom, floorTop))
         }
-
-        // верх стены — на всю толщину, над дырой тоже
-        quad(
-            worldAt(innerStart, wallTop), worldAt(innerEnd, wallTop), worldAt(outerEnd, wallTop), worldAt(outerStart, wallTop),
-            [0, 1, 0], _GM.rectUvQ(RECT_WHITE), _GM.rectUvQ(RECT_AO_NONE), colorWall,
-        )
     }
     _GM.mergeIndexedArrays(result, builder.g)
 
