@@ -19,6 +19,9 @@ import {
 // стене — по центру ребра плана, шириной portalWidth, сужается, если пилоны не помещаются у одной из комнат;
 // уже 1.2 — общая стена без портала.
 //
+// Оттенок tint — множитель цвета вершин (c) всего комплекса после сборки комнат, поверх запечённого света;
+// компоненты не больше 1, поэтому цвет остаётся в [0, 1]. По умолчанию — синий.
+//
 // Высоты, стены, пилястры и профиль — общие для всех комнат: стыки на общих стенах сходятся только при одинаковых
 // уровнях. Своё у комнаты — форма (в координатах плана относительно pos).
 //
@@ -50,6 +53,7 @@ type T = {
     pilasterProtrusion?: number,  // на сколько ствол выступает из стены в комнату
     aoLength?: number,            // длина, на которую растягивается тайл тени у угла стены с полом и потолком
     colorWall?: A3,               // базовый цвет стен до запечённого освещения
+    tint?: A3,                    // множитель цвета вершин всего комплекса, компоненты от 0 до 1
 }
 
 export const DEFAULT_OPTS: Required<T> = {
@@ -88,6 +92,7 @@ export const DEFAULT_OPTS: Required<T> = {
     aoLength: .5,
     colorWall: [.82, .8, .76],
     //colorWall: [0, 0, 0],
+    tint: [.45, .62, 1],
 }
 
 const isInsidePolygon = ([x, z]: A2, polygon: A2[]): boolean => {
@@ -210,6 +215,7 @@ export const randomOpts = (): T => {
         pilasterProtrusion: rand(.06, .3),
         aoLength: rand(.3, .7),
         colorWall: [rand(.65, .9), rand(.65, .9), rand(.65, .9)],
+        tint: [rand(.6, .9), rand(.7, .95), 1],
     }
 }
 
@@ -343,6 +349,10 @@ export const complex00 = (opts: T = {}): IBuffersGeom => {
             colorWall: o.colorWall,
         }))
     })
+
+    // ---- оттенок всего комплекса: множитель цвета каждой вершины
+    const tint = o.tint.map(channel => Math.min(1, Math.max(0, channel)))
+    for (let i = 0; i < result.c.length; ++i) result.c[i] *= tint[i % 3]
 
     return result
 }

@@ -52,20 +52,20 @@ window.addEventListener("DOMContentLoaded", async () => {
         studioConf: {
             cameraPos: new THREE.Vector3(0, 30, 35),
             cameraLookAt: new THREE.Vector3(0, 0, 0),
-            fogParams: { near: 10, far: 80, color: new THREE.Color().set('#687277') },
-            ambientLightParams: { color: new THREE.Color().setHex(0x897fa0), intensity: 3 },
+            fogParams: { near: 10, far: 30, color: new THREE.Color().set('#062331') },
+            //ambientLightParams: { color: new THREE.Color().set('#9877e7'), intensity: 0 },
             directionalLightParams: { 
-                color: new THREE.Color(0xffffff), intensity: .3,
+                color: new THREE.Color(0xffffff), intensity: 5,
                 pos: new THREE.Vector3(-3, 3, -2)
             },
             spotLightParams: {
                 color: new THREE.Color().setHex(0xffffff),
                 intensity: 15,
-                pos: new THREE.Vector3(0, 3, 5),
+                pos: new THREE.Vector3(0, 1, 5),
                 angle: Math.PI * .2,
                 penumbra: 1,
                 decay: 1,
-                distance: 300,
+                distance: 30,
                 targetPos: new THREE.Vector3(0, 0, -50)
             },
         },
@@ -88,6 +88,10 @@ window.addEventListener("DOMContentLoaded", async () => {
 
     init(root)
 })
+
+// с чего стенд стартует: фабрика и положение игрока в режиме walk
+const START_ENTRY = 'complex00'
+const START_PLAYER_POS: [number, number, number] = [0, 2, 0]
 
 async function init(root: Root) {
     console.log('Root')
@@ -112,11 +116,12 @@ async function init(root: Root) {
     phisics.init(root)
     ticker.on(phisics.update.bind(phisics))
     phisics.createPlayer()
-    phisics.setPlayerPosition(studio.camera.position.x, studio.camera.position.y, studio.camera.position.z)
+    // старт — в режиме walk, игрок в точке START_PLAYER_POS
+    phisics.setPlayerPosition(START_PLAYER_POS[0], START_PLAYER_POS[1], START_PLAYER_POS[2])
 
     ui.init(root)
 
-    controls.init(root, true)
+    controls.init(root, false)
     //controls.setRotation(0, Math.PI * .25, 0)
     ticker.on(controls.update.bind(controls))
 
@@ -337,7 +342,8 @@ async function init(root: Root) {
     // ---- orbit / walk. Игрок ставится под камеру — на то, что под ней видно, — и смотрит туда же, куда она
 
     const PLAYER_LIFT = 1
-    const spawn = new THREE.Vector3(0, PLAYER_LIFT, 0)
+    // точка входа: до первого переключения в walk — стартовая
+    const spawn = new THREE.Vector3(...START_PLAYER_POS)
     const raycaster = new THREE.Raycaster()
     const placePlayer = () => {
         const cam = studio.camera.position
@@ -411,7 +417,7 @@ async function init(root: Root) {
         onChange: buildSingle,
         onReroll: buildGrid,
     })
-    panel.setEntry(GEOM_REGISTRY[0])
+    panel.setEntry(GEOM_REGISTRY.find(entry => entry.name === START_ENTRY) ?? GEOM_REGISTRY[0])
 }
 
 // габариты triangle soup или вершин индексной геометрии

@@ -166,7 +166,7 @@ export class Studio {
     render () {
         if (this.spotLight) {
             this.camera.getWorldPosition(this.spotLight.position)
-            this.spotLight.position.y += .1
+            this.spotLight.position.y += 1
         }
 
         if (this.composer) {
