@@ -1,5 +1,5 @@
 import { _GM, type IBuffersGeom, type A2, type A3, type T_SweepProfilePoint } from "_CORE/_M/_gm"
-import { RECT_WHITE } from "atlases/atlas00/atlas00"
+import { RECT_LIMESTONE, RECT_SANDSTONE } from "atlases/atlas00/atlas00"
 import { RECT_AO_NONE, RECT_AO_TOP } from "atlases/atlasAo00/atlasAo00"
 
 // Пилястра: выступ из стены — ствол, внизу база, вверху капитель.
@@ -21,7 +21,8 @@ import { RECT_AO_NONE, RECT_AO_TOP } from "atlases/atlasAo00/atlasAo00"
 // +z к зрителю), — по нормали ребра (−dz, dx). Фабрика путь не разворачивает: против часовой стрелки — профили
 // наружу, от стены; по часовой — профили вывернуты внутрь.
 //
-// Атласы. uv — atlas00, белый тайл под цвет colorShaft / colorMolding, растянут на каждый отрезок профиля.
+// Атласы. uv — atlas00: ствол — песчаник RECT_SANDSTONE под colorShaft, база и капитель — известняк RECT_LIMESTONE под
+// colorMolding; тайл растянут на каждый отрезок профиля, у ствола — повторяется по высоте, вытянут не больше чем вдвое.
 // uv2 — atlasAo00: тень во внутренних углах профиля (ствол над полкой базы и под полочкой капители,
 // полки у ствола) и у земли (низ плинта). Тень одной длины aoLength по обе стороны угла: у длинной грани
 // затеняется только полоса у угла, остальное — без тени.
@@ -258,7 +259,8 @@ export const pilaster00 = (opts: T = {}): IBuffersGeom => {
         { projection: baseSlopeProjection, y: plinthHeight, color: colorMolding },
         { projection: baseFilletProjection, y: plinthHeight + baseSlopeHeight, color: colorMolding },
         { projection: baseFilletProjection, y: baseTop, color: colorMolding },
-        { projection: 0, y: baseTop, color: colorShaft },
+        // ствол режется по высоте: тайл вытянут не больше чем вдвое относительно ширины грани
+        { projection: 0, y: baseTop, color: colorShaft, uvRect: RECT_SANDSTONE, maxTileStretch: 2 },
         { projection: 0, y: capitalBottom, color: colorMolding },
         { projection: capitalFilletProjection, y: capitalBottom, color: colorMolding },
         { projection: capitalFilletProjection, y: capitalBottom + capitalFilletHeight, color: colorMolding },
@@ -272,7 +274,7 @@ export const pilaster00 = (opts: T = {}): IBuffersGeom => {
     _GM.sweepProfile(builder, {
         profile, edgeCount, edgeNormals, offsetPoint,
         origin: pos, aoLength, shadowAtStart: true,
-        uvRect: RECT_WHITE, aoRectNone: RECT_AO_NONE, aoRectShadow: RECT_AO_TOP,
+        uvRect: RECT_LIMESTONE, aoRectNone: RECT_AO_NONE, aoRectShadow: RECT_AO_TOP,
     })
 
     // ---- верх абаки: вынесенный на abacusProjection путь, замкнутый по стене
@@ -280,7 +282,7 @@ export const pilaster00 = (opts: T = {}): IBuffersGeom => {
     const topOutline: A2[] = []
     for (let i = 0; i < pointCount; ++i) topOutline.push(offsetPoint(i, abacusProjection))
     _GM.fillPlanPolygon(
-        builder, topOutline, pos, height, true, RECT_WHITE, _GM.rectPoint(RECT_AO_NONE, .5, .5), colorMolding,
+        builder, topOutline, pos, height, true, RECT_LIMESTONE, _GM.rectPoint(RECT_AO_NONE, .5, .5), colorMolding,
     )
 
     // ---- прокси физики: призма по контуру плинта во всю высоту, без профилей и верха —

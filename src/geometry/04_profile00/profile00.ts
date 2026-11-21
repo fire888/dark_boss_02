@@ -1,5 +1,5 @@
 import { _GM, type IBuffersGeom, type A2, type A3, type T_SweepProfilePoint } from "_CORE/_M/_gm"
-import { RECT_WHITE } from "atlases/atlas00/atlas00"
+import { RECT_LIMESTONE } from "atlases/atlas00/atlas00"
 import { RECT_AO_NONE, RECT_AO_TOP } from "atlases/atlasAo00/atlasAo00"
 
 // Профиль: полоса стены с карнизом, протянутая вдоль пути в плане (см. ref.jpg).
@@ -10,8 +10,11 @@ import { RECT_AO_NONE, RECT_AO_TOP } from "atlases/atlasAo00/atlasAo00"
 //   скат — от пояска наружу и вверх, нависает;
 //   карниз — софит (низ выноса), лицо карниза, верх карниза обратно к стене;
 //   стена над карнизом — по самому пути.
-// Весь профиль масштабируется по высоте height. Верх и низ открыты: полоса стыкуется с продолжением стены,
-// крышек нет. Концы незамкнутого пути тоже открыты — срез поперёк крайнего ребра.
+// Стена над карнизом занимает topWallFraction высоты и темнее остальной полосы (topWallBrightness), сечение ниже
+// неё сжимается по высоте.
+// Весь профиль масштабируется по высоте height и отодвинут от линии стены наружу на wallOffset. Низ зазора между
+// стеной и полосой закрыт гранью, верх открыт — он упирается в потолок или стыкуется с продолжением стены,
+// верхней крышки нет. Концы незамкнутого пути тоже открыты — срез поперёк крайнего ребра.
 //
 // Система координат. Точки пути — { x, z } относительно pos, pos[1] — низ полосы. Профиль всегда выступает
 // вправо от хода пути, если смотреть сверху (x вправо, +z к зрителю), — по нормали ребра (−dz, dx).
@@ -20,7 +23,8 @@ import { RECT_AO_NONE, RECT_AO_TOP } from "atlases/atlasAo00/atlasAo00"
 //   путь по часовой стрелке — профиль внутрь (карниз по периметру комнаты).
 // Замкнутый путь (closed) — обход контура целиком.
 //
-// Атласы. uv — atlas00, белый тайл под цвет colorWall / colorMolding, растянут на каждый отрезок профиля.
+// Атласы. uv — atlas00: вся полоса — известняк RECT_LIMESTONE (стена под colorWall, поясок и карниз под colorMolding),
+// повторяется вдоль пути, вытянут не больше чем вдвое.
 // uv2 — atlasAo00: тень во внутренних углах профиля острее 120° (стена под пояском, верх пояска у ската,
 // стена над карнизом) полосой aoLength по обе стороны угла; тупой угол ската к софиту — без тени.
 
@@ -34,6 +38,9 @@ type T = {
     path?: T_PathPoint[], // линия стены в плане; профиль выступает от неё наружу
     closed?: boolean,     // путь замкнут: последняя точка соединяется с первой
     height?: number,      // полная высота полосы; профиль масштабируется по ней целиком
+    wallOffset?: number,  // на сколько весь профиль отодвинут от линии стены наружу; низ зазора закрыт гранью
+    topWallFraction?: number,   // доля высоты под стену над карнизом; остальное сечение сжимается под неё
+    topWallBrightness?: number, // яркость стены над карнизом относительно colorWall: она темнее остальной полосы
     // длина, на которую растягивается тайл тени у внутреннего угла; видимая тень — примерно её четверть
     aoLength?: number,
     // базовые цвета до запечённого освещения; умножаются на тайл атласа
@@ -47,13 +54,16 @@ export const DEFAULT_OPTS: Required<T> = {
     path: [{ x: -2, z: 0 }, { x: -.6, z: 0 }, { x: -.6, z: .8 }, { x: .6, z: .8 }, { x: .6, z: 0 }, { x: 2, z: 0 }],
     closed: false,
     height: 3,
+    wallOffset: .25,
+    topWallFraction: .35,
+    topWallBrightness: .35,
     aoLength: .3,
     colorWall: [.85, .83, .78],
     colorMolding: [.75, .73, .7],
 }
 
 // Сечение в долях высоты: [вынос, высота]. Рисунок — 660 px по высоте, стена на x = 975 px
-const PROFILE_FRACTIONS: { projection: number, y: number, isWall: boolean }[] = [
+const PROFILE_FRACTIONS: { projection: number, y: number, isWall: boolean, isTopWall?: boolean }[] = [
     { projection: 0, y: 0, isWall: true },               // низ стены
     { projection: 0, y: 310 / 660, isWall: false },      // стена до низа пояска
     { projection: 40 / 660, y: 310 / 660, isWall: false },  // низ пояска
@@ -62,9 +72,11 @@ const PROFILE_FRACTIONS: { projection: number, y: number, isWall: boolean }[] = 
     { projection: 85 / 660, y: 450 / 660, isWall: false },  // верх ската; дальше софит
     { projection: 125 / 660, y: 450 / 660, isWall: false }, // край софита; дальше лицо карниза
     { projection: 125 / 660, y: 545 / 660, isWall: false }, // верх лица карниза; дальше верх карниза к стене
-    { projection: 0, y: 545 / 660, isWall: true },       // стена над карнизом
+    { projection: 0, y: 545 / 660, isWall: true, isTopWall: true }, // стена над карнизом
     { projection: 0, y: 1, isWall: true },               // верх полосы
 ]
+// где на рисунке начинается стена над карнизом, доля высоты; topWallFraction переносит эту границу
+const TOP_WALL_START_FRACTION = 545 / 660
 // наибольший вынос профиля в долях высоты
 const MAX_PROJECTION_FRACTION = Math.max(...PROFILE_FRACTIONS.map(point => point.projection))
 
@@ -75,7 +87,7 @@ export const randomOpts = (): T => {
     const height = rand(1, 5)
     // На вогнутом изломе пути профиль укорачивает ребро на вынос с каждой стороны — ребро не короче minEdge,
     // иначе грани вывернутся
-    const minEdge = 2 * MAX_PROJECTION_FRACTION * height + .1
+    const minEdge = 2 * (MAX_PROJECTION_FRACTION * height + DEFAULT_OPTS.wallOffset) + .1
     const edge = () => rand(minEdge, minEdge + 2)
 
     let path: T_PathPoint[]
@@ -112,7 +124,10 @@ export const randomOpts = (): T => {
 }
 
 export const profile00 = (opts: T = {}): IBuffersGeom => {
-    const { pos, path, closed, height, aoLength, colorWall, colorMolding }: Required<T> = { ...DEFAULT_OPTS, ...opts }
+    const { pos, path, closed, height, aoLength, colorWall, colorMolding, ...rest }: Required<T> = { ...DEFAULT_OPTS, ...opts }
+    const wallOffset = Math.max(0, rest.wallOffset)
+    const topWallFraction = Math.min(.9, Math.max(0, rest.topWallFraction))
+    const colorTopWall = colorWall.map(channel => channel * Math.max(0, rest.topWallBrightness)) as A3
 
     const builder = _GM.createGeomBuilder()
 
@@ -164,18 +179,26 @@ export const profile00 = (opts: T = {}): IBuffersGeom => {
 
     // ---- профиль в метрах; цвет точки — у отрезка, который с неё начинается
 
-    const profile: T_SweepProfilePoint[] = PROFILE_FRACTIONS.map(({ projection, y, isWall }) => ({
-        projection: projection * height,
-        y: y * height,
-        color: isWall ? colorWall : colorMolding,
-    }))
+    // Вся полоса — известняк, повторяется вдоль пути, вытянут не больше чем вдвое. Первый отрезок — от линии стены
+    // к отодвинутому профилю по низу: грань вниз, закрывает зазор. Верх зазора не закрывается
+    const texture = { uvRect: RECT_LIMESTONE, maxTileStretchAlongPath: 2 }
+    const profile: T_SweepProfilePoint[] = [
+        { projection: 0, y: 0, color: colorWall, ...texture },
+        // всё ниже стены над карнизом сжимается по высоте в 1 − topWallFraction, выносы не меняются
+        ...PROFILE_FRACTIONS.map(({ projection, y, isWall, isTopWall }) => ({
+            projection: projection * height + wallOffset,
+            y: (y >= 1 ? 1 : y / TOP_WALL_START_FRACTION * (1 - topWallFraction)) * height,
+            color: isTopWall ? colorTopWall : isWall ? colorWall : colorMolding,
+            ...texture,
+        })),
+    ]
 
     // ---- грани: каждый отрезок профиля вдоль каждого ребра пути. Низ полосы не на земле — без тени у низа
 
     _GM.sweepProfile(builder, {
         profile, edgeCount, edgeNormals, offsetPoint,
         origin: pos, aoLength, shadowAtStart: false,
-        uvRect: RECT_WHITE, aoRectNone: RECT_AO_NONE, aoRectShadow: RECT_AO_TOP,
+        uvRect: RECT_LIMESTONE, aoRectNone: RECT_AO_NONE, aoRectShadow: RECT_AO_TOP,
     })
 
     // vCollide пустой: физика стены — у самой стены, профиль декоративный

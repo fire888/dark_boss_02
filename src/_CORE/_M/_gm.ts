@@ -201,8 +201,13 @@ const createGeomBuilder = (opts: T_LightOpts = {}): T_GeomBuilder => {
 
 // #region profile sweep — профиль (сечение), протянутый вдоль ломаной в плане: пилястры, карнизы, перемычки
 
-// Точка профиля: вынос от пути наружу и высота над origin. color — цвет отрезка, который начинается в этой точке
-export type T_SweepProfilePoint = { projection: number, y: number, color: A3 }
+// Точка профиля: вынос от пути наружу и высота над origin. color — цвет отрезка, который начинается в этой точке,
+// uvRect — его тайл цвета, если он не общий (T_SweepOpts.uvRect), maxTileStretch — во сколько раз тайл может быть
+// вытянут вдоль отрезка относительно ширины грани: длиннее — отрезок режется и тайл повторяется (без него — один на отрезок),
+// maxTileStretchAlongPath — то же поперёк: во сколько раз тайл может быть вытянут вдоль ребра пути относительно длины отрезка
+export type T_SweepProfilePoint = {
+    projection: number, y: number, color: A3, uvRect?: T_TileRect, maxTileStretch?: number, maxTileStretchAlongPath?: number,
+}
 
 export type T_SweepOpts = {
     // сечение снизу вверх; тело — со стороны пути (меньшего выноса)
@@ -220,7 +225,7 @@ export type T_SweepOpts = {
     aoLength: number,
     // начало профиля стоит на земле — у низа первого отрезка тень
     shadowAtStart: boolean,
-    // тайл цвета (растянут на каждый отрезок), тайл без тени и тайл с тенью у верхнего края
+    // тайл цвета (растянут на каждый отрезок; у точки профиля может быть свой), тайл без тени и тайл с тенью у верхнего края
     uvRect: T_TileRect,
     aoRectNone: T_TileRect,
     aoRectShadow: T_TileRect,
@@ -240,6 +245,9 @@ const sweepProfile = (builder: T_GeomBuilder, opts: T_SweepOpts): void => {
         const last = profile[profile.length - 1]
         if (last && Math.hypot(point.projection - last.projection, point.y - last.y) < 1e-6) {
             last.color = point.color
+            last.uvRect = point.uvRect
+            last.maxTileStretch = point.maxTileStretch
+            last.maxTileStretchAlongPath = point.maxTileStretchAlongPath
             continue
         }
         profile.push({ ...point })
@@ -273,6 +281,7 @@ const sweepProfile = (builder: T_GeomBuilder, opts: T_SweepOpts): void => {
         const end = profile[segment + 1]
         const length = Math.hypot(end.projection - start.projection, end.y - start.y)
         const [directionProjection, directionY] = segmentDirection(segment)
+        const segmentUvRect = start.uvRect ?? uvRect
         // нормаль отрезка в осях (вынос, высота): направление, повёрнутое направо — от тела
         const normalProjection = directionY
         const normalY = -directionProjection
@@ -305,33 +314,74 @@ const sweepProfile = (builder: T_GeomBuilder, opts: T_SweepOpts): void => {
         for (let edge = 0; edge < edgeCount; ++edge) {
             const [edgeNormalX, edgeNormalZ] = edgeNormals[edge]
             const outwardNormal: A3 = [edgeNormalX * normalProjection, normalY, edgeNormalZ * normalProjection]
-            for (const { from, to, shadow } of pieces) {
+
+            // Сколько раз тайл повторяется вдоль отрезка на этом ребре. Без maxTileStretch — один, растянут на весь
+            // отрезок. С ним — столько, чтобы тайл был вытянут вдоль профиля не больше чем в maxTileStretch раз
+            // относительно ширины грани (длины ребра на середине отрезка)
+            let tileCount = 1
+            if (start.maxTileStretch && start.maxTileStretch > 0) {
+                const middleProjection = (start.projection + end.projection) / 2
+                const [ax, az] = offsetPoint(edge, middleProjection), [bx, bz] = offsetPoint(edge + 1, middleProjection)
+                const faceWidth = Math.hypot(bx - ax, bz - az)
+                if (faceWidth > 1e-6) tileCount = Math.min(200, Math.max(1, Math.ceil(length / (start.maxTileStretch * faceWidth) - 1e-9)))
+            }
+            // куски тени, дополнительно разрезанные по границам тайлов; v — доля внутри своего тайла
+            const cuts: { from: number, to: number, shadow: T_Piece['shadow'], tile: number }[] = []
+            for (const piece of pieces) {
+                let from = piece.from
+                while (piece.to - from > 1e-9) {
+                    const tile = Math.min(tileCount - 1, Math.floor(from * tileCount + 1e-9))
+                    const to = Math.min(piece.to, (tile + 1) / tileCount)
+                    if (to - from > 1e-9) cuts.push({ from, to, shadow: piece.shadow, tile })
+                    from = to
+                }
+            }
+
+            // Сколько раз тайл повторяется вдоль ребра пути. С maxTileStretchAlongPath — столько, чтобы тайл был вытянут
+            // вдоль ребра не больше чем в столько раз относительно длины отрезка профиля (высоты тайла на грани)
+            let pathTileCount = 1
+            if (start.maxTileStretchAlongPath && start.maxTileStretchAlongPath > 0 && length > 1e-6) {
+                const middleProjection = (start.projection + end.projection) / 2
+                const [ax, az] = offsetPoint(edge, middleProjection), [bx, bz] = offsetPoint(edge + 1, middleProjection)
+                const faceWidth = Math.hypot(bx - ax, bz - az)
+                pathTileCount = Math.min(200, Math.max(1, Math.ceil(faceWidth / (start.maxTileStretchAlongPath * length) - 1e-9)))
+            }
+            // точка грани: доля along вдоль ребра пути на выносе и высоте точки профиля
+            const facePointAt = (along: number, at: { projection: number, y: number }): A3 => {
+                const [ax, az] = offsetPoint(edge, at.projection), [bx, bz] = offsetPoint(edge + 1, at.projection)
+                return worldAt([ax + (bx - ax) * along, az + (bz - az) * along], at.y)
+            }
+
+            for (const { from, to, shadow, tile } of cuts) {
                 const bottom = profileAt(from)
                 const top = profileAt(to)
-                builder.quad(
-                    worldAt(offsetPoint(edge, bottom.projection), bottom.y),
-                    worldAt(offsetPoint(edge + 1, bottom.projection), bottom.y),
-                    worldAt(offsetPoint(edge + 1, top.projection), top.y),
-                    worldAt(offsetPoint(edge, top.projection), top.y),
-                    outwardNormal,
-                    // тайл: вдоль ребра — горизонталь, вдоль отрезка профиля — вертикаль
-                    [
-                        ..._GM.rectPoint(uvRect, 0, from), ..._GM.rectPoint(uvRect, 1, from),
-                        ..._GM.rectPoint(uvRect, 1, to), ..._GM.rectPoint(uvRect, 0, to),
-                    ],
-                    [...aoUvAt(from, shadow), ...aoUvAt(from, shadow), ...aoUvAt(to, shadow), ...aoUvAt(to, shadow)],
-                    start.color,
-                )
+                const vFrom = clamp01(from * tileCount - tile), vTo = clamp01(to * tileCount - tile)
+                for (let pathTile = 0; pathTile < pathTileCount; ++pathTile) {
+                    const alongFrom = pathTile / pathTileCount, alongTo = (pathTile + 1) / pathTileCount
+                    builder.quad(
+                        facePointAt(alongFrom, bottom), facePointAt(alongTo, bottom),
+                        facePointAt(alongTo, top), facePointAt(alongFrom, top),
+                        outwardNormal,
+                        // тайл: вдоль ребра — горизонталь, вдоль отрезка профиля — вертикаль
+                        [
+                            ..._GM.rectPoint(segmentUvRect, 0, vFrom), ..._GM.rectPoint(segmentUvRect, 1, vFrom),
+                            ..._GM.rectPoint(segmentUvRect, 1, vTo), ..._GM.rectPoint(segmentUvRect, 0, vTo),
+                        ],
+                        [...aoUvAt(from, shadow), ...aoUvAt(from, shadow), ...aoUvAt(to, shadow), ...aoUvAt(to, shadow)],
+                        start.color,
+                    )
+                }
             }
         }
     }
 }
 
 // Горизонтальная грань по контуру в плане [x, z] (простой многоугольник, обход любой) на высоте y над origin:
-// верх (facingUp) или низ. Тайл uvRect — плоская проекция контура целиком, uv2 — одна точка aoPoint
+// верх (facingUp) или низ. Тайл uvRect — плоская проекция контура целиком, uv2 — одна точка aoPoint.
+// С tileSize грань режется по квадратной сетке этого шага (от origin), и в каждой клетке — свой целый тайл без растяжения
 const fillPlanPolygon = (
     builder: T_GeomBuilder, outline: A2[], origin: A3, y: number, facingUp: boolean,
-    uvRect: T_TileRect, aoPoint: A2, color: A3,
+    uvRect: T_TileRect, aoPoint: A2, color: A3, tileSize = 0,
 ): void => {
     if (outline.length < 3) return
     const clamp01 = (x: number) => Math.min(1, Math.max(0, x))
@@ -351,6 +401,35 @@ const fillPlanPolygon = (
     const worldAt = ([x, planY]: A2): A3 => [origin[0] + x, origin[1] + y, origin[2] - planY]
     const normal: A3 = facingUp ? [0, 1, 0] : [0, -1, 0]
     const triangles = _GM.triangulatePolygon(flat)
+    if (tileSize > 1e-6) {
+        // каждый треугольник — по клеткам сетки; кусок клетки выпуклый — веер из первой точки
+        for (let k = 0; k < triangles.length; k += 3) {
+            const triangle = [flat[triangles[k]], flat[triangles[k + 1]], flat[triangles[k + 2]]]
+            const xs = triangle.map(point => point[0]), ys = triangle.map(point => point[1])
+            const cellXFrom = Math.floor(Math.min(...xs) / tileSize), cellXTo = Math.ceil(Math.max(...xs) / tileSize)
+            const cellYFrom = Math.floor(Math.min(...ys) / tileSize), cellYTo = Math.ceil(Math.max(...ys) / tileSize)
+            for (let cellX = cellXFrom; cellX < cellXTo; ++cellX) {
+                for (let cellY = cellYFrom; cellY < cellYTo; ++cellY) {
+                    const cellLeft = cellX * tileSize, cellBottom = cellY * tileSize
+                    const part = _GM.clipPolygonToRect(triangle, cellLeft, cellBottom, cellLeft + tileSize, cellBottom + tileSize)
+                    const cellUvAt = ([x, planY]: A2) => _GM.rectPoint(
+                        uvRect, clamp01((x - cellLeft) / tileSize), clamp01((planY - cellBottom) / tileSize),
+                    )
+                    for (let i = 1; i < part.length - 1; ++i) {
+                        const a = part[0], b = part[i], c = part[i + 1]
+                        if (Math.abs(_GM.polygonArea2([a, b, c])) < 1e-9) continue
+                        builder.tri(
+                            worldAt(a), worldAt(b), worldAt(c), normal,
+                            [...cellUvAt(a), ...cellUvAt(b), ...cellUvAt(c)],
+                            [...aoPoint, ...aoPoint, ...aoPoint],
+                            color,
+                        )
+                    }
+                }
+            }
+        }
+        return
+    }
     for (let k = 0; k < triangles.length; k += 3) {
         const a = flat[triangles[k]], b = flat[triangles[k + 1]], c = flat[triangles[k + 2]]
         builder.tri(

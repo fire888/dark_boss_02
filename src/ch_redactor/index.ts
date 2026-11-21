@@ -26,12 +26,15 @@ import { GEOM_REGISTRY, type T_GeomEntry, type T_Opts } from "./registry"
 import { OptsPanel } from "./OptsPanel"
 import atlas00Img from 'atlases/atlas00/512.jpg'
 import atlasAo00Img from 'atlases/atlasAo00/512Ao.jpg'
+import px from 'atlases/matIronBox/posx.jpg'
+import py from 'atlases/matIronBox/posy.jpg'
+import pz from 'atlases/matIronBox/posz.jpg'
+import nx from 'atlases/matIronBox/negx.jpg'
+import ny from 'atlases/matIronBox/negy.jpg'
+import nz from 'atlases/matIronBox/negz.jpg'
 
 
-export interface Root extends Core {
-    //controls: ControlsSystem,
-    //debug: Debug
-}
+export interface Root extends Core {}
 
 window.addEventListener("DOMContentLoaded", async () => {
     // @ts-ignore:next-line
@@ -47,6 +50,22 @@ window.addEventListener("DOMContentLoaded", async () => {
         studioConf: {
             cameraPos: new THREE.Vector3(0, 30, 35),
             cameraLookAt: new THREE.Vector3(0, 0, 0),
+            fogParams: { near: 10, far: 80, color: new THREE.Color().set('#687277') },
+            ambientLightParams: { color: new THREE.Color().setHex(0x897fa0), intensity: 3 },
+            directionalLightParams: { 
+                color: new THREE.Color(0xffffff), intensity: .3,
+                pos: new THREE.Vector3(-3, 3, -2)
+            },
+            spotLightParams: {
+                color: new THREE.Color().setHex(0xffffff),
+                intensity: 15,
+                pos: new THREE.Vector3(0, 3, 5),
+                angle: Math.PI * .2,
+                penumbra: 1,
+                decay: 1,
+                distance: 300,
+                targetPos: new THREE.Vector3(0, 0, -50)
+            },
         },
         studio: new Studio(),
 
@@ -115,11 +134,19 @@ async function init(root: Root) {
     // aoMap читает uv2 геометрии: в three 0.173 это канал 2
     mapAo.channel = 2
 
-    const material = new THREE.MeshBasicMaterial({
+    const loader = new THREE.CubeTextureLoader()
+    const textureCube = loader.load([px, nx, py, ny, pz, nz])
+
+    const material = new THREE.MeshStandardMaterial({
         color: 0xffffff,
         //wireframe: true
         vertexColors: true,
         map: mapAtlas,
+        bumpMap: mapAtlas,
+        bumpScale: 5,
+        envMap: textureCube,
+        envMapIntensity: 1,
+        roughness: .1,
         aoMap: mapAo,
         aoMapIntensity: 1,
     })

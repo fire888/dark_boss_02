@@ -1,10 +1,11 @@
 import { _GM, type IBuffersGeom, type A2, type A3 } from "_CORE/_M/_gm"
-import { RECT_EARTH, UV_ORNAMENT_Q, UV_WHITE_Q } from "atlases/atlas00/atlas00"
+import { RECT_EARTH, RECT_ORNAMENT, UV_ORNAMENT_Q, UV_WHITE_Q } from "atlases/atlas00/atlas00"
 import { RECT_AO_NONE, UV_AO_TOP_Q } from "atlases/atlasAo00/atlasAo00"
 
 // Пол по контуру: плоская плита высотой height над землёй, верх залит землёй по сетке тайлов.
 // Вдоль края, с отступом borderOffset внутрь, идёт кантик — полоса плитки шириной borderWidth,
-// как полоса по краю площадки у лестниц stairs00. Между краем и кантиком и внутри кантика — земля.
+// как полоса по краю площадки у лестниц stairs00. Между краем и кантиком и внутри кантика — земля;
+// в отступе между краем и кантиком она темнее, в offsetBrightness раз.
 //
 // Контур — замкнутая ломаная: каждая точка соединяется со следующей, последняя — с первой.
 // Обход — против часовой стрелки при взгляде сверху (x вправо, −z вверх, как на карте уровня).
@@ -30,6 +31,7 @@ type T = {
     height?: number,         // высота верха плиты над землёй; < 0 — верх ниже земли (яма); 0 — без боков, только верх
     borderOffset?: number,   // отступ кантика от края плиты внутрь
     borderWidth?: number,    // ширина кантика, она же сторона одной плитки
+    offsetBrightness?: number, // яркость земли в отступе между краем и кантиком относительно остальной земли
     groundTileSize?: number, // сторона клетки сетки, на которую ложится один тайл земли
     // разброс яркости земли по клеткам сетки, доля: клетка темнее или светлее colorGround до этой доли.
     // Без него плоский пол одного цвета — свет на одной нормали не даёт оттенков
@@ -48,8 +50,9 @@ export const DEFAULT_OPTS: Required<T> = {
         { x: 0, z: 0 }, { x: 0, z: -3 }, { x: -3, z: -3 },
     ],
     height: .15,
-    borderOffset: .3,
+    borderOffset: .8,
     borderWidth: .4,
+    offsetBrightness: .4,
     groundTileSize: 1.5,
     groundColorJitter: .3,
     colorGround: [1, 1, 1],
@@ -97,8 +100,9 @@ export const randomOpts = (): T => {
         contour: plan.map(([x, minusZ]) => ({ x, z: -minusZ })),
         // иногда 0 — без боков, иногда отрицательная — яма, бока внутрь
         height: Math.random() < .2 ? 0 : rand(.05, .4) * (Math.random() < .2 ? -1 : 1),
-        borderOffset: Math.random() < .2 ? 0 : rand(.1, .6),
+        borderOffset: Math.random() < .1 ? 0 : rand(.5, 1.2),
         borderWidth: rand(.25, .6),
+        offsetBrightness: rand(.3, .55),
         groundTileSize: rand(.8, 2.5),
         groundColorJitter: rand(.15, .4),
         colorGround: tint(.75, .95, .15),
@@ -109,7 +113,7 @@ export const randomOpts = (): T => {
 
 export const floor00 = (opts: T = {}): IBuffersGeom => {
     const {
-        pos, contour, height, groundColorJitter, borderOffset, borderWidth, groundTileSize, colorGround, colorBorder, colorSide,
+        pos, contour, height, groundColorJitter, borderOffset, borderWidth, offsetBrightness, groundTileSize, colorGround, colorBorder, colorSide,
     }: Required<T> = { ...DEFAULT_OPTS, ...opts }
 
     const builder = _GM.createGeomBuilder()
@@ -190,7 +194,8 @@ export const floor00 = (opts: T = {}): IBuffersGeom => {
 
     // ---- земля: выпуклый кусок плана режется по сетке groundTileSize, у каждой клетки — свой целый тайл.
     // Сетка привязана к pos, поэтому соседние куски и соседние полы с тем же pos стыкуются тайлами
-    const fillGround = (piece: A2[]) => {
+    // shade — множитель яркости куска: в отступе у края земля темнее
+    const fillGround = (piece: A2[], shade = 1) => {
         let xMin = Infinity, yMin = Infinity, xMax = -Infinity, yMax = -Infinity
         for (const [x, y] of piece) {
             xMin = Math.min(xMin, x); xMax = Math.max(xMax, x)
@@ -204,7 +209,7 @@ export const floor00 = (opts: T = {}): IBuffersGeom => {
                 const cellPart = _GM.clipPolygonToRect(piece, cellLeft, cellBottom, cellLeft + groundTileSize, cellBottom + groundTileSize)
                 if (cellPart.length < 3) continue
                 // яркость клетки — от её номера, а не от Math.random(): на пересборке не мигает
-                const brightness = 1 + groundColorJitter * (2 * _GM.hash2(cellX, cellY) - 1)
+                const brightness = shade * (1 + groundColorJitter * (2 * _GM.hash2(cellX, cellY) - 1))
                 // Сверху не зажимается: при colorGround = 1 светлые клетки иначе срезались бы до него же и разброс
                 // остался бы только в тёмную сторону. Итоговый цвет зажимает сборщик после освещения
                 const cellColor = colorGround.map(channel => Math.max(0, channel * brightness)) as A3
@@ -228,11 +233,11 @@ export const floor00 = (opts: T = {}): IBuffersGeom => {
         }
     }
 
-    // отступ между краем и кантиком: по трапеции на ребро
+    // отступ между краем и кантиком: по трапеции на ребро, темнее остальной земли
     if (borderStart > 1e-6) {
         for (let i = 0; i < pointCount; ++i) {
             const next = (i + 1) % pointCount
-            fillGround([plan[i], plan[next], borderOuter[next], borderOuter[i]])
+            fillGround([plan[i], plan[next], borderOuter[next], borderOuter[i]], Math.max(0, offsetBrightness))
         }
     }
     // середина внутри кантика — невыпуклая, сначала на треугольники
@@ -241,24 +246,63 @@ export const floor00 = (opts: T = {}): IBuffersGeom => {
         fillGround([borderInner[innerTriangles[k]], borderInner[innerTriangles[k + 1]], borderInner[innerTriangles[k + 2]]])
     }
 
-    // ---- кантик: вдоль каждого ребра целое число плиток; низ тайла — к краю плиты.
-    // Угловые плитки срезаны по биссектрисе угла, как стык полос на углу
-    for (let i = 0; i < pointCount; ++i) {
+    // ---- кантик: вдоль каждого ребра — прямоугольные плитки, стыки поперёк ребра; низ тайла — к краю плиты.
+    // Полоса ребра — трапеция, срезанная на углах по биссектрисе. Прямоугольники занимают общую часть её внешней
+    // и внутренней стороны; на концах остаётся клин до биссектрисы — он кроется продолжением соседней плитки
+    const bandWidth = borderEnd - borderStart
+    const aoUnshadedTri = [...AO_UNSHADED_POINT, ...AO_UNSHADED_POINT, ...AO_UNSHADED_POINT]
+    // кантик нулевой ширины не строится
+    for (let i = 0; i < pointCount && bandWidth > 1e-6; ++i) {
         const next = (i + 1) % pointCount
         const outerStart = borderOuter[i], outerEnd = borderOuter[next]
         const innerStart = borderInner[i], innerEnd = borderInner[next]
-        const middleLength = (Math.hypot(outerEnd[0] - outerStart[0], outerEnd[1] - outerStart[1])
-            + Math.hypot(innerEnd[0] - innerStart[0], innerEnd[1] - innerStart[1])) / 2
-        const tileCount = Math.max(1, Math.round(middleLength / Math.max(1e-6, borderEnd - borderStart)))
-        const lerp = (from: A2, to: A2, t: number): A2 => [from[0] + (to[0] - from[0]) * t, from[1] + (to[1] - from[1]) * t]
-        for (let tile = 0; tile < tileCount; ++tile) {
-            const tFrom = tile / tileCount, tTo = (tile + 1) / tileCount
-            quad(
-                worldAt(lerp(outerStart, outerEnd, tFrom), height), worldAt(lerp(outerStart, outerEnd, tTo), height),
-                worldAt(lerp(innerStart, innerEnd, tTo), height), worldAt(lerp(innerStart, innerEnd, tFrom), height),
-                TOP_NORMAL, UV_ORNAMENT_Q, _GM.rectUvQ(RECT_AO_NONE), colorBorder,
+        const direction = edgeDirections[i], inward = inwardNormalOf(i)
+        // координаты вдоль ребра от outerStart и поперёк — доля ширины полосы от внешней стороны
+        const alongOf = (point: A2) => (point[0] - outerStart[0]) * direction[0] + (point[1] - outerStart[1]) * direction[1]
+        const pointAt = (along: number, across: number): A2 => [
+            outerStart[0] + direction[0] * along + inward[0] * across * bandWidth,
+            outerStart[1] + direction[1] * along + inward[1] * across * bandWidth,
+        ]
+        // прямоугольная часть: от дальнего из начал до ближнего из концов
+        const rectFrom = Math.max(0, alongOf(innerStart))
+        const rectTo = Math.min(alongOf(outerEnd), alongOf(innerEnd))
+        const rectLength = rectTo - rectFrom
+        const tileCount = Math.max(1, Math.round(rectLength / Math.max(1e-6, bandWidth)))
+        // на очень коротком ребре прямоугольной части нет — клинья меряются плиткой во всю ширину
+        const tileLength = rectLength > 1e-6 ? rectLength / tileCount : bandWidth
+        if (rectLength > 1e-6) {
+            for (let tile = 0; tile < tileCount; ++tile) {
+                const from = rectFrom + tile * tileLength, to = from + tileLength
+                quad(
+                    worldAt(pointAt(from, 0), height), worldAt(pointAt(to, 0), height),
+                    worldAt(pointAt(to, 1), height), worldAt(pointAt(from, 1), height),
+                    TOP_NORMAL, UV_ORNAMENT_Q, _GM.rectUvQ(RECT_AO_NONE), colorBorder,
+                )
+            }
+        }
+        // Клин на конце — треугольник до биссектрисы угла. Тайл продолжает крайнюю плитку: u — по длине
+        // от стыка в долях плитки, v — поперёк, зажаты в тайл
+        const uvAt = (point: A2, joint: number, sign: number): A2 => {
+            const along = alongOf(point)
+            const across = ((point[0] - outerStart[0]) * inward[0] + (point[1] - outerStart[1]) * inward[1]) / bandWidth
+            const tileFraction = sign > 0 ? (along - joint) / tileLength : 1 + (along - joint) / tileLength
+            return _GM.rectPoint(RECT_ORNAMENT, clamp01(tileFraction), clamp01(across))
+        }
+        const wedge = (a: A2, b: A2, c: A2, joint: number, sign: number) => {
+            if (Math.abs(_GM.polygonArea2([a, b, c])) < 1e-9) return
+            tri(
+                worldAt(a, height), worldAt(b, height), worldAt(c, height), TOP_NORMAL,
+                [...uvAt(a, joint, sign), ...uvAt(b, joint, sign), ...uvAt(c, joint, sign)], aoUnshadedTri, colorBorder,
             )
         }
+        // в начале: у выпуклого угла внутренняя сторона короче — клин у внешней, у вогнутого — наоборот
+        const innerStartAlong = alongOf(innerStart)
+        if (innerStartAlong > 1e-6) wedge(outerStart, pointAt(rectFrom, 0), innerStart, rectFrom, -1)
+        else if (innerStartAlong < -1e-6) wedge(innerStart, outerStart, pointAt(rectFrom, 1), rectFrom, -1)
+        // в конце — так же
+        const outerEndAlong = alongOf(outerEnd), innerEndAlong = alongOf(innerEnd)
+        if (outerEndAlong > innerEndAlong + 1e-6) wedge(pointAt(rectTo, 0), outerEnd, innerEnd, rectTo, 1)
+        else if (innerEndAlong > outerEndAlong + 1e-6) wedge(outerEnd, innerEnd, pointAt(rectTo, 1), rectTo, 1)
     }
 
     // ---- бока плиты: по квадру на ребро от земли до верха; нормаль — наружу (вправо от направления обхода

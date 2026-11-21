@@ -1,5 +1,5 @@
 import { _GM, type IBuffersGeom, type A2, type A3, type T_SweepProfilePoint } from "_CORE/_M/_gm"
-import { RECT_WHITE } from "atlases/atlas00/atlas00"
+import { RECT_LIMESTONE } from "atlases/atlas00/atlas00"
 import { RECT_AO_NONE, RECT_AO_TOP } from "atlases/atlasAo00/atlasAo00"
 
 // Перемычка: каменная балка над проёмом, лежит на капителях пилястр (верх портала, см. 02_portal00/ref.jpg).
@@ -18,7 +18,8 @@ import { RECT_AO_NONE, RECT_AO_TOP } from "atlases/atlasAo00/atlasAo00"
 // Профиль выступает вправо от хода контура, если смотреть сверху (x вправо, +z к зрителю), — по нормали ребра
 // (−dz, dx). Фабрика контур не разворачивает: против часовой стрелки — карниз наружу, по часовой — вывернут внутрь.
 //
-// Атласы. uv — atlas00, белый тайл под цвет colorFascia / colorCornice. uv2 — atlasAo00: тень во внутренних
+// Атласы. uv — atlas00, известняк RECT_LIMESTONE под цвет colorFascia / colorCornice; на боковых гранях тайл повторяется
+// вдоль балки, вытянут не больше чем вдвое. uv2 — atlasAo00: тень во внутренних
 // углах профиля (архитрав под карнизом, когда скат крутой); софит и верх — без тени.
 
 type T_PlanPoint = {
@@ -160,26 +161,29 @@ export const lintel00 = (opts: T = {}): IBuffersGeom => {
     const totalHeight = slopeTop + corniceHeight
     if (totalHeight <= 0) return builder.g
 
+    // грани режутся вдоль балки: тайл вытянут вдоль неё не больше чем вдвое относительно высоты грани
     const profile: T_SweepProfilePoint[] = [
-        { projection: 0, y: 0, color: colorFascia },
-        { projection: 0, y: fasciaHeight, color: colorCornice },
-        { projection: corniceSlopeProjection, y: slopeTop, color: colorCornice },
-        { projection: corniceProjection, y: slopeTop, color: colorCornice },
-        { projection: corniceProjection, y: totalHeight, color: colorCornice },
+        { projection: 0, y: 0, color: colorFascia, maxTileStretchAlongPath: 2 },
+        { projection: 0, y: fasciaHeight, color: colorCornice, maxTileStretchAlongPath: 2 },
+        { projection: corniceSlopeProjection, y: slopeTop, color: colorCornice, maxTileStretchAlongPath: 2 },
+        { projection: corniceProjection, y: slopeTop, color: colorCornice, maxTileStretchAlongPath: 2 },
+        { projection: corniceProjection, y: totalHeight, color: colorCornice, maxTileStretchAlongPath: 2 },
     ]
 
     _GM.sweepProfile(builder, {
         profile, edgeCount: pointCount, edgeNormals, offsetPoint,
         origin: pos, aoLength, shadowAtStart: false,
-        uvRect: RECT_WHITE, aoRectNone: RECT_AO_NONE, aoRectShadow: RECT_AO_TOP,
+        uvRect: RECT_LIMESTONE, aoRectNone: RECT_AO_NONE, aoRectShadow: RECT_AO_TOP,
     })
 
     // ---- софит (низ по контуру) и верх карнизной плиты
 
     const aoUnshaded = _GM.rectPoint(RECT_AO_NONE, .5, .5)
-    _GM.fillPlanPolygon(builder, points, pos, 0, false, RECT_WHITE, aoUnshaded, colorFascia)
+    // режутся по сетке: клетка — квадрат со стороной во всю высоту балки, тайл не растянут
+    const capTileSize = totalHeight
+    _GM.fillPlanPolygon(builder, points, pos, 0, false, RECT_LIMESTONE, aoUnshaded, colorFascia, capTileSize)
     const topOutline: A2[] = points.map((_, i) => offsetPoint(i, corniceProjection))
-    _GM.fillPlanPolygon(builder, topOutline, pos, totalHeight, true, RECT_WHITE, aoUnshaded, colorCornice)
+    _GM.fillPlanPolygon(builder, topOutline, pos, totalHeight, true, RECT_LIMESTONE, aoUnshaded, colorCornice, capTileSize)
 
     // ---- прокси физики: призма по контуру архитрава без карниза — бока и софит (в балку упираются головой)
 
