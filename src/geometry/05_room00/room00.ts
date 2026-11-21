@@ -9,7 +9,6 @@ import {
 import { portal00 } from "geometry/02_portal00/portal00"
 import { DEFAULT_PROFILE as LINTEL_DEFAULT_PROFILE } from "geometry/03_lintel00/lintel00"
 import { profile00 } from "geometry/04_profile00/profile00"
-import { stairs00 } from "geometry/07_stairs00/stairs00"
 import { wall00 } from "geometry/08_wall00/wall00"
 
 // Комната: толстые стены по периметру, в стенах — порталы (portal00), пол и потолок — floor00 или floor01.
@@ -35,12 +34,6 @@ import { wall00 } from "geometry/08_wall00/wall00"
 // Пол — плита толщиной floorThickness на земле pos[1], потолок — та же фабрика пола по развёрнутому контуру:
 // верх смотрит вниз, плита висит под верхом стен на ceilingThickness. Тип пола и потолка — floor00 (с кантиком)
 // или floor01 (без), пустая строка — случайный на каждой сборке.
-//
-// Подиумы (zones) — зоны пола выше уровня комнаты: плита той же фабрики пола от верха пола на level, бока наружу.
-// Зона выше maxStepUp получает крыльцо stairs00 — полукруглую площадку вровень с подиумом, приставленную плоской
-// стороной к самому длинному краю, с которого дуга со ступенями помещается в комнату и не заходит на другие подиумы.
-// Нет такого края — подиум без лестницы. Свет у крыльца запечён stairs00 до поворота, поэтому на повёрнутом крыльце
-// он падает с другой стороны, чем на остальной комнате.
 //
 // Высоты, снизу вверх от pos[1]: земля — верх пола (floorThickness) — низ потолка (+ height) — верх стен
 // (+ ceilingThickness). Стены изнутри видны от пола до низа профиля, снаружи — от земли до верха, сверху закрыты.
@@ -78,12 +71,6 @@ export type T_PlanPoint = {
     z: number,
 }
 
-// Зона пола другого уровня — подиум внутри комнаты
-export type T_Zone = {
-    points: T_PlanPoint[], // контур зоны в плане относительно pos, против часовой стрелки сверху, целиком внутри комнаты
-    level: number,         // высота верха зоны над верхом пола комнаты; <= 0 — зона не строится
-}
-
 type T = {
     pos?: A3,                    // начало координат пути; pos[1] — земля под полом
     path?: T_PerimeterPoint[],   // внутреннее лицо стен, замкнутое, против часовой стрелки сверху; порталы — на рёбрах
@@ -100,9 +87,6 @@ type T = {
     pilasterSpacing?: number,     // шаг пилястр вдоль стен, между центрами; 0 — без пилястр у стен
     pilasterWidth?: number,       // ширина ствола пилястры у стены, вдоль стены
     pilasterProtrusion?: number,  // на сколько ствол выступает из стены в комнату
-    zones?: T_Zone[],             // подиумы — зоны пола выше уровня комнаты
-    // Перепад, на который ещё заходят без лестницы. Зона выше — получает крыльцо stairs00 у одного из краёв
-    maxStepUp?: number,
     // длина, на которую растягивается тайл тени у угла стены с полом и потолком; видимая тень — примерно её четверть
     aoLength?: number,
     // базовый цвет стен до запечённого освещения; умножается на тайл атласа
@@ -135,26 +119,10 @@ export const DEFAULT_OPTS: Required<T> = {
     pilasterSpacing: 3,
     pilasterWidth: .6,
     pilasterProtrusion: .15,
-    // высокий подиум в дальнем левом углу — с крыльцом к зрителю, и низкий справа — без лестницы
-    zones: [
-        { points: [{ x: -5, z: -1 }, { x: -1, z: -1 }, { x: -1, z: -4 }, { x: -5, z: -4 }], level: 1.2 },
-        { points: [{ x: 2, z: 1 }, { x: 5, z: 1 }, { x: 5, z: -2 }, { x: 2, z: -2 }], level: .3 },
-    ],
-    maxStepUp: .4,
     aoLength: .5,
     colorWall: [.82, .8, .76],
     masonryTileSize: 1.2,
     colorMasonry: [.22, .2, .36],
-}
-
-// точка внутри многоугольника в плане [x, z] — по чётности пересечений луча; обход любой
-const isInsidePolygon = ([x, z]: A2, polygon: A2[]): boolean => {
-    let inside = false
-    for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
-        const [xi, zi] = polygon[i], [xj, zj] = polygon[j]
-        if ((zi > z) !== (zj > z) && x < (xj - xi) * (z - zi) / (zj - zi) + xi) inside = !inside
-    }
-    return inside
 }
 
 const PORTAL_PIER_WIDTH = .45
@@ -204,37 +172,6 @@ export const randomOpts = (): T => {
         portalAt: rand(.2, .8),
     }))
 
-    // Подиумы — прямоугольники внутри комнаты. Вокруг каждого — запас под крыльцо и пилястры у стен:
-    // прямоугольник с запасом целиком в комнате (все его углы внутри и ни одного угла комнаты в нём)
-    // и не задевает запасы других подиумов
-    const roomPolygon: A2[] = path.map(({ x, z }) => [x, z])
-    let xMin = Infinity, xMax = -Infinity, zMin = Infinity, zMax = -Infinity
-    for (const [x, z] of roomPolygon) {
-        xMin = Math.min(xMin, x); xMax = Math.max(xMax, x)
-        zMin = Math.min(zMin, z); zMax = Math.max(zMax, z)
-    }
-    const ZONE_MARGIN = 6
-    type T_Box = { left: number, right: number, back: number, front: number }
-    const reserved: T_Box[] = []
-    const zones: T_Zone[] = []
-    const zoneCount = Math.floor(Math.random() * 4)
-    for (let attempt = 0; attempt < 40 && zones.length < zoneCount; ++attempt) {
-        const width = rand(3, 10), depth = rand(3, 10)
-        const left = rand(xMin, xMax - width), back = rand(zMin, zMax - depth)
-        const box: T_Box = { left: left - ZONE_MARGIN, right: left + width + ZONE_MARGIN, back: back - ZONE_MARGIN, front: back + depth + ZONE_MARGIN }
-        const boxCorners: A2[] = [[box.left, box.front], [box.right, box.front], [box.right, box.back], [box.left, box.back]]
-        if (!boxCorners.every(corner => isInsidePolygon(corner, roomPolygon))) continue
-        if (roomPolygon.some(([x, z]) => x > box.left && x < box.right && z > box.back && z < box.front)) continue
-        if (reserved.some(other => box.left < other.right && box.right > other.left && box.back < other.front && box.front > other.back)) continue
-        reserved.push(box)
-        zones.push({
-            // против часовой стрелки сверху: передний левый, передний правый, дальний правый, дальний левый
-            points: [{ x: left, z: back + depth }, { x: left + width, z: back + depth }, { x: left + width, z: back }, { x: left, z: back }],
-            // иногда ниже порога — без лестницы
-            level: Math.random() < .25 ? rand(.1, .35) : rand(.5, 2.5),
-        })
-    }
-
     return {
         path,
         randomPortals: Math.random() < .5,
@@ -250,8 +187,6 @@ export const randomOpts = (): T => {
         pilasterSpacing: Math.random() < .15 ? 0 : rand(2.5, 6),
         pilasterWidth: rand(.4, 1),
         pilasterProtrusion: rand(.06, .3),
-        zones,
-        maxStepUp: rand(.3, .5),
         aoLength: rand(.3, .7),
         colorWall: [rand(.65, .9), rand(.65, .9), rand(.65, .9)],
         masonryTileSize: rand(.8, 1.8),
@@ -596,91 +531,11 @@ export const room00 = (opts: T = {}): IBuffersGeom => {
         return resolved === 'floor00' ? floor00 : floor01
     }
     const contour = pathPoints.map(toPoint)
-    // пол: контур против часовой стрелки — верх вверх. Подиумы — той же фабрикой, чтобы пол был одного вида
-    const floorFactoryResolved = floorFactory(o.floorType)
-    _GM.mergeIndexedArrays(result, floorFactoryResolved({
+    // пол: контур против часовой стрелки — верх вверх
+    _GM.mergeIndexedArrays(result, floorFactory(o.floorType)({
         pos, contour, height: floorThickness,
     }))
 
-    // ---- подиумы: плита от верха пола на level, бока наружу; выше maxStepUp — крыльцо stairs00 у одного края
-
-    // подиумы без повторяющихся соседних точек, только выше пола
-    const zones: { polygon: A2[], level: number }[] = []
-    for (const zone of o.zones) {
-        if (!(zone.level > 0)) continue
-        const polygon: A2[] = []
-        for (const { x, z } of zone.points) {
-            const last = polygon[polygon.length - 1]
-            if (!last || Math.hypot(x - last[0], z - last[1]) > 1e-6) polygon.push([x, z])
-        }
-        while (polygon.length > 1 && Math.hypot(polygon[0][0] - polygon[polygon.length - 1][0], polygon[0][1] - polygon[polygon.length - 1][1]) <= 1e-6) {
-            polygon.pop()
-        }
-        if (polygon.length >= 3 && Math.abs(_GM.polygonArea2(polygon)) > 1e-9) zones.push({ polygon, level: zone.level })
-    }
-
-    // запас крыльца от стен комнаты (пилястры с базой) и от других подиумов
-    const PORCH_CLEARANCE = .8
-    const MIN_PORCH_RADIUS = 1.5
-    const MAX_PORCH_RADIUS = 5
-    const STEP_HEIGHT = .2, STEP_DEPTH = .35
-
-    for (const { polygon, level } of zones) {
-        _GM.mergeIndexedArrays(result, floorFactoryResolved({
-            pos: [pos[0], pos[1] + floorTop, pos[2]], contour: polygon.map(toPoint), height: level,
-        }))
-        if (level <= o.maxStepUp) continue
-
-        // Крыльцо — полукруглая площадка вровень с подиумом, плоской стороной к краю подиума, ступени — по дуге
-        // наружу. Радиус — такой, чтобы ступени нормальной глубины уложились в него, но не шире края.
-        // Края перебираются от длинного к короткому; подходит тот, у которого дуга с запасом остаётся
-        // в комнате и не заходит на другие подиумы
-        const edgeOrder = polygon.map((_, i) => i).sort((a, b) => {
-            const lengthOf = (i: number) => {
-                const [startX, startZ] = polygon[i], [endX, endZ] = polygon[(i + 1) % polygon.length]
-                return Math.hypot(endX - startX, endZ - startZ)
-            }
-            return lengthOf(b) - lengthOf(a)
-        })
-        const radiusForSteps = (Math.round(level / STEP_HEIGHT) - 1) * STEP_DEPTH + .5
-        for (const edge of edgeOrder) {
-            const [startX, startZ] = polygon[edge], [endX, endZ] = polygon[(edge + 1) % polygon.length]
-            const length = Math.hypot(endX - startX, endZ - startZ)
-            const radius = Math.min(length / 2 - .1, MAX_PORCH_RADIUS, Math.max(MIN_PORCH_RADIUS, radiusForSteps))
-            if (radius < MIN_PORCH_RADIUS) break
-            // наружу от подиума — вправо от хода контура; вдоль края — локальная +x крыльца
-            const normal: A2 = [-(endZ - startZ) / length, (endX - startX) / length]
-            const tangent: A2 = [normal[1], -normal[0]]
-            const middle: A2 = [(startX + endX) / 2, (startZ + endZ) / 2]
-            let fits = true
-            for (let k = 0; k <= 8 && fits; ++k) {
-                const angle = Math.PI * k / 8
-                const reach = radius + PORCH_CLEARANCE
-                const sample: A2 = [
-                    middle[0] + tangent[0] * Math.cos(angle) * reach + normal[0] * Math.sin(angle) * reach,
-                    middle[1] + tangent[1] * Math.cos(angle) * reach + normal[1] * Math.sin(angle) * reach,
-                ]
-                if (!isInsidePolygon(sample, pathPoints)) fits = false
-                if (zones.some(other => other.polygon !== polygon && isInsidePolygon(sample, other.polygon))) fits = false
-            }
-            if (!fits) continue
-
-            const porch = stairs00({
-                pos: [0, 0, 0], radius, platformHeight: level, hasWall: false,
-                stepHeight: STEP_HEIGHT, stepDepth: STEP_DEPTH,
-                stairs: [{ angle: Math.PI / 2, width: radius * 1.2 }],
-            })
-            // stairs00 строит крыльцо у линии z = 0 с дугой в +z: поворот вокруг y переводит +z в normal
-            // (makeRotationY: локальная (0, 1) в плане → (sin, cos)), затем сдвиг к середине края на верх пола
-            const turn = Math.atan2(normal[0], normal[1])
-            for (const array of [porch.v, porch.vCollide]) {
-                _GM.rotateVerticesY(array, turn)
-                _GM.translateVertices(array, pos[0] + middle[0], pos[1] + floorTop, pos[2] + middle[1])
-            }
-            _GM.mergeIndexedArrays(result, porch)
-            break
-        }
-    }
     // потолок: тот же контур по часовой стрелке — верх смотрит вниз; отрицательная высота — плита свисает
     // от верха стен до низа потолка, бока смотрят наружу, в стены
     _GM.mergeIndexedArrays(result, floorFactory(o.ceilingType)({

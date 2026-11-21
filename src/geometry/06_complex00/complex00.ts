@@ -4,7 +4,7 @@ import {
 } from "geometry/01_pilaster00/pilaster00"
 import {
     room00, portalMarginFor, MIN_PORTAL_WIDTH,
-    type T_PerimeterPoint, type T_PlanPoint, type T_WallOwner, type T_Zone,
+    type T_PerimeterPoint, type T_PlanPoint, type T_WallOwner,
 } from "geometry/05_room00/room00"
 
 // Комплекс: несколько комнат room00 из смежных многоугольников, между соседями — порталы.
@@ -20,7 +20,7 @@ import {
 // уже 1.2 — общая стена без портала.
 //
 // Высоты, стены, пилястры и профиль — общие для всех комнат: стыки на общих стенах сходятся только при одинаковых
-// уровнях. Своё у комнаты — форма и подиумы (zones, в координатах плана относительно pos).
+// уровнях. Своё у комнаты — форма (в координатах плана относительно pos).
 //
 // Ограничения плана, при которых стены сходятся: многоугольники выпуклые, углы комнаты у концов общего ребра —
 // не тупые (иначе в углу между стеной соседа и своей останется щель), три комнаты не сходятся в одной точке,
@@ -28,7 +28,6 @@ import {
 
 type T_Room = {
     points: T_PlanPoint[], // многоугольник плана относительно pos — оси стен, выпуклый, против часовой стрелки сверху
-    zones?: T_Zone[],      // подиумы комнаты, как у room00
 }
 
 type T = {
@@ -46,7 +45,6 @@ type T = {
     pilasterSpacing?: number,     // шаг пилястр вдоль стен, между центрами; 0 — без пилястр у стен
     pilasterWidth?: number,       // ширина ствола пилястры у стены, вдоль стены
     pilasterProtrusion?: number,  // на сколько ствол выступает из стены в комнату
-    maxStepUp?: number,           // перепад, на который заходят без лестницы; подиум выше — с крыльцом stairs00
     aoLength?: number,            // длина, на которую растягивается тайл тени у угла стены с полом и потолком
     colorWall?: A3,               // базовый цвет стен до запечённого освещения
 }
@@ -57,19 +55,15 @@ export const DEFAULT_OPTS: Required<T> = {
     rooms: [
         {
             points: [{ x: -6, z: 5 }, { x: 6, z: 5 }, { x: 6, z: -5 }, { x: -6, z: -5 }],
-            zones: [{ points: [{ x: -5, z: -1 }, { x: -1, z: -1 }, { x: -1, z: -4 }, { x: -5, z: -4 }], level: 1.2 }],
         },
         {
             points: [{ x: 6, z: -5 }, { x: 6, z: 5 }, { x: 15, z: 3 }, { x: 15, z: -3 }],
-            zones: [],
         },
         {
             points: [{ x: 15, z: -3 }, { x: 15, z: 3 }, { x: 23, z: 3 }, { x: 23, z: -3 }],
-            zones: [],
         },
         {
             points: [{ x: -6, z: 5 }, { x: -6, z: -5 }, { x: -13, z: -5 }, { x: -17, z: 0 }, { x: -13, z: 5 }],
-            zones: [],
         },
     ],
     portalWidth: 1.8,
@@ -84,7 +78,6 @@ export const DEFAULT_OPTS: Required<T> = {
     pilasterSpacing: 3,
     pilasterWidth: .6,
     pilasterProtrusion: .15,
-    maxStepUp: .4,
     aoLength: .5,
     colorWall: [.82, .8, .76],
     //colorWall: [0, 0, 0],
@@ -192,30 +185,7 @@ export const randomOpts = (): T => {
         plans.push(plan)
     }
 
-    // подиумы — прямоугольники с запасом от стен, по одному на комнату и не в каждой
-    const ZONE_MARGIN = 3
-    const rooms: T_Room[] = plans.map(plan => {
-        const zones: T_Zone[] = []
-        if (Math.random() < .5) {
-            let xMin = Infinity, xMax = -Infinity, zMin = Infinity, zMax = -Infinity
-            for (const [x, z] of plan) {
-                xMin = Math.min(xMin, x); xMax = Math.max(xMax, x)
-                zMin = Math.min(zMin, z); zMax = Math.max(zMax, z)
-            }
-            for (let attempt = 0; attempt < 20 && !zones.length; ++attempt) {
-                const width = rand(2.5, 6), depth = rand(2.5, 6)
-                const left = rand(xMin, xMax - width), back = rand(zMin, zMax - depth)
-                const box = { left: left - ZONE_MARGIN, right: left + width + ZONE_MARGIN, back: back - ZONE_MARGIN, front: back + depth + ZONE_MARGIN }
-                const boxCorners: A2[] = [[box.left, box.front], [box.right, box.front], [box.right, box.back], [box.left, box.back]]
-                if (!boxCorners.every(corner => isInsidePolygon(corner, plan))) continue
-                zones.push({
-                    points: [{ x: left, z: back + depth }, { x: left + width, z: back + depth }, { x: left + width, z: back }, { x: left, z: back }],
-                    level: Math.random() < .25 ? rand(.1, .35) : rand(.5, 2),
-                })
-            }
-        }
-        return { points: plan.map(([x, z]) => ({ x, z })), zones }
-    })
+    const rooms: T_Room[] = plans.map(plan => ({ points: plan.map(([x, z]) => ({ x, z })) }))
 
     return {
         rooms,
@@ -231,7 +201,6 @@ export const randomOpts = (): T => {
         pilasterSpacing: Math.random() < .15 ? 0 : rand(2.5, 6),
         pilasterWidth: rand(.4, 1),
         pilasterProtrusion: rand(.06, .3),
-        maxStepUp: rand(.3, .5),
         aoLength: rand(.3, .7),
         colorWall: [rand(.65, .9), rand(.65, .9), rand(.65, .9)],
     }
@@ -363,8 +332,6 @@ export const complex00 = (opts: T = {}): IBuffersGeom => {
             pilasterSpacing: o.pilasterSpacing,
             pilasterWidth: o.pilasterWidth,
             pilasterProtrusion: o.pilasterProtrusion,
-            zones: o.rooms[room].zones ?? [],
-            maxStepUp: o.maxStepUp,
             aoLength: o.aoLength,
             colorWall: o.colorWall,
         }))
