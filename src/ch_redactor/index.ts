@@ -25,7 +25,9 @@ import { Debug } from "_CORE/Debug"
 import { GEOM_REGISTRY, type T_GeomEntry, type T_Opts } from "./registry"
 import { OptsPanel } from "./OptsPanel"
 import atlas00Img from 'atlases/atlas00/512.jpg'
+import atlasEnv00Img from 'atlases/atlas00/512env.jpg'
 import atlasAo00Img from 'atlases/atlasAo00/512Ao.jpg'
+
 import px from 'atlases/matIronBox/posx.jpg'
 import py from 'atlases/matIronBox/posy.jpg'
 import pz from 'atlases/matIronBox/posz.jpg'
@@ -130,6 +132,7 @@ async function init(root: Root) {
     // чёткие пиксели; без мипмапов соседние тайлы атласа не подмешиваются вдали
     mapAtlas.magFilter = THREE.NearestFilter
     mapAtlas.minFilter = THREE.NearestFilter
+    const mapAtlasRough = textureLoader.load(atlasEnv00Img)
     const mapAo = textureLoader.load(atlasAo00Img)
     // aoMap читает uv2 геометрии: в three 0.173 это канал 2
     mapAo.channel = 2
@@ -146,7 +149,8 @@ async function init(root: Root) {
         bumpScale: 5,
         envMap: textureCube,
         envMapIntensity: 1,
-        roughness: .1,
+        roughness: .5,
+        roughnessMap: mapAtlasRough,
         aoMap: mapAo,
         aoMapIntensity: 1,
     })
