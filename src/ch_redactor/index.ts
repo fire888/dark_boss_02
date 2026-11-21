@@ -238,6 +238,14 @@ async function init(root: Root) {
     let gridCollision: string | null = null
 
     const buildGrid = (entry: T_GeomEntry) => {
+        // крупные фабрики (комплекс комнат) — только одиночный пример, сетки нет
+        if (entry.noGrid) {
+            removeMesh(grid)
+            removeMesh(gridCollide)
+            grid = gridCollide = null
+            gridCollision = replaceCollision(gridCollision, [], new THREE.Vector3())
+            return
+        }
         const COUNT = 20
         const COLS = 4
 

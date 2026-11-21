@@ -22,6 +22,12 @@ import { stairs00 } from "geometry/07_stairs00/stairs00"
 // portalWidth (чистый, между стволами пилястр), центр — на доле portalAt длины ребра. Проём сдвигается
 // и сужается так, чтобы пилоны с базой и капителью не залезали в соседние стены, но не уже 1.2
 // (MIN_PORTAL_WIDTH): заданный уже — расширяется, не помещается шириной 1.2 — портала нет. randomPortals — фабрика сама ставит порталы на часть рёбер, где их нет.
+// Общая стена с соседней комнатой (complex00). wall у точки пути — кто строит стену на ребре от неё:
+// 'own' — своя наружная стена; 'shared' — эта комната, а за стеной другая комната: наружное лицо строится
+// как внутреннее (от пола до низа профиля, с тенью у пола), с прокси; 'neighbour' — стену с порталом строит сосед,
+// здесь ребро пустое, но дыра портала считается, чтобы пилястры её обходили. randomPortals ставит порталы только
+// на свои стены.
+//
 // В стене под порталом — дыра от пола до низа перемычки; откосы закрывают стволы пилястр, верх дыры — софит
 // перемычки, пол в проёме — порог.
 //
@@ -48,25 +54,29 @@ import { stairs00 } from "geometry/07_stairs00/stairs00"
 // Атласы. uv — atlas00, белый тайл под colorWall, растянут на каждый кусок стены. uv2 — atlasAo00: тень полосой
 // aoLength у пола изнутри (и у потолка, если профиля нет) и у земли снаружи; вертикальные углы стен не затеняются.
 
-type T_PerimeterPoint = {
+export type T_PerimeterPoint = {
     x: number,
     z: number,
     // ширина проёма портала на ребре от этой точки к следующей; 0 — портала нет
     portalWidth?: number,
     // где на ребре центр проёма — доля длины ребра от этой точки
     portalAt?: number,
+    // кто строит стену на ребре от этой точки: 'own' (по умолчанию), 'shared', 'neighbour' — см. выше
+    wall?: T_WallOwner,
 }
+
+export type T_WallOwner = 'own' | 'shared' | 'neighbour'
 
 // фабрика пола; пустая строка — выбрать случайно
 type T_FloorType = '' | 'floor00' | 'floor01'
 
-type T_PlanPoint = {
+export type T_PlanPoint = {
     x: number,
     z: number,
 }
 
 // Зона пола другого уровня — подиум внутри комнаты
-type T_Zone = {
+export type T_Zone = {
     points: T_PlanPoint[], // контур зоны в плане относительно pos, против часовой стрелки сверху, целиком внутри комнаты
     level: number,         // высота верха зоны над верхом пола комнаты; <= 0 — зона не строится
 }
@@ -136,6 +146,20 @@ const isInsidePolygon = ([x, z]: A2, polygon: A2[]): boolean => {
         if ((zi > z) !== (zj > z) && x < (xj - xi) * (z - zi) / (zj - zi) + xi) inside = !inside
     }
     return inside
+}
+
+const PORTAL_PIER_WIDTH = .45
+const PORTAL_LINTEL_INSET = .05
+export const MIN_PORTAL_WIDTH = 1.2
+
+// Сколько стены нужно от края дыры портала до угла комнаты: пилон, вынос базы и капители, карниз перемычки.
+// Тот же расчёт, что внутри room00; complex00 по нему заранее выбирает проём, который обе комнаты поставят одинаково
+export const portalMarginFor = (pilasterProfile: T_PilasterProfile = {}): number => {
+    const pilaster: Required<T_PilasterProfile> = { ...PILASTER_DEFAULT_PROFILE, ...pilasterProfile }
+    // перемычка опирается на абаки; карниз шире абаки уходит в стену (так считает portal00)
+    const corniceEdge = Math.max(0, pilaster.abacusProjection) - PORTAL_LINTEL_INSET
+    const corniceProjection = Math.max(0, Math.min(LINTEL_DEFAULT_PROFILE.corniceProjection, corniceEdge + PORTAL_PIER_WIDTH / 2))
+    return PORTAL_PIER_WIDTH + Math.max(pilaster.plinthProjection, pilaster.abacusProjection) + corniceProjection + .1
 }
 
 // случайные опции из диапазона, в котором модуль используется; по ним гоняют check:geom и стенд
@@ -246,11 +270,11 @@ export const room00 = (opts: T = {}): IBuffersGeom => {
 
     // ---- периметр: без повторяющихся соседних точек и без повтора первой точки в конце
 
-    const points: { point: A2, portalWidth: number, portalAt: number }[] = []
-    for (const { x, z, portalWidth, portalAt } of o.path) {
+    const points: { point: A2, portalWidth: number, portalAt: number, wall: T_WallOwner }[] = []
+    for (const { x, z, portalWidth, portalAt, wall } of o.path) {
         const last = points[points.length - 1]
         if (last && Math.hypot(x - last.point[0], z - last.point[1]) < 1e-6) continue
-        points.push({ point: [x, z], portalWidth: portalWidth ?? 0, portalAt: portalAt ?? .5 })
+        points.push({ point: [x, z], portalWidth: portalWidth ?? 0, portalAt: portalAt ?? .5, wall: wall ?? 'own' })
     }
     while (points.length > 1) {
         const first = points[0].point, last = points[points.length - 1].point
@@ -297,8 +321,8 @@ export const room00 = (opts: T = {}): IBuffersGeom => {
     // перемычка с карнизом — под потолком
     const portalHeight = Math.min(o.portalHeight, height - profileHeight - lintelHeight - .05)
     const portalsFit = portalHeight >= pilasterMinHeight
-    const pierWidth = .45
-    const lintelInset = .05
+    const pierWidth = PORTAL_PIER_WIDTH
+    const lintelInset = PORTAL_LINTEL_INSET
     // Перемычка опирается на абаки и уходит в стену, если карниз шире абаки (так считает portal00). Пилон
     // выступает из стены хотя бы на столько, чтобы лицо перемычки вышло из обеих плоскостей стены и её софит
     // закрыл верх дыры по всей толщине
@@ -306,8 +330,7 @@ export const room00 = (opts: T = {}): IBuffersGeom => {
     const corniceProjection = Math.max(0, Math.min(lintel.corniceProjection, corniceEdge + pierWidth / 2))
     const pierProtrusion = Math.max(.1, corniceProjection - corniceEdge + .02)
     // от края дыры вдоль стены — пилон, а за ним вынос базы, капители и карниза перемычки
-    const portalMargin = pierWidth + Math.max(pilaster.plinthProjection, pilaster.abacusProjection) + corniceProjection + .1
-    const MIN_PORTAL_WIDTH = 1.2
+    const portalMargin = portalMarginFor(pilaster)
 
     // дыра в стене на ребре: отрезок [from, to] вдоль ребра от его начала
     type T_Hole = { from: number, to: number }
@@ -316,7 +339,7 @@ export const room00 = (opts: T = {}): IBuffersGeom => {
         holes.push(null)
         if (!portalsFit) continue
         let { portalWidth, portalAt } = points[edge]
-        if (!(portalWidth > 0) && randomPortals && Math.random() < .4) {
+        if (!(portalWidth > 0) && randomPortals && points[edge].wall === 'own' && Math.random() < .4) {
             portalWidth = MIN_PORTAL_WIDTH + Math.random() * 1.2
             portalAt = .3 + Math.random() * .4
         }
@@ -384,13 +407,23 @@ export const room00 = (opts: T = {}): IBuffersGeom => {
         const direction = edgeDirections[edge], normal = edgeNormals[edge]
         const inwardNormal: A2 = [-normal[0], -normal[1]]
         const hole = holes[edge]
+        const wallOwner = points[edge].wall
+        // стену строит соседняя комната
+        if (wallOwner === 'neighbour') continue
+        const shared = wallOwner === 'shared'
 
         if (!hole) {
             // внутреннее лицо — в комнату, от пола до потолка
             wallPiece(innerStart, innerEnd, floorTop, profileBottom, inwardNormal, true, !hasProfile)
             collideQuad(worldAt(innerStart, floorTop), worldAt(innerEnd, floorTop), worldAt(innerEnd, ceilingBottom), worldAt(innerStart, ceilingBottom))
-            // наружное — от земли до верха стен
-            wallPiece(outerStart, outerEnd, 0, wallTop, normal, true, false)
+            if (shared) {
+                // наружное — внутреннее лицо соседней комнаты
+                wallPiece(outerStart, outerEnd, floorTop, profileBottom, normal, true, !hasProfile)
+                collideQuad(worldAt(outerStart, floorTop), worldAt(outerEnd, floorTop), worldAt(outerEnd, ceilingBottom), worldAt(outerStart, ceilingBottom))
+            } else {
+                // наружное — от земли до верха стен
+                wallPiece(outerStart, outerEnd, 0, wallTop, normal, true, false)
+            }
         } else {
             // края дыры на внутреннем и наружном лице
             const innerFrom = along(innerStart, direction, hole.from), innerTo = along(innerStart, direction, hole.to)
@@ -404,11 +437,21 @@ export const room00 = (opts: T = {}): IBuffersGeom => {
             collideQuad(worldAt(innerTo, floorTop), worldAt(innerEnd, floorTop), worldAt(innerEnd, ceilingBottom), worldAt(innerTo, ceilingBottom))
             collideQuad(worldAt(innerFrom, floorTop + portalHeight), worldAt(innerTo, floorTop + portalHeight), worldAt(innerTo, ceilingBottom), worldAt(innerFrom, ceilingBottom))
 
-            // наружное лицо: по бокам — во всю высоту, под порогом — от земли, над дырой — до верха стен
-            wallPiece(outerStart, outerFrom, 0, wallTop, normal, true, false)
-            wallPiece(outerTo, outerEnd, 0, wallTop, normal, true, false)
-            wallPiece(outerFrom, outerTo, 0, floorTop, normal, true, false)
-            wallPiece(outerFrom, outerTo, floorTop + portalHeight, wallTop, normal, false, false)
+            if (shared) {
+                // наружное лицо — внутреннее лицо соседней комнаты, режется так же, как своё внутреннее
+                wallPiece(outerStart, outerFrom, floorTop, profileBottom, normal, true, !hasProfile)
+                wallPiece(outerTo, outerEnd, floorTop, profileBottom, normal, true, !hasProfile)
+                wallPiece(outerFrom, outerTo, floorTop + portalHeight, profileBottom, normal, false, !hasProfile)
+                collideQuad(worldAt(outerStart, floorTop), worldAt(outerFrom, floorTop), worldAt(outerFrom, ceilingBottom), worldAt(outerStart, ceilingBottom))
+                collideQuad(worldAt(outerTo, floorTop), worldAt(outerEnd, floorTop), worldAt(outerEnd, ceilingBottom), worldAt(outerTo, ceilingBottom))
+                collideQuad(worldAt(outerFrom, floorTop + portalHeight), worldAt(outerTo, floorTop + portalHeight), worldAt(outerTo, ceilingBottom), worldAt(outerFrom, ceilingBottom))
+            } else {
+                // наружное лицо: по бокам — во всю высоту, под порогом — от земли, над дырой — до верха стен
+                wallPiece(outerStart, outerFrom, 0, wallTop, normal, true, false)
+                wallPiece(outerTo, outerEnd, 0, wallTop, normal, true, false)
+                wallPiece(outerFrom, outerTo, 0, floorTop, normal, true, false)
+                wallPiece(outerFrom, outerTo, floorTop + portalHeight, wallTop, normal, false, false)
+            }
 
             // порог — пол в проёме на уровне верха пола, сквозь толщу стены
             quad(
@@ -430,7 +473,8 @@ export const room00 = (opts: T = {}): IBuffersGeom => {
 
     for (let edge = 0; edge < pointCount; ++edge) {
         const hole = holes[edge]
-        if (!hole) continue
+        // портал в стене соседа строит сосед
+        if (!hole || points[edge].wall === 'neighbour') continue
         const innerStart = pointAt(edge)
         const direction = edgeDirections[edge], normal = edgeNormals[edge]
         const innerFrom = along(innerStart, direction, hole.from), innerTo = along(innerStart, direction, hole.to)
