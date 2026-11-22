@@ -42,6 +42,9 @@ type T = {
     lintel?: T_LintelProfile,     // профиль перемычки — lintel00
 }
 
+// на сколько прокси перемычки ниже видимой перемычки
+const LINTEL_COLLIDE_DROP = 1
+
 export const DEFAULT_OPTS: Required<T> = {
     pos: [0, 0, 0],
     // проём 1.6 в стене толщиной 0.6; передняя плоскость стены — в +z, к зрителю
@@ -159,11 +162,14 @@ export const portal00 = (opts: T = {}): IBuffersGeom => {
             pathPoints.reverse()
             ;[startWallDirection, endWallDirection] = [endWallDirection, startWallDirection]
         }
-        _GM.mergeIndexedArrays(result, pilaster00({
+        const pier = pilaster00({
             ...pilaster,
             pos, path: pathPoints.map(toPoint), height,
             startWallDirection, endWallDirection,
-        }))
+        })
+        // без прокси — экономия тел физики; проход держат откосы дыры в прокси стены (room00)
+        pier.vCollide = []
+        _GM.mergeIndexedArrays(result, pier)
     }
 
     // ---- перемычка: внутри верха абак — край карниза на lintelInset от края абаки, архитрав ещё на вынос карниза глубже
@@ -188,12 +194,15 @@ export const portal00 = (opts: T = {}): IBuffersGeom => {
     ]
     // lintel00 контур не разворачивает: против часовой стрелки сверху — карниз наружу
     if (_GM.polygonArea2(outlinePoints) > 0) outlinePoints.reverse()
-    _GM.mergeIndexedArrays(result, lintel00({
+    const lintelPart = lintel00({
         ...lintel,
         corniceProjection,
         pos: [pos[0], pos[1] + height, pos[2]],
         outline: outlinePoints.map(toPoint),
-    }))
+    })
+    // прокси перемычки ниже видимой на LINTEL_COLLIDE_DROP — запас для камеры над игроком, как у потолка room01
+    _GM.translateVertices(lintelPart.vCollide, 0, -LINTEL_COLLIDE_DROP, 0)
+    _GM.mergeIndexedArrays(result, lintelPart)
 
     return result
 }

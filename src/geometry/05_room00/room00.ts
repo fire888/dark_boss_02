@@ -402,6 +402,9 @@ export const room00 = (opts: T = {}): IBuffersGeom => {
             threshold.vCollide = []
             _GM.mergeIndexedArrays(result, threshold)
             collideQuad(worldAt(innerFrom, floorTop), worldAt(innerTo, floorTop), worldAt(outerTo, floorTop), worldAt(outerFrom, floorTop))
+            // откосы дыры сквозь толщу стены: у пилонов портала прокси нет, без откосов игрок зашёл бы в стену сбоку
+            collideQuad(worldAt(innerFrom, floorTop), worldAt(outerFrom, floorTop), worldAt(outerFrom, floorTop + portalHeight), worldAt(innerFrom, floorTop + portalHeight))
+            collideQuad(worldAt(innerTo, floorTop), worldAt(outerTo, floorTop), worldAt(outerTo, floorTop + portalHeight), worldAt(innerTo, floorTop + portalHeight))
         }
     }
     _GM.mergeIndexedArrays(result, builder.g)
@@ -465,13 +468,16 @@ export const room00 = (opts: T = {}): IBuffersGeom => {
                         along(wallLeft, inwardNormal, pilasterProtrusion),
                         wallLeft,
                     ]
-                    _GM.mergeIndexedArrays(result, pilaster00({
+                    const wallPilaster = pilaster00({
                         ...pilaster,
                         pos: [pos[0], pos[1] + floorTop, pos[2]],
                         path: pilasterPath.map(toPoint),
                         height: wallPilasterHeight,
                         startWallDirection: direction, endWallDirection: direction,
-                    }))
+                    })
+                    // без прокси: пилястра выступает из стены на ладонь, её держит прокси стены — экономия тел физики
+                    wallPilaster.vCollide = []
+                    _GM.mergeIndexedArrays(result, wallPilaster)
                 }
             }
         }

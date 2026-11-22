@@ -2,6 +2,7 @@ import { _GM, type IBuffersGeom, type A2, type A3 } from "_CORE/_M/_gm"
 import { DEFAULT_PROFILE as PILASTER_DEFAULT_PROFILE, type T_PilasterProfile } from "geometry/01_pilaster00/pilaster00"
 import { portalHeightFor, DEFAULT_OPTS as ROOM_DEFAULT_OPTS } from "geometry/05_room00/room00"
 import { room01 } from "geometry/05_room01/room01"
+import { wall00 } from "geometry/08_wall00/wall00"
 import {
     complex00, complexEntrances, randomOpts as randomComplexOpts, DEFAULT_OPTS as COMPLEX_DEFAULT_OPTS,
     type T_ComplexRoom, type T_Entrance,
@@ -18,21 +19,29 @@ import {
 // (entranceTargets), и узнаёт, где встала дыра (complexEntrances). Края дыры на наружном лице стены — концы туннеля,
 // по ширине ровно дыра, высота в свету — высота дыры портала (до низа перемычки), пол — на уровне пола комплекса.
 // Концы туннеля пара к паре — так, чтобы бока не перекрещивались.
+// tunnelCeilingRise — потолок туннеля выше дыры на столько; полосу над дырой на каждом конце закрывает кладка wall00
+// лицом в туннель (концы room01 открыты, а наружного лица у стен комплекса нет).
 //
 // Туннель идёт по прямой и ничего не обходит: план комплексов и связи подбираются так, чтобы он не проходил сквозь
 // комнаты и другие туннели.
 //
 // Высоты, стены, пилястры, порталы — общие для всех комплексов. Оттенок tint — множитель цвета вершин всего,
 // включая туннели, после сборки.
+//
+// Скрытый комплекс (hidden) не строится, но его входы считаются как у видимого; скрытый туннель — тоже: входы
+// у его концов есть, самого туннеля нет. Так бесконечный уровень собирается кусками: соседний комплекс в куске
+// скрыт, с теми же туннелями в том же порядке, и входы у него встают там же, где в его собственном куске.
 
 type T_Complex = {
     pos: A3,               // положение комплекса относительно общего pos; pos[1] — земля под его полом
     rooms: T_ComplexRoom[], // комнаты complex00, точки плана — относительно pos комплекса
+    hidden?: boolean,       // не строить: только входы — для туннелей к нему
 }
 
 type T_Link = {
     from: number, // номер комплекса у входа в туннель
     to: number,   // номер комплекса у выхода
+    hidden?: boolean, // не строить туннель: только входы у его концов
 }
 
 type T = {
@@ -41,6 +50,7 @@ type T = {
     links?: T_Link[],        // туннели между комплексами
     entranceCount?: number,  // сколько ещё входов в наружных стенах каждого комплекса, кроме туннельных — дыры наружу
     tunnelFlatLength?: number, // длина горизонтального участка туннеля у каждого конца, до пандуса
+    tunnelCeilingRise?: number, // на сколько потолок туннеля выше дыры портала; 0 — вровень с дырой
     colorTunnel?: A3,          // базовый цвет кладки туннелей до запечённого освещения
     portalWidth?: number,    // ширина проёма портала — между комнатами и у входов туннелей
     height?: number,         // высота комнат в свету
@@ -88,6 +98,7 @@ export const DEFAULT_OPTS: Required<T> = {
     links: [{ from: 0, to: 1 }, { from: 0, to: 2 }, { from: 1, to: 2 }],
     entranceCount: 0,
     tunnelFlatLength: 2,
+    tunnelCeilingRise: 0,
     colorTunnel: [...ROOM_DEFAULT_OPTS.colorMasonry],
     portalWidth: COMPLEX_DEFAULT_OPTS.portalWidth,
     height: COMPLEX_DEFAULT_OPTS.height,
@@ -103,6 +114,72 @@ export const DEFAULT_OPTS: Required<T> = {
     aoLength: COMPLEX_DEFAULT_OPTS.aoLength,
     colorWall: [...COMPLEX_DEFAULT_OPTS.colorWall],
     tint: [...COMPLEX_DEFAULT_OPTS.tint],
+}
+
+// на сколько туннель шире дыры портала с каждой стороны
+const TUNNEL_SIDE_WIDEN = .1
+
+// Туннель room01 между двумя дырами порталов на наружных лицах стен — его строят complex01 и complex02.
+// Концы — края дыр в координатах относительно pos, y — верх пола у дыры. Концы пара к паре сами: бока не
+// перекрещиваются. Высота в свету — дыра портала и ещё ceilingRise; полосу над дырой на каждом конце закрывает
+// кладка wall00 лицом в туннель (концы room01 открыты, а наружного лица у стен комнат нет)
+export const tunnelBetweenHoles = (options: {
+    pos: A3, entryStart: A3, entryEnd: A3, exitStart: A3, exitEnd: A3,
+    portalHeight: number, ceilingRise: number, flatLength: number,
+    floorThickness: number, ceilingThickness: number, aoLength: number, colorTunnel: A3,
+}): IBuffersGeom => {
+    const { pos, portalHeight, aoLength, colorTunnel } = options
+    // Туннель шире дыры на TUNNEL_SIDE_WIDEN с каждой стороны: пилоны портала выступают из наружного лица стены,
+    // и их бока в плоскости стен туннеля мерцали бы (z-fighting); так стена туннеля уходит в толщу пилона
+    const widen = (start: A3, end: A3): [A3, A3] => {
+        const length = Math.hypot(end[0] - start[0], end[2] - start[2]) || 1
+        const dx = (end[0] - start[0]) / length * TUNNEL_SIDE_WIDEN, dz = (end[2] - start[2]) / length * TUNNEL_SIDE_WIDEN
+        return [[start[0] - dx, start[1], start[2] - dz], [end[0] + dx, end[1], end[2] + dz]]
+    }
+    const [entryStart, entryEnd] = widen(options.entryStart, options.entryEnd)
+    let [exitStart, exitEnd] = widen(options.exitStart, options.exitEnd)
+    const result: IBuffersGeom = { index: [], v: [], uv: [], uv2: [], c: [], vCollide: [] }
+    const ceilingRise = Math.max(0, options.ceilingRise)
+    // пара к паре — без перекрещенных боков: дыры напротив друг друга идут навстречу
+    const planDistance = (a: A3, b: A3) => Math.hypot(a[0] - b[0], a[2] - b[2])
+    if (planDistance(entryStart, exitStart) + planDistance(entryEnd, exitEnd) >
+        planDistance(entryStart, exitEnd) + planDistance(entryEnd, exitStart)) {
+        [exitStart, exitEnd] = [exitEnd, exitStart]
+    }
+    _GM.mergeIndexedArrays(result, room01({
+        pos,
+        entryLeft: entryStart, entryRight: entryEnd,
+        exitLeft: exitStart, exitRight: exitEnd,
+        height: portalHeight + ceilingRise,
+        entryFlatLength: options.flatLength,
+        exitFlatLength: options.flatLength,
+        floorThickness: options.floorThickness,
+        ceilingThickness: options.ceilingThickness,
+        masonryTileSize: ROOM_DEFAULT_OPTS.masonryTileSize,
+        aoLength,
+        colorMasonry: colorTunnel,
+    }))
+    // кладка над дырой от её верха до потолка туннеля, лицом к точке inside внутри туннеля
+    const headerOverHole = (start: A3, end: A3, inside: A3) => {
+        const faceX = -(end[2] - start[2]), faceZ = end[0] - start[0]
+        const facesInside = faceX * (inside[0] - start[0]) + faceZ * (inside[2] - start[2]) > 0
+        const [from, to] = facesInside ? [start, end] : [end, start]
+        _GM.mergeIndexedArrays(result, wall00({
+            pos: [pos[0], pos[1] + (start[1] + end[1]) / 2 + portalHeight, pos[2]],
+            start: [from[0], from[2]], end: [to[0], to[2]],
+            height: ceilingRise,
+            tileSize: ROOM_DEFAULT_OPTS.masonryTileSize,
+            tileOffsetY: portalHeight,
+            shadowBottom: false, shadowTop: true, aoLength,
+            colorWall: colorTunnel,
+        }))
+    }
+    if (ceilingRise > 0) {
+        const middle = (a: A3, b: A3): A3 => [(a[0] + b[0]) / 2, 0, (a[2] + b[2]) / 2]
+        headerOverHole(entryStart, entryEnd, middle(exitStart, exitEnd))
+        headerOverHole(exitStart, exitEnd, middle(entryStart, entryEnd))
+    }
+    return result
 }
 
 // центр комплекса в плане относительно его pos — среднее всех точек всех комнат
@@ -138,6 +215,7 @@ export const randomOpts = (): T => {
         links,
         entranceCount: Math.floor(Math.random() * 3),
         tunnelFlatLength: rand(0, 4),
+        tunnelCeilingRise: Math.random() < .5 ? 0 : rand(0, 1.5),
         colorTunnel: [rand(.2, .85), rand(.2, .8), rand(.3, .85)],
         portalWidth: base.portalWidth,
         height: base.height,
@@ -206,15 +284,16 @@ export const complex01 = (opts: T = {}): IBuffersGeom => {
 
     const entrances: (T_Entrance | null)[][] = complexes.map((_, index) => {
         const complexOpts = complexOptsAt(index)
-        _GM.mergeIndexedArrays(result, complex00(complexOpts))
+        if (!complexes[index].hidden) _GM.mergeIndexedArrays(result, complex00(complexOpts))
         return complexEntrances(complexOpts)
     })
 
-    // ---- туннели: room01 между краями дыр на наружном лице стены, высотой в дыру портала
+    // ---- туннели: room01 между краями дыр на наружном лице стены, высотой в дыру портала и выше на tunnelCeilingRise
 
     const portalHeight = portalHeightFor(pilaster, o.height, o.profileHeight, o.portalHeight)
     if (portalHeight > 0) {
-        links.forEach(({ from, to }, index) => {
+        links.forEach(({ from, to, hidden }, index) => {
+            if (hidden) return
             const entry = entrances[from][linkSlots[index].from]
             const exit = entrances[to][linkSlots[index].to]
             if (!entry || !exit) return
@@ -222,25 +301,11 @@ export const complex01 = (opts: T = {}): IBuffersGeom => {
             const worldAt = (complex: number, [x, z]: A2): A3 =>
                 [complexes[complex].pos[0] + x, complexes[complex].pos[1] + floorThickness, complexes[complex].pos[2] + z]
             const entryStart = worldAt(from, entry.start), entryEnd = worldAt(from, entry.end)
-            let exitStart = worldAt(to, exit.start), exitEnd = worldAt(to, exit.end)
-            // пара к паре — без перекрещенных боков: дыры напротив друг друга идут по фасаду навстречу
-            const planDistance = (a: A3, b: A3) => Math.hypot(a[0] - b[0], a[2] - b[2])
-            if (planDistance(entryStart, exitStart) + planDistance(entryEnd, exitEnd) >
-                planDistance(entryStart, exitEnd) + planDistance(entryEnd, exitStart)) {
-                [exitStart, exitEnd] = [exitEnd, exitStart]
-            }
-            _GM.mergeIndexedArrays(result, room01({
-                pos: o.pos,
-                entryLeft: entryStart, entryRight: entryEnd,
-                exitLeft: exitStart, exitRight: exitEnd,
-                height: portalHeight,
-                entryFlatLength: o.tunnelFlatLength,
-                exitFlatLength: o.tunnelFlatLength,
-                floorThickness,
-                ceilingThickness: o.ceilingThickness,
-                masonryTileSize: ROOM_DEFAULT_OPTS.masonryTileSize,
-                aoLength: o.aoLength,
-                colorMasonry: o.colorTunnel,
+            const exitStart = worldAt(to, exit.start), exitEnd = worldAt(to, exit.end)
+            _GM.mergeIndexedArrays(result, tunnelBetweenHoles({
+                pos: o.pos, entryStart, entryEnd, exitStart, exitEnd, portalHeight,
+                ceilingRise: o.tunnelCeilingRise, flatLength: o.tunnelFlatLength,
+                floorThickness, ceilingThickness: o.ceilingThickness, aoLength: o.aoLength, colorTunnel: o.colorTunnel,
             }))
         })
     }
