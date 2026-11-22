@@ -41,6 +41,7 @@ type T = {
     // длина, на которую растягивается тайл тени у угла стены с полом и потолком; видимая тень — примерно её четверть
     aoLength?: number,
     colorMasonry?: A3,     // базовый цвет кладки до запечённого освещения
+    ceilingCollideGap?: number, // на сколько прокси потолка ниже видимого потолка — запас для камеры над игроком
 }
 
 export const DEFAULT_OPTS: Required<T> = {
@@ -58,6 +59,7 @@ export const DEFAULT_OPTS: Required<T> = {
     masonryTileSize: 1.2,
     aoLength: .5,
     colorMasonry: [.22, .2, .36],
+    ceilingCollideGap: 1,
 }
 
 // случайные опции из диапазона, в котором модуль используется; по ним гоняют check:geom и стенд
@@ -82,6 +84,7 @@ export const randomOpts = (): T => {
         masonryTileSize: rand(.8, 1.8),
         aoLength: rand(.3, .7),
         colorMasonry: [rand(.2, .85), rand(.2, .8), rand(.3, .85)],
+        ceilingCollideGap: rand(0, 1),
     }
 }
 
@@ -94,6 +97,8 @@ export const room01 = (opts: T = {}): IBuffersGeom => {
     const floorThickness = Math.max(0, o.floorThickness)
     const ceilingThickness = Math.max(0, o.ceilingThickness)
     const masonryTileSize = Math.max(.1, o.masonryTileSize)
+    // не ниже середины высоты в свету — проход остаётся
+    const ceilingCollideGap = Math.min(Math.max(0, o.ceilingCollideGap), height / 2)
     // уровни пола у входа и выхода
     const entryY = (o.entryLeft[1] + o.entryRight[1]) / 2
     const exitY = (o.exitLeft[1] + o.exitRight[1]) / 2
@@ -175,11 +180,14 @@ export const room01 = (opts: T = {}): IBuffersGeom => {
         _GM.mergeIndexedArrays(result, lift(floor01({
             pos: [pos[0], pos[1] + entryY - floorThickness, pos[2]], contour: contourPoints, height: floorThickness,
         })))
-        // потолок: контур по часовой стрелке — верх смотрит вниз; плита свисает от верха до низа потолка
-        _GM.mergeIndexedArrays(result, lift(floor01({
+        // потолок: контур по часовой стрелке — верх смотрит вниз; плита свисает от верха до низа потолка.
+        // Прокси потолка опущен на ceilingCollideGap ниже видимого — камера над игроком не уходит за потолок
+        const ceiling = floor01({
             pos: [pos[0], pos[1] + entryY + height + ceilingThickness, pos[2]],
             contour: [...contourPoints].reverse(), height: -ceilingThickness,
-        })))
+        })
+        for (let i = 1; i < ceiling.vCollide.length; i += 3) ceiling.vCollide[i] -= ceilingCollideGap
+        _GM.mergeIndexedArrays(result, lift(ceiling))
 
         // Стены: лицо wall00 — вправо от хода start → end. Левая стена идёт по ходу туннеля, правая — навстречу,
         // но направление «вправо» в осях проверяется явно: лицо должно смотреть к другому боку туннеля

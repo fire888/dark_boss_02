@@ -33,6 +33,8 @@ import { wall00 } from "geometry/08_wall00/wall00"
 //   снизу — софит свеса (тот же контур по часовой стрелке). Внутренний двор (петля по часовой стрелке) крыша
 //   не оставляет — накрывается целиком наружной петлёй.
 // Прокси у оболочки нет: стену держат прокси внутренних лиц room00, крыша — над потолками.
+// shell: false — оболочки нет совсем, только комнаты (complex01 так соединяет комплексы туннелями).
+// entranceTargets — входы к заданным точкам плана, до распределения entranceCount; где они встали — complexEntrances.
 //
 // Оттенок tint — множитель цвета вершин (c) всего комплекса после сборки комнат, поверх запечённого света;
 // компоненты не больше 1, поэтому цвет остаётся в [0, 1]. По умолчанию — синий.
@@ -73,7 +75,16 @@ type T = {
     aoLength?: number,            // длина, на которую растягивается тайл тени у угла стены с полом и потолком
     colorWall?: A3,               // базовый цвет стен до запечённого освещения
     tint?: A3,                    // множитель цвета вершин всего комплекса, компоненты от 0 до 1
+    shell?: boolean,              // строить оболочку — фасад, пилястры фасада и крышу; false — только комнаты
+    // точки плана (относительно pos), к которым нужны входы: на каждую — вход на наружном ребре, ближайшем к точке,
+    // сверх entranceCount. Где они встали — complexEntrances (туннели complex01 подводятся к ним)
+    entranceTargets?: T_PlanPoint[],
 }
+
+// вход в наружной стене: края дыры на наружном лице стены, в плане относительно pos; start → end — по ходу фасада
+export type T_Entrance = { start: A2, end: A2 }
+
+export type T_ComplexRoom = T_Room
 
 export const DEFAULT_OPTS: Required<T> = {
     pos: [0, 0, 0],
@@ -116,6 +127,8 @@ export const DEFAULT_OPTS: Required<T> = {
     colorWall: [.82, .8, .76],
     //colorWall: [0, 0, 0],
     tint: [.45, .62, 1],
+    shell: true,
+    entranceTargets: [],
 }
 
 const isInsidePolygon = ([x, z]: A2, polygon: A2[]): boolean => {
@@ -246,9 +259,38 @@ export const randomOpts = (): T => {
     }
 }
 
-export const complex00 = (opts: T = {}): IBuffersGeom => {
-    const o: Required<T> = { ...DEFAULT_OPTS, ...opts }
-    const result: IBuffersGeom = { index: [], v: [], uv: [], uv2: [], c: [], vCollide: [] }
+// Многоугольник, раздвинутый наружу на distance: каждое ребро сдвигается вправо от хода, по (−dz, dx), вершина —
+// пересечение соседних сдвинутых рёбер; рёбра на одной прямой — точка просто сдвигается
+const offsetPolygon = (points: A2[], distance: number): A2[] => {
+    const count = points.length
+    const lines = points.map((start, i) => {
+        const end = points[(i + 1) % count]
+        const length = Math.hypot(end[0] - start[0], end[1] - start[1])
+        const normal: A2 = [-(end[1] - start[1]) / length, (end[0] - start[0]) / length]
+        return { normal, offset: start[0] * normal[0] + start[1] * normal[1] + distance }
+    })
+    return points.map((point, i) => {
+        const previous = lines[(i - 1 + count) % count], next = lines[i]
+        const determinant = previous.normal[0] * next.normal[1] - previous.normal[1] * next.normal[0]
+        if (Math.abs(determinant) < 1e-6) return [point[0] + next.normal[0] * distance, point[1] + next.normal[1] * distance]
+        return [
+            (previous.offset * next.normal[1] - next.offset * previous.normal[1]) / determinant,
+            (previous.normal[0] * next.offset - next.normal[0] * previous.offset) / determinant,
+        ]
+    })
+}
+
+// Отрезок фасада — наружное лицо стены по отрезку плана: от угла до угла наружного контура. holes — дыры входов,
+// отрезки [from, to] вдоль от start
+type T_FacadeSegment = { start: A2, end: A2, direction: A2, normal: A2, length: number, holes: [number, number][] }
+const distanceAlong = (segment: T_FacadeSegment, point: A2) =>
+    (point[0] - segment.start[0]) * segment.direction[0] + (point[1] - segment.start[1]) * segment.direction[1]
+const pointAlong = (segment: T_FacadeSegment, distance: number): A2 =>
+    [segment.start[0] + segment.direction[0] * distance, segment.start[1] + segment.direction[1] * distance]
+
+// План комплекса без геометрии: общие рёбра, внутреннее лицо стен, порталы, отрезки фасада и входы.
+// Детерминирован — complex00 строит по нему геометрию, complexEntrances отдаёт входы
+const layoutComplex = (o: Required<T>) => {
     const wallThickness = Math.max(.05, o.wallThickness)
     const SAME_POINT = 1e-3
 
@@ -399,30 +441,6 @@ export const complex00 = (opts: T = {}): IBuffersGeom => {
         if (runs.length >= 3) loops.push(runs)
     }
 
-    // Многоугольник, раздвинутый наружу на distance: каждое ребро сдвигается вправо от хода, по (−dz, dx), вершина —
-    // пересечение соседних сдвинутых рёбер; рёбра на одной прямой — точка просто сдвигается
-    const offsetPolygon = (points: A2[], distance: number): A2[] => {
-        const count = points.length
-        const lines = points.map((start, i) => {
-            const end = points[(i + 1) % count]
-            const length = Math.hypot(end[0] - start[0], end[1] - start[1])
-            const normal: A2 = [-(end[1] - start[1]) / length, (end[0] - start[0]) / length]
-            return { normal, offset: start[0] * normal[0] + start[1] * normal[1] + distance }
-        })
-        return points.map((point, i) => {
-            const previous = lines[(i - 1 + count) % count], next = lines[i]
-            const determinant = previous.normal[0] * next.normal[1] - previous.normal[1] * next.normal[0]
-            if (Math.abs(determinant) < 1e-6) return [point[0] + next.normal[0] * distance, point[1] + next.normal[1] * distance]
-            return [
-                (previous.offset * next.normal[1] - next.offset * previous.normal[1]) / determinant,
-                (previous.normal[0] * next.offset - next.normal[0] * previous.offset) / determinant,
-            ]
-        })
-    }
-
-    // Отрезок фасада — наружное лицо стены по отрезку плана: от угла до угла наружного контура. holes — дыры входов,
-    // отрезки [from, to] вдоль от start
-    type T_FacadeSegment = { start: A2, end: A2, direction: A2, normal: A2, length: number, holes: [number, number][] }
     const facadeLoops: T_FacadeSegment[][] = []
     const segmentOfEdge = new Map<T_ExteriorEdge, T_FacadeSegment>()
     for (const runs of loops) {
@@ -441,19 +459,19 @@ export const complex00 = (opts: T = {}): IBuffersGeom => {
             return segment
         }))
     }
-    const distanceAlong = (segment: T_FacadeSegment, point: A2) =>
-        (point[0] - segment.start[0]) * segment.direction[0] + (point[1] - segment.start[1]) * segment.direction[1]
-    const pointAlong = (segment: T_FacadeSegment, distance: number): A2 =>
-        [segment.start[0] + segment.direction[0] * distance, segment.start[1] + segment.direction[1] * distance]
 
     // ---- входы: на каждом наружном ребре — самый широкий проём по центру ребра, пилоны которого помещаются и в комнате,
     // и на отрезке фасада; из подходящих рёбер выбираются ближайшие к точкам, делящим периметр на entranceCount частей
 
     const portalHeight = portalHeightFor(pilaster, o.height, o.profileHeight, o.portalHeight)
-    type T_EntranceCandidate = { edge: T_ExteriorEdge, segment: T_FacadeSegment, width: number, at: number, along: number, perimeterAt: number }
+    // outer — на наружной петле (против часовой стрелки сверху), а не во внутреннем дворе
+    type T_EntranceCandidate = {
+        edge: T_ExteriorEdge, segment: T_FacadeSegment, width: number, at: number, along: number, perimeterAt: number, outer: boolean,
+    }
     const candidates: T_EntranceCandidate[] = []
     let perimeter = 0
     for (const segments of facadeLoops) {
+        const outer = _GM.polygonArea2(segments.map(segment => segment.start)) < 0
         for (const segment of segments) {
             if (portalHeight > 0) {
                 for (const edge of exteriorEdges) {
@@ -467,12 +485,31 @@ export const complex00 = (opts: T = {}): IBuffersGeom => {
                     )
                     const width = Math.min(Math.max(o.portalWidth, MIN_PORTAL_WIDTH), halfRoom * 2)
                     if (width < MIN_PORTAL_WIDTH) continue
-                    candidates.push({ edge, segment, width, at: here.distance / here.length, along, perimeterAt: perimeter + along })
+                    candidates.push({ edge, segment, width, at: here.distance / here.length, along, perimeterAt: perimeter + along, outer })
                 }
             }
             perimeter += Math.max(0, segment.length)
         }
     }
+    const placeEntrance = (index: number): T_Entrance => {
+        const { edge, segment, width, at, along } = candidates.splice(index, 1)[0]
+        portals[edge.room][edge.edge] = { width, at }
+        segment.holes.push([along - width / 2, along + width / 2])
+        return { start: pointAlong(segment, along - width / 2), end: pointAlong(segment, along + width / 2) }
+    }
+
+    // сначала входы к заданным точкам: середина дыры на наружной петле, ближайшая к точке
+    const entrances: (T_Entrance | null)[] = o.entranceTargets.map(({ x, z }) => {
+        let best = -1, bestDistance = Infinity
+        candidates.forEach((candidate, index) => {
+            if (!candidate.outer) return
+            const [centerX, centerZ] = pointAlong(candidate.segment, candidate.along)
+            const distance = Math.hypot(centerX - x, centerZ - z)
+            if (distance < bestDistance) { best = index; bestDistance = distance }
+        })
+        return best < 0 ? null : placeEntrance(best)
+    })
+
     const entranceCount = Math.max(0, Math.floor(o.entranceCount))
     for (let i = 0; i < entranceCount && candidates.length > 0; ++i) {
         const target = (i + .5) / entranceCount * perimeter
@@ -480,11 +517,21 @@ export const complex00 = (opts: T = {}): IBuffersGeom => {
         candidates.forEach((candidate, index) => {
             if (Math.abs(candidate.perimeterAt - target) < Math.abs(candidates[best].perimeterAt - target)) best = index
         })
-        const { edge, segment, width, at, along } = candidates.splice(best, 1)[0]
-        portals[edge.room][edge.edge] = { width, at }
-        segment.holes.push([along - width / 2, along + width / 2])
+        placeEntrance(best)
     }
     for (const segments of facadeLoops) for (const segment of segments) segment.holes.sort((a, b) => a[0] - b[0])
+
+    return { wallThickness, plans, isValid, links, innerPaths, portals, pilaster, portalMargin, portalHeight, facadeLoops, entrances }
+}
+
+// Где встали входы к точкам entranceTargets — по одному на точку, в том же порядке; null — подходящего ребра нет
+export const complexEntrances = (opts: T = {}): (T_Entrance | null)[] =>
+    layoutComplex({ ...DEFAULT_OPTS, ...opts }).entrances
+
+export const complex00 = (opts: T = {}): IBuffersGeom => {
+    const o: Required<T> = { ...DEFAULT_OPTS, ...opts }
+    const result: IBuffersGeom = { index: [], v: [], uv: [], uv2: [], c: [], vCollide: [] }
+    const { wallThickness, plans, isValid, links, innerPaths, portals, pilaster, portalMargin, portalHeight, facadeLoops } = layoutComplex(o)
 
     // ---- комнаты
 
@@ -515,108 +562,111 @@ export const complex00 = (opts: T = {}): IBuffersGeom => {
         }))
     })
 
-    // ---- фасад: кладка wall00 от земли до верха стен; у дыры входа — под порогом (толща пола) и над перемычкой.
-    // Сетка кладки привязана к проекции на направление отрезка и к земле — куски одного отрезка продолжают одну кладку
+    // ---- оболочка: фасад, пилястры фасада, крыша; без неё — только комнаты (complex01)
+    if (o.shell) {
+        // ---- фасад: кладка wall00 от земли до верха стен; у дыры входа — под порогом (толща пола) и над перемычкой.
+        // Сетка кладки привязана к проекции на направление отрезка и к земле — куски одного отрезка продолжают одну кладку
 
-    const floorTop = Math.max(0, o.floorThickness)
-    const wallTop = floorTop + Math.max(0, o.height) + Math.max(0, o.ceilingThickness)
-    const roofOverhang = Math.max(0, o.roofOverhang)
-    // под свесом крыши — тень у верха фасада
-    const shadowUnderRoof = roofOverhang > 1e-3
-    const masonryTileSize = Math.max(.1, o.masonryTileSize)
-    const facadePiece = (segment: T_FacadeSegment, from: number, to: number, yFrom: number, yTo: number, shadowBottom: boolean) => {
-        if (to - from < 1e-6 || yTo - yFrom < 1e-6) return
-        const start = pointAlong(segment, from)
-        const piece = wall00({
-            pos: [o.pos[0], o.pos[1] + yFrom, o.pos[2]],
-            start, end: pointAlong(segment, to),
-            height: yTo - yFrom,
-            tileSize: masonryTileSize,
-            tileOffsetX: start[0] * segment.direction[0] + start[1] * segment.direction[1],
-            tileOffsetY: yFrom,
-            shadowBottom, shadowTop: shadowUnderRoof && yTo >= wallTop,
-            aoLength: o.aoLength,
-            colorWall: o.colorFacade,
-        })
-        piece.vCollide = []
-        _GM.mergeIndexedArrays(result, piece)
-    }
-    for (const segments of facadeLoops) {
-        for (const segment of segments) {
-            let cursor = 0
-            for (const [from, to] of segment.holes) {
-                facadePiece(segment, cursor, from, 0, wallTop, true)
-                facadePiece(segment, from, to, 0, floorTop, true)
-                facadePiece(segment, from, to, floorTop + portalHeight, wallTop, false)
-                cursor = to
-            }
-            facadePiece(segment, cursor, segment.length, 0, wallTop, true)
+        const floorTop = Math.max(0, o.floorThickness)
+        const wallTop = floorTop + Math.max(0, o.height) + Math.max(0, o.ceilingThickness)
+        const roofOverhang = Math.max(0, o.roofOverhang)
+        // под свесом крыши — тень у верха фасада
+        const shadowUnderRoof = roofOverhang > 1e-3
+        const masonryTileSize = Math.max(.1, o.masonryTileSize)
+        const facadePiece = (segment: T_FacadeSegment, from: number, to: number, yFrom: number, yTo: number, shadowBottom: boolean) => {
+            if (to - from < 1e-6 || yTo - yFrom < 1e-6) return
+            const start = pointAlong(segment, from)
+            const piece = wall00({
+                pos: [o.pos[0], o.pos[1] + yFrom, o.pos[2]],
+                start, end: pointAlong(segment, to),
+                height: yTo - yFrom,
+                tileSize: masonryTileSize,
+                tileOffsetX: start[0] * segment.direction[0] + start[1] * segment.direction[1],
+                tileOffsetY: yFrom,
+                shadowBottom, shadowTop: shadowUnderRoof && yTo >= wallTop,
+                aoLength: o.aoLength,
+                colorWall: o.colorFacade,
+            })
+            piece.vCollide = []
+            _GM.mergeIndexedArrays(result, piece)
         }
-    }
-
-    // ---- пилястры фасада: pilaster00 от земли до верха стен, наружу; на концах свободных кусков отрезка
-    // (у углов и по бокам входов) и равномерно между ними с шагом не больше pilasterSpacing
-
-    const pilasterHalfWidth = Math.max(.05, o.pilasterWidth) / 2
-    const pilasterProtrusion = Math.max(.02, o.pilasterProtrusion)
-    // наибольший вынос базы или капители от ствола
-    const pilasterProjection = Math.max(pilaster.plinthProjection ?? 0, pilaster.abacusProjection ?? 0, 0)
-    if (o.pilasterSpacing > 0 && wallTop > 2) {
-        // от угла — чтобы база не залезла в соседний отрезок у вогнутого угла контура
-        const cornerClearance = pilasterHalfWidth + pilasterProjection + pilasterProtrusion + .1
-        // от края дыры входа — пилон портала с выносами, плюс полширины и вынос самой пилястры
-        const holeClearance = portalMargin + pilasterHalfWidth + pilasterProjection + .1
         for (const segments of facadeLoops) {
             for (const segment of segments) {
-                const freeRanges: [number, number][] = []
-                let rangeFrom = cornerClearance
+                let cursor = 0
                 for (const [from, to] of segment.holes) {
-                    freeRanges.push([rangeFrom, from - holeClearance])
-                    rangeFrom = to + holeClearance
+                    facadePiece(segment, cursor, from, 0, wallTop, true)
+                    facadePiece(segment, from, to, 0, floorTop, true)
+                    facadePiece(segment, from, to, floorTop + portalHeight, wallTop, false)
+                    cursor = to
                 }
-                freeRanges.push([rangeFrom, segment.length - cornerClearance])
-                for (const [from, to] of freeRanges) {
-                    if (to < from) continue
-                    const rangeLength = to - from
-                    const count = rangeLength < o.pilasterSpacing ? 1 : Math.ceil(rangeLength / o.pilasterSpacing) + 1
-                    for (let k = 0; k < count; ++k) {
-                        const center = count === 1 ? (from + to) / 2 : from + rangeLength * k / (count - 1)
-                        const wallLeft = pointAlong(segment, center - pilasterHalfWidth)
-                        const wallRight = pointAlong(segment, center + pilasterHalfWidth)
-                        const outward = (point: A2): A2 =>
-                            [point[0] + segment.normal[0] * pilasterProtrusion, point[1] + segment.normal[1] * pilasterProtrusion]
-                        // П из стены наружу; лицо ствола идёт по ходу отрезка — профили выступают вправо от хода, наружу
-                        const piece = pilaster00({
-                            ...pilaster,
-                            pos: o.pos,
-                            path: [wallLeft, outward(wallLeft), outward(wallRight), wallRight].map(([x, z]) => ({ x, z })),
-                            height: wallTop,
-                            startWallDirection: segment.direction, endWallDirection: segment.direction,
-                        })
-                        piece.vCollide = []
-                        _GM.mergeIndexedArrays(result, piece)
+                facadePiece(segment, cursor, segment.length, 0, wallTop, true)
+            }
+        }
+
+        // ---- пилястры фасада: pilaster00 от земли до верха стен, наружу; на концах свободных кусков отрезка
+        // (у углов и по бокам входов) и равномерно между ними с шагом не больше pilasterSpacing
+
+        const pilasterHalfWidth = Math.max(.05, o.pilasterWidth) / 2
+        const pilasterProtrusion = Math.max(.02, o.pilasterProtrusion)
+        // наибольший вынос базы или капители от ствола
+        const pilasterProjection = Math.max(pilaster.plinthProjection ?? 0, pilaster.abacusProjection ?? 0, 0)
+        if (o.pilasterSpacing > 0 && wallTop > 2) {
+            // от угла — чтобы база не залезла в соседний отрезок у вогнутого угла контура
+            const cornerClearance = pilasterHalfWidth + pilasterProjection + pilasterProtrusion + .1
+            // от края дыры входа — пилон портала с выносами, плюс полширины и вынос самой пилястры
+            const holeClearance = portalMargin + pilasterHalfWidth + pilasterProjection + .1
+            for (const segments of facadeLoops) {
+                for (const segment of segments) {
+                    const freeRanges: [number, number][] = []
+                    let rangeFrom = cornerClearance
+                    for (const [from, to] of segment.holes) {
+                        freeRanges.push([rangeFrom, from - holeClearance])
+                        rangeFrom = to + holeClearance
+                    }
+                    freeRanges.push([rangeFrom, segment.length - cornerClearance])
+                    for (const [from, to] of freeRanges) {
+                        if (to < from) continue
+                        const rangeLength = to - from
+                        const count = rangeLength < o.pilasterSpacing ? 1 : Math.ceil(rangeLength / o.pilasterSpacing) + 1
+                        for (let k = 0; k < count; ++k) {
+                            const center = count === 1 ? (from + to) / 2 : from + rangeLength * k / (count - 1)
+                            const wallLeft = pointAlong(segment, center - pilasterHalfWidth)
+                            const wallRight = pointAlong(segment, center + pilasterHalfWidth)
+                            const outward = (point: A2): A2 =>
+                                [point[0] + segment.normal[0] * pilasterProtrusion, point[1] + segment.normal[1] * pilasterProtrusion]
+                            // П из стены наружу; лицо ствола идёт по ходу отрезка — профили выступают вправо от хода, наружу
+                            const piece = pilaster00({
+                                ...pilaster,
+                                pos: o.pos,
+                                path: [wallLeft, outward(wallLeft), outward(wallRight), wallRight].map(([x, z]) => ({ x, z })),
+                                height: wallTop,
+                                startWallDirection: segment.direction, endWallDirection: segment.direction,
+                            })
+                            piece.vCollide = []
+                            _GM.mergeIndexedArrays(result, piece)
+                        }
                     }
                 }
             }
         }
-    }
 
-    // ---- крыша: floor01 по наружному контуру, раздвинутому на свес, — плита на верху стен; снизу — софит свеса.
-    // Крышу получают только наружные петли (против часовой стрелки сверху — в осях [x, z] площадь отрицательна)
+        // ---- крыша: floor01 по наружному контуру, раздвинутому на свес, — плита на верху стен; снизу — софит свеса.
+        // Крышу получают только наружные петли (против часовой стрелки сверху — в осях [x, z] площадь отрицательна)
 
-    for (const segments of facadeLoops) {
-        const corners = segments.map(segment => segment.start)
-        if (_GM.polygonArea2(corners) >= 0) continue
-        const contour = (roofOverhang > 1e-3 ? offsetPolygon(corners, roofOverhang) : corners).map(([x, z]) => ({ x, z }))
-        const roofPos: A3 = [o.pos[0], o.pos[1] + wallTop, o.pos[2]]
-        const roof = floor01({ pos: roofPos, contour, height: Math.max(.01, o.roofThickness) })
-        roof.vCollide = []
-        _GM.mergeIndexedArrays(result, roof)
-        if (shadowUnderRoof) {
-            // контур по часовой стрелке — верх смотрит вниз
-            const soffit = floor01({ pos: roofPos, contour: [...contour].reverse(), height: 0 })
-            soffit.vCollide = []
-            _GM.mergeIndexedArrays(result, soffit)
+        for (const segments of facadeLoops) {
+            const corners = segments.map(segment => segment.start)
+            if (_GM.polygonArea2(corners) >= 0) continue
+            const contour = (roofOverhang > 1e-3 ? offsetPolygon(corners, roofOverhang) : corners).map(([x, z]) => ({ x, z }))
+            const roofPos: A3 = [o.pos[0], o.pos[1] + wallTop, o.pos[2]]
+            const roof = floor01({ pos: roofPos, contour, height: Math.max(.01, o.roofThickness) })
+            roof.vCollide = []
+            _GM.mergeIndexedArrays(result, roof)
+            if (shadowUnderRoof) {
+                // контур по часовой стрелке — верх смотрит вниз
+                const soffit = floor01({ pos: roofPos, contour: [...contour].reverse(), height: 0 })
+                soffit.vCollide = []
+                _GM.mergeIndexedArrays(result, soffit)
+            }
         }
     }
 

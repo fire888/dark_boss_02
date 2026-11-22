@@ -9,6 +9,7 @@ import * as profile00 from 'geometry/04_profile00/profile00'
 import * as room00 from 'geometry/05_room00/room00'
 import * as room01 from 'geometry/05_room01/room01'
 import * as complex00 from 'geometry/06_complex00/complex00'
+import * as complex01 from 'geometry/06_complex01/complex01'
 import * as stairs00 from 'geometry/07_stairs00/stairs00'
 import * as stairs01 from 'geometry/07_stairs01/stairs01'
 import * as wall00 from 'geometry/08_wall00/wall00'
@@ -87,6 +88,13 @@ export const GEOM_REGISTRY: T_GeomEntry[] = [
         factory: complex00.complex00,
         randomOpts: complex00.randomOpts,
         defaultOpts: complex00.DEFAULT_OPTS,
+        noGrid: true,
+    },
+    {
+        name: 'complex01',
+        factory: complex01.complex01,
+        randomOpts: complex01.randomOpts,
+        defaultOpts: complex01.DEFAULT_OPTS,
         noGrid: true,
     },
     {
