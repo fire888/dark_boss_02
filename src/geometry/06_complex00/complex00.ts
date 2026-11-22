@@ -33,8 +33,8 @@ import { wall00 } from "geometry/08_wall00/wall00"
 //   снизу — софит свеса (тот же контур по часовой стрелке). Внутренний двор (петля по часовой стрелке) крыша
 //   не оставляет — накрывается целиком наружной петлёй.
 // Прокси у оболочки нет: стену держат прокси внутренних лиц room00, крыша — над потолками.
-// shell: false — оболочки нет совсем, только комнаты (complex01 так соединяет комплексы туннелями).
-// entranceTargets — входы к заданным точкам плана, до распределения entranceCount; где они встали — complexEntrances.
+// shell: false — оболочки нет совсем, только комнаты (так собирает группы комнат complex02).
+// entranceTargets — входы к заданным точкам плана, до распределения entranceCount.
 //
 // Оттенок tint — множитель цвета вершин (c) всего комплекса после сборки комнат, поверх запечённого света;
 // компоненты не больше 1, поэтому цвет остаётся в [0, 1]. По умолчанию — синий.
@@ -77,14 +77,9 @@ type T = {
     tint?: A3,                    // множитель цвета вершин всего комплекса, компоненты от 0 до 1
     shell?: boolean,              // строить оболочку — фасад, пилястры фасада и крышу; false — только комнаты
     // точки плана (относительно pos), к которым нужны входы: на каждую — вход на наружном ребре, ближайшем к точке,
-    // сверх entranceCount. Где они встали — complexEntrances (туннели complex01 подводятся к ним)
+    // сверх entranceCount (complex02 подводит к ним туннели)
     entranceTargets?: T_PlanPoint[],
 }
-
-// вход в наружной стене: края дыры на наружном лице стены, в плане относительно pos; start → end — по ходу фасада
-export type T_Entrance = { start: A2, end: A2 }
-
-export type T_ComplexRoom = T_Room
 
 export const DEFAULT_OPTS: Required<T> = {
     pos: [0, 0, 0],
@@ -289,7 +284,7 @@ const pointAlong = (segment: T_FacadeSegment, distance: number): A2 =>
     [segment.start[0] + segment.direction[0] * distance, segment.start[1] + segment.direction[1] * distance]
 
 // План комплекса без геометрии: общие рёбра, внутреннее лицо стен, порталы, отрезки фасада и входы.
-// Детерминирован — complex00 строит по нему геометрию, complexEntrances отдаёт входы
+// Детерминирован — complex00 строит по нему геометрию
 const layoutComplex = (o: Required<T>) => {
     const wallThickness = Math.max(.05, o.wallThickness)
     const SAME_POINT = 1e-3
@@ -491,15 +486,14 @@ const layoutComplex = (o: Required<T>) => {
             perimeter += Math.max(0, segment.length)
         }
     }
-    const placeEntrance = (index: number): T_Entrance => {
+    const placeEntrance = (index: number) => {
         const { edge, segment, width, at, along } = candidates.splice(index, 1)[0]
         portals[edge.room][edge.edge] = { width, at }
         segment.holes.push([along - width / 2, along + width / 2])
-        return { start: pointAlong(segment, along - width / 2), end: pointAlong(segment, along + width / 2) }
     }
 
     // сначала входы к заданным точкам: середина дыры на наружной петле, ближайшая к точке
-    const entrances: (T_Entrance | null)[] = o.entranceTargets.map(({ x, z }) => {
+    for (const { x, z } of o.entranceTargets) {
         let best = -1, bestDistance = Infinity
         candidates.forEach((candidate, index) => {
             if (!candidate.outer) return
@@ -507,8 +501,8 @@ const layoutComplex = (o: Required<T>) => {
             const distance = Math.hypot(centerX - x, centerZ - z)
             if (distance < bestDistance) { best = index; bestDistance = distance }
         })
-        return best < 0 ? null : placeEntrance(best)
-    })
+        if (best >= 0) placeEntrance(best)
+    }
 
     const entranceCount = Math.max(0, Math.floor(o.entranceCount))
     for (let i = 0; i < entranceCount && candidates.length > 0; ++i) {
@@ -521,12 +515,8 @@ const layoutComplex = (o: Required<T>) => {
     }
     for (const segments of facadeLoops) for (const segment of segments) segment.holes.sort((a, b) => a[0] - b[0])
 
-    return { wallThickness, plans, isValid, links, innerPaths, portals, pilaster, portalMargin, portalHeight, facadeLoops, entrances }
+    return { wallThickness, plans, isValid, links, innerPaths, portals, pilaster, portalMargin, portalHeight, facadeLoops }
 }
-
-// Где встали входы к точкам entranceTargets — по одному на точку, в том же порядке; null — подходящего ребра нет
-export const complexEntrances = (opts: T = {}): (T_Entrance | null)[] =>
-    layoutComplex({ ...DEFAULT_OPTS, ...opts }).entrances
 
 export const complex00 = (opts: T = {}): IBuffersGeom => {
     const o: Required<T> = { ...DEFAULT_OPTS, ...opts }
@@ -562,7 +552,7 @@ export const complex00 = (opts: T = {}): IBuffersGeom => {
         }))
     })
 
-    // ---- оболочка: фасад, пилястры фасада, крыша; без неё — только комнаты (complex01)
+    // ---- оболочка: фасад, пилястры фасада, крыша; без неё — только комнаты (complex02)
     if (o.shell) {
         // ---- фасад: кладка wall00 от земли до верха стен; у дыры входа — под порогом (толща пола) и над перемычкой.
         // Сетка кладки привязана к проекции на направление отрезка и к земле — куски одного отрезка продолжают одну кладку

@@ -1,6 +1,5 @@
 import type { A2, A3 } from "_CORE/_M/_gm"
-import { randomOpts as randomComplexOpts } from "geometry/06_complex00/complex00"
-import { layoutComplex02, type T_Complex02Layout } from "geometry/06_complex02/complex02"
+import { layoutComplex02, randomOpts as randomComplexOpts, type T_Complex02Layout } from "geometry/06_complex02/complex02"
 import type { T_ChunkOpts } from "./chunkBuffers"
 import {
     MAIN_CLUSTERS_PER_CHUNK, MAIN_CLUSTER_ROOMS_MIN, MAIN_CLUSTER_ROOMS_MAX, BRANCH_CLUSTER_ROOMS_MIN, BRANCH_CLUSTER_ROOMS_MAX,

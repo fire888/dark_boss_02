@@ -216,3 +216,69 @@ export const room01 = (opts: T = {}): IBuffersGeom => {
 
     return result
 }
+
+// на сколько туннель шире дыры портала с каждой стороны
+const TUNNEL_SIDE_WIDEN = .1
+
+// Туннель room01 между двумя дырами порталов на наружных лицах стен — так группы комнат соединяет complex02.
+// Концы — края дыр в координатах относительно pos, y — верх пола у дыры. Концы пара к паре сами: бока не
+// перекрещиваются. Высота в свету — дыра портала и ещё ceilingRise; полосу над дырой на каждом конце закрывает
+// кладка wall00 лицом в туннель (концы room01 открыты, а наружного лица у стен комнат нет)
+export const tunnelBetweenHoles = (options: {
+    pos: A3, entryStart: A3, entryEnd: A3, exitStart: A3, exitEnd: A3,
+    portalHeight: number, ceilingRise: number, flatLength: number,
+    floorThickness: number, ceilingThickness: number, aoLength: number, colorTunnel: A3,
+}): IBuffersGeom => {
+    const { pos, portalHeight, aoLength, colorTunnel } = options
+    // Туннель шире дыры на TUNNEL_SIDE_WIDEN с каждой стороны: пилоны портала выступают из наружного лица стены,
+    // и их бока в плоскости стен туннеля мерцали бы (z-fighting); так стена туннеля уходит в толщу пилона
+    const widen = (start: A3, end: A3): [A3, A3] => {
+        const length = Math.hypot(end[0] - start[0], end[2] - start[2]) || 1
+        const dx = (end[0] - start[0]) / length * TUNNEL_SIDE_WIDEN, dz = (end[2] - start[2]) / length * TUNNEL_SIDE_WIDEN
+        return [[start[0] - dx, start[1], start[2] - dz], [end[0] + dx, end[1], end[2] + dz]]
+    }
+    const [entryStart, entryEnd] = widen(options.entryStart, options.entryEnd)
+    let [exitStart, exitEnd] = widen(options.exitStart, options.exitEnd)
+    const result: IBuffersGeom = { index: [], v: [], uv: [], uv2: [], c: [], vCollide: [] }
+    const ceilingRise = Math.max(0, options.ceilingRise)
+    // пара к паре — без перекрещенных боков: дыры напротив друг друга идут навстречу
+    const planDistance = (a: A3, b: A3) => Math.hypot(a[0] - b[0], a[2] - b[2])
+    if (planDistance(entryStart, exitStart) + planDistance(entryEnd, exitEnd) >
+        planDistance(entryStart, exitEnd) + planDistance(entryEnd, exitStart)) {
+        [exitStart, exitEnd] = [exitEnd, exitStart]
+    }
+    _GM.mergeIndexedArrays(result, room01({
+        pos,
+        entryLeft: entryStart, entryRight: entryEnd,
+        exitLeft: exitStart, exitRight: exitEnd,
+        height: portalHeight + ceilingRise,
+        entryFlatLength: options.flatLength,
+        exitFlatLength: options.flatLength,
+        floorThickness: options.floorThickness,
+        ceilingThickness: options.ceilingThickness,
+        masonryTileSize: DEFAULT_OPTS.masonryTileSize,
+        aoLength,
+        colorMasonry: colorTunnel,
+    }))
+    // кладка над дырой от её верха до потолка туннеля, лицом к точке inside внутри туннеля
+    const headerOverHole = (start: A3, end: A3, inside: A3) => {
+        const faceX = -(end[2] - start[2]), faceZ = end[0] - start[0]
+        const facesInside = faceX * (inside[0] - start[0]) + faceZ * (inside[2] - start[2]) > 0
+        const [from, to] = facesInside ? [start, end] : [end, start]
+        _GM.mergeIndexedArrays(result, wall00({
+            pos: [pos[0], pos[1] + (start[1] + end[1]) / 2 + portalHeight, pos[2]],
+            start: [from[0], from[2]], end: [to[0], to[2]],
+            height: ceilingRise,
+            tileSize: DEFAULT_OPTS.masonryTileSize,
+            tileOffsetY: portalHeight,
+            shadowBottom: false, shadowTop: true, aoLength,
+            colorWall: colorTunnel,
+        }))
+    }
+    if (ceilingRise > 0) {
+        const middle = (a: A3, b: A3): A3 => [(a[0] + b[0]) / 2, 0, (a[2] + b[2]) / 2]
+        headerOverHole(entryStart, entryEnd, middle(exitStart, exitEnd))
+        headerOverHole(exitStart, exitEnd, middle(entryStart, entryEnd))
+    }
+    return result
+}

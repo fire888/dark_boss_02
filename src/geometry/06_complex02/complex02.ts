@@ -4,7 +4,7 @@ import { portalHeightFor, portalMarginFor, MIN_PORTAL_WIDTH, DEFAULT_OPTS as ROO
 import {
     complex00, randomOpts as randomComplexOpts, DEFAULT_OPTS as COMPLEX_DEFAULT_OPTS,
 } from "geometry/06_complex00/complex00"
-import { tunnelBetweenHoles } from "geometry/06_complex01/complex01"
+import { tunnelBetweenHoles } from "geometry/05_room01/room01"
 
 // Уровень из групп комнат, соединённых прямыми туннелями room01, — сначала главный путь вперёд, потом отростки вбок.
 //
