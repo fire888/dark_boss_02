@@ -138,6 +138,21 @@ export const portalMarginFor = (pilasterProfile: T_PilasterProfile = {}): number
     return PORTAL_PIER_WIDTH + Math.max(pilaster.plinthProjection, pilaster.abacusProjection) + corniceProjection + .1
 }
 
+// Высота пилястр портала, которую room00 поставит на самом деле: перемычка с карнизом — под профилем потолка,
+// пилястра вмещает базу и капитель; 0 — порталы не помещаются. complex00 по ней узнаёт, будут ли проёмы в стенах
+export const portalHeightFor = (pilasterProfile: T_PilasterProfile, height: number, profileHeight: number, portalHeight: number): number => {
+    const pilaster: Required<T_PilasterProfile> = { ...PILASTER_DEFAULT_PROFILE, ...pilasterProfile }
+    const lintel = LINTEL_DEFAULT_PROFILE
+    const lintelHeight = lintel.fasciaHeight + lintel.corniceSlopeHeight + lintel.corniceHeight
+    // пилястра должна вместить базу и капитель и ещё немного ствола между ними
+    const pilasterMinHeight = pilaster.plinthHeight + pilaster.baseSlopeHeight + pilaster.baseFilletHeight
+        + pilaster.abacusHeight + pilaster.capitalSlopeHeight + pilaster.capitalFilletHeight + .3
+    const clampedHeight = Math.max(0, height)
+    const clampedProfileHeight = Math.min(Math.max(0, profileHeight), clampedHeight)
+    const result = Math.min(portalHeight, clampedHeight - clampedProfileHeight - lintelHeight - .05)
+    return result >= pilasterMinHeight ? result : 0
+}
+
 // случайные опции из диапазона, в котором модуль используется; по ним гоняют check:geom и стенд
 export const randomOpts = (): T => {
     const rand = (min: number, max: number) => min + Math.random() * (max - min)
@@ -259,13 +274,12 @@ export const room00 = (opts: T = {}): IBuffersGeom => {
     // ---- порталы: размеры, общие для всех
 
     const toPoint = ([x, z]: A2) => ({ x, z })
-    const lintelHeight = lintel.fasciaHeight + lintel.corniceSlopeHeight + lintel.corniceHeight
     // пилястра должна вместить базу и капитель и ещё немного ствола между ними
     const pilasterMinHeight = pilaster.plinthHeight + pilaster.baseSlopeHeight + pilaster.baseFilletHeight
         + pilaster.abacusHeight + pilaster.capitalSlopeHeight + pilaster.capitalFilletHeight + .3
     // перемычка с карнизом — под потолком
-    const portalHeight = Math.min(o.portalHeight, height - profileHeight - lintelHeight - .05)
-    const portalsFit = portalHeight >= pilasterMinHeight
+    const portalHeight = portalHeightFor(pilaster, height, profileHeight, o.portalHeight)
+    const portalsFit = portalHeight > 0
     const pierWidth = PORTAL_PIER_WIDTH
     const lintelInset = PORTAL_LINTEL_INSET
     // Перемычка опирается на абаки и уходит в стену, если карниз шире абаки (так считает portal00). Пилон
