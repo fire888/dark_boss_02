@@ -1,6 +1,6 @@
 import { buildChunkBuffers, chunkTransferList, type T_ChunkOpts } from "./chunkBuffers"
 
-// Воркер кусков уровня: опции complex02 → буферы куска. Запросы идут по очереди, ответ — с тем же id
+// Воркер кусков уровня: опции level00 → буферы куска. Запросы идут по очереди, ответ — с тем же id
 
 export type T_ChunkRequest = { id: number, opts: T_ChunkOpts }
 

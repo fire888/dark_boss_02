@@ -30,7 +30,7 @@ import { tunnelBetweenHoles } from "geometry/05_room01/room01"
 // Ничто не пересекается в плане: комнаты (по наружному лицу стен), туннели и obstacles отстоят друг от друга
 // хотя бы на clearance. Группа или туннель, которые не встают, пробуются заново в другой форме, на другой стене,
 // другой длины. Раскладка сочиняется генератором от seed: одни и те же опции — одна и та же раскладка.
-// layoutComplex02 отдаёт её без геометрии.
+// layoutLevel00 отдаёт её без геометрии.
 //
 // Высота — своя у каждой группы, от height до height + heightSpread (внутри группы одна: так требует complex00);
 // порталы у всех групп одной высоты — какая помещается при height, к ним подходят туннели. Размер комнат в плане —
@@ -184,7 +184,7 @@ export const randomOpts = (): T => {
 // ---- раскладка
 
 // наружная стена группы: ребро edge комнаты room плана, без соседа
-export type T_Complex02Wall = {
+export type T_Level00Wall = {
     room: number, edge: number,
     length: number,  // длина ребра плана (оси стены)
     direction: A2,   // единичное направление ребра
@@ -192,28 +192,28 @@ export type T_Complex02Wall = {
     middle: A2,      // середина ребра плана
 }
 
-export type T_Complex02Cluster = {
+export type T_Level00Cluster = {
     plans: A2[][],   // комнаты — оси стен [x, z] относительно pos, выпуклые, против часовой стрелки сверху; как rooms complex00
     level: number,   // земля под полом относительно pos[1]
     height: number,  // высота комнат группы в свету
     hasPilasters: boolean, // пилястры у стен (у порталов — всегда)
-    walls: T_Complex02Wall[],     // наружные стены
-    holes: T_Complex02Wall[],     // наружные стены с дырой портала по центру
+    walls: T_Level00Wall[],     // наружные стены
+    holes: T_Level00Wall[],     // наружные стены с дырой портала по центру
     outlines: A2[][],             // комнаты по наружному лицу стен — место группы в плане
     roomCenters: A2[],            // середины комнат в плане
     entryRoom: number,            // комната, в которую входит туннель, ведущий к группе
     isMain: boolean,              // на главном пути
 }
 
-export type T_Complex02Tunnel = {
+export type T_Level00Tunnel = {
     entryStart: A3, entryEnd: A3, // края дыры у начала; y — верх пола, относительно pos
     exitStart: A3, exitEnd: A3,   // края дыры у конца — или края выхода, если туннель ведёт из куска
     outline: A2[],                // место туннеля в плане
 }
 
-export type T_Complex02Layout = {
-    clusters: T_Complex02Cluster[],
-    tunnels: T_Complex02Tunnel[],
+export type T_Level00Layout = {
+    clusters: T_Level00Cluster[],
+    tunnels: T_Level00Tunnel[],
     // куда ведёт выход (exitTunnel): середина конца туннеля, земля под полом и направление дальше.
     // Следующий кусок ставится сюда: pos = point, heading = heading
     end: { point: A3, heading: number } | null,
@@ -277,10 +277,10 @@ const centerOf = (path: A2[]): A2 => {
 }
 
 // наружные стены плана группы: рёбра, которые не повторяет навстречу другая комната
-const exteriorWalls = (plans: A2[][]): T_Complex02Wall[] => {
+const exteriorWalls = (plans: A2[][]): T_Level00Wall[] => {
     const SAME_POINT = 1e-6
     const same = (p: A2, q: A2) => Math.abs(p[0] - q[0]) <= SAME_POINT && Math.abs(p[1] - q[1]) <= SAME_POINT
-    const walls: T_Complex02Wall[] = []
+    const walls: T_Level00Wall[] = []
     plans.forEach((plan, room) => plan.forEach((start, edge) => {
         const end = plan[(edge + 1) % plan.length]
         const isShared = plans.some((other, otherRoom) => otherRoom !== room &&
@@ -297,7 +297,7 @@ const exteriorWalls = (plans: A2[][]): T_Complex02Wall[] => {
     return walls
 }
 
-export const layoutComplex02 = (opts: T = {}): T_Complex02Layout => {
+export const layoutLevel00 = (opts: T = {}): T_Level00Layout => {
     const o: Required<T> = { ...DEFAULT_OPTS, ...opts }
     const random = _GM.seededRandom(o.seed)
     const rand = (min: number, max: number) => min + random() * (max - min)
@@ -330,10 +330,10 @@ export const layoutComplex02 = (opts: T = {}): T_Complex02Layout => {
     const slopeMax = Math.max(.05, o.tunnelSlopeMax)
     const floorTop = Math.max(0, o.floorThickness)
 
-    const clusters: T_Complex02Cluster[] = []
-    const tunnels: T_Complex02Tunnel[] = []
+    const clusters: T_Level00Cluster[] = []
+    const tunnels: T_Level00Tunnel[] = []
     // всё занятое в плане: чьё (группа и комната, null — туннель или obstacles) и где
-    type T_Occupied = { polygon: A2[], cluster: T_Complex02Cluster | null, room: number }
+    type T_Occupied = { polygon: A2[], cluster: T_Level00Cluster | null, room: number }
     const occupied: T_Occupied[] = o.obstacles.filter(polygon => polygon.length >= 3)
         .map(polygon => ({ polygon, cluster: null, room: -1 }))
     // свободно ли место: skip — что не проверять, touch — что проверять только на пересечение
@@ -418,7 +418,7 @@ export const layoutComplex02 = (opts: T = {}): T_Complex02Layout => {
     // direction. leadTunnel — туннель, что к ней ведёт: его касается комната входа, с остальными он не пересекается
     // allowShrink — с неудачами группа становится меньше, последняя попытка — запасная комната; иначе только roomCount
     const placeCluster = (anchor: A2, direction: A2, level: number, roomCount: number, leadTunnel: A2[] | null,
-        isMain: boolean, mustFit: (outline: A2[]) => boolean, allowShrink: boolean, force = false): T_Complex02Cluster | null => {
+        isMain: boolean, mustFit: (outline: A2[]) => boolean, allowShrink: boolean, force = false): T_Level00Cluster | null => {
         const ATTEMPTS = allowShrink ? 12 : 6
         for (let attempt = 0; attempt <= ATTEMPTS; ++attempt) {
             const isLast = attempt === ATTEMPTS
@@ -454,7 +454,7 @@ export const layoutComplex02 = (opts: T = {}): T_Complex02Layout => {
 
     // Туннель из наружной стены wall группы cluster и группа на его конце (или только туннель — выход куска).
     // Дыра — по центру стены, туннель — по её нормали
-    const growFrom = (cluster: T_Complex02Cluster, wall: T_Complex02Wall, roomCount: number, isMain: boolean,
+    const growFrom = (cluster: T_Level00Cluster, wall: T_Level00Wall, roomCount: number, isMain: boolean,
         withCluster: boolean, mustFit: (outline: A2[]) => boolean, allowShrink: boolean, force = false) => {
         const { direction, normal, middle } = wall
         const holeMiddle: A2 = [middle[0] + normal[0] * wallThickness, middle[1] + normal[1] * wallThickness]
@@ -475,7 +475,7 @@ export const layoutComplex02 = (opts: T = {}): T_Complex02Layout => {
             if (!tunnelFits && !(force && isLast)) continue
             const end: A2 = [holeMiddle[0] + along[0], holeMiddle[1] + along[1]]
             const level = cluster.level + levelStep
-            let next: T_Complex02Cluster | null = null
+            let next: T_Level00Cluster | null = null
             if (withCluster) {
                 next = placeCluster(end, normal, level, roomCount, tunnelOutline, isMain, mustFit, allowShrink)
                 if (!next) continue
@@ -496,20 +496,20 @@ export const layoutComplex02 = (opts: T = {}): T_Complex02Layout => {
         return null
     }
 
-    const addCluster = (cluster: T_Complex02Cluster) => {
+    const addCluster = (cluster: T_Level00Cluster) => {
         clusters.push(cluster)
         cluster.outlines.forEach((polygon, room) => occupied.push({ polygon, cluster, room }))
     }
 
     // стены, в которые ещё можно врезать дыру; у первой группы без дыры входа стена входа тоже занята —
     // у входа пусто
-    const blockedWalls = new Set<T_Complex02Wall>()
-    const freeWalls = (cluster: T_Complex02Cluster) => cluster.walls.filter(wall =>
+    const blockedWalls = new Set<T_Level00Wall>()
+    const freeWalls = (cluster: T_Level00Cluster) => cluster.walls.filter(wall =>
         wall.length >= minWallForHole && !cluster.holes.includes(wall) && !blockedWalls.has(wall))
-    const forwardness = (wall: T_Complex02Wall) => wall.normal[0] * forward[0] + wall.normal[1] * forward[1]
+    const forwardness = (wall: T_Level00Wall) => wall.normal[0] * forward[0] + wall.normal[1] * forward[1]
     // Стены для выхода главного пути: в пределах headingSpread — вперемешку; потом остальные, что хоть как-то
     // смотрят вперёд, лучшие сначала
-    const forwardWalls = (walls: T_Complex02Wall[]) => [
+    const forwardWalls = (walls: T_Level00Wall[]) => [
         ...shuffled(walls.filter(wall => forwardness(wall) >= cosSpread)),
         ...walls.filter(wall => forwardness(wall) < cosSpread && forwardness(wall) > .05)
             .sort((a, b) => forwardness(b) - forwardness(a)),
@@ -537,7 +537,7 @@ export const layoutComplex02 = (opts: T = {}): T_Complex02Layout => {
     const clusterCount = Math.max(1, Math.round(o.mainClusterCount))
     for (let i = 1; i < clusterCount; ++i) {
         // сначала группа во весь размер у любой из стен, и только потом — меньше
-        let grown: T_Complex02Cluster | null = null
+        let grown: T_Level00Cluster | null = null
         const roomCount = mainRooms()
         for (const allowShrink of [false, true]) {
             for (const wall of forwardWalls(freeWalls(last))) {
@@ -552,7 +552,7 @@ export const layoutComplex02 = (opts: T = {}): T_Complex02Layout => {
 
     // ---- выход: туннель из последней группы, впереди — свободное место под первую группу следующего куска
 
-    let end: T_Complex02Layout['end'] = null
+    let end: T_Level00Layout['end'] = null
     const RESERVE = 30
     const reserveAhead = (point: A2, direction: A2): A2[] => {
         const side: A2 = [-direction[1] * RESERVE / 2, direction[0] * RESERVE / 2]
@@ -584,7 +584,7 @@ export const layoutComplex02 = (opts: T = {}): T_Complex02Layout => {
     const behindExit = (outline: A2[]) => outline.every(([x, z]) => x * forward[0] + z * forward[1] <= endProjection)
     const branchDepth = Math.max(0, Math.round(o.branchDepth))
     const branchChance = Math.max(0, Math.min(1, o.branchChance))
-    const growBranches = (cluster: T_Complex02Cluster, depth: number) => {
+    const growBranches = (cluster: T_Level00Cluster, depth: number) => {
         if (depth >= branchDepth) return
         for (const wall of shuffled(freeWalls(cluster))) {
             if (random() >= branchChance) continue
@@ -598,12 +598,12 @@ export const layoutComplex02 = (opts: T = {}): T_Complex02Layout => {
     return { clusters, tunnels, end, outlines }
 }
 
-export const complex02 = (opts: T = {}): IBuffersGeom => {
+export const level00 = (opts: T = {}): IBuffersGeom => {
     const o: Required<T> = { ...DEFAULT_OPTS, ...opts }
     const result: IBuffersGeom = { index: [], v: [], uv: [], uv2: [], c: [], vCollide: [] }
     const pilaster: T_PilasterProfile = { ...PILASTER_DEFAULT_PROFILE, ...o.pilaster }
     const wallThickness = Math.max(.05, o.wallThickness)
-    const layout = layoutComplex02(o)
+    const layout = layoutLevel00(o)
     // Портал — по самой низкой высоте height, одинаковый во всех группах: туннели подходят к дырам этой высоты.
     // Если по height портал не помещается — порталов нет нигде (и туннелей), группы получают то, что просили
     const portalHeight = portalHeightFor(pilaster, o.height, o.profileHeight, o.portalHeight)

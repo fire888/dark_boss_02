@@ -1,5 +1,5 @@
 import type { A2, A3 } from "_CORE/_M/_gm"
-import { layoutComplex02, randomOpts as randomComplexOpts, type T_Complex02Layout } from "geometry/06_complex02/complex02"
+import { layoutLevel00, randomOpts as randomComplexOpts, type T_Level00Layout } from "geometry/09_level00/level00"
 import type { T_ChunkOpts } from "./chunkBuffers"
 import {
     MAIN_CLUSTERS_PER_CHUNK, MAIN_CLUSTER_ROOMS_MIN, MAIN_CLUSTER_ROOMS_MAX, BRANCH_CLUSTER_ROOMS_MIN, BRANCH_CLUSTER_ROOMS_MAX,
@@ -11,11 +11,11 @@ import { portalHeightFor } from "geometry/05_room00/room00"
 
 type T_Chunk = {
     origin: A3,                // мировое положение pos куска: середина дыры входа первой комнаты, земля под её полом
-    opts: T_ChunkOpts,         // опции complex02 в координатах относительно origin
-    layout: T_Complex02Layout, // раскладка тех же опций — где комнаты и куда ведёт выход
+    opts: T_ChunkOpts,         // опции level00 в координатах относительно origin
+    layout: T_Level00Layout, // раскладка тех же опций — где комнаты и куда ведёт выход
 }
 
-// План бесконечного уровня: куски complex02 один за другим. Кусок k — главный путь по +x из групп смежных комнат,
+// План бесконечного уровня: куски level00 один за другим. Кусок k — главный путь по +x из групп смежных комнат,
 // между группами — туннели с перепадами, вбок — тупиковые отростки; туннель выхода последней группы ведёт в точку,
 // где стоит вход первой группы куска k + 1 (его origin).
 // Куски сочиняются по порядку и запоминаются: кусок, построенный заново, выходит тем же. Каждый следующий
@@ -97,10 +97,10 @@ export class LevelPlan {
                 tint: [rand(.6, .9), rand(.7, .95), 1],
             }
             // выход встаёт всегда, кроме совсем безвыходной раскладки — тогда другое зерно
-            let layout = layoutComplex02(opts)
+            let layout = layoutLevel00(opts)
             for (let attempt = 0; !layout.end && attempt < 10; ++attempt) {
                 opts.seed = Math.floor(Math.random() * 1e9)
-                layout = layoutComplex02(opts)
+                layout = layoutLevel00(opts)
             }
             this._chunks.push({ origin, opts, layout })
         }

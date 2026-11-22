@@ -1,9 +1,9 @@
-import { complex02 } from "geometry/06_complex02/complex02"
+import { level00 } from "geometry/09_level00/level00"
 
-// Кусок уровня: complex02 → типизированные массивы, готовые к BufferAttribute, с нормалями.
+// Кусок уровня: level00 → типизированные массивы, готовые к BufferAttribute, с нормалями.
 // Чистая функция — исполняется в Web Worker (levelWorker.ts), а без воркера — в основном потоке.
 
-export type T_ChunkOpts = NonNullable<Parameters<typeof complex02>[0]>
+export type T_ChunkOpts = NonNullable<Parameters<typeof level00>[0]>
 
 export type T_ChunkBuffers = {
     index: Uint32Array,
@@ -16,7 +16,7 @@ export type T_ChunkBuffers = {
 }
 
 export const buildChunkBuffers = (opts: T_ChunkOpts): T_ChunkBuffers => {
-    const geom = complex02(opts)
+    const geom = level00(opts)
     const position = new Float32Array(geom.v)
     const index = new Uint32Array(geom.index)
     return {

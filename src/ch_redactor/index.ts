@@ -400,6 +400,9 @@ async function init(root: Root) {
         if (isOrbitShown === controls.isOrbit) return
         isOrbitShown = controls.isOrbit
         modeButtons.forEach(b => b.classList.toggle('active', (b.dataset.mode === 'orbit') === isOrbitShown))
+        // туман — только в walk: в orbit камера далеко и туман скрыл бы всё
+        if (isOrbitShown) studio.removeFog()
+        else studio.addFog()
     }
     modeButtons.forEach(b => b.addEventListener('click', () => {
         // фокус с кнопки снимается: иначе пробел (прыжок) нажал бы её снова
