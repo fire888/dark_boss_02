@@ -27,7 +27,8 @@ import { wall00 } from "geometry/08_wall00/wall00"
 // на свои стены.
 //
 // В стене под порталом — дыра от пола до низа перемычки; откосы закрывают стволы пилястр, верх дыры — софит
-// перемычки, пол в проёме — порог.
+// перемычки, пол в проёме — порог. portalType 'hole' — та же дыра, но без portal00, порога и прокси откосов:
+// проём закрывает то, что к нему пристроено снаружи (у complex00 — portal01 пристройки room02).
 //
 // Пол — плита толщиной floorThickness на земле pos[1], потолок — та же фабрика пола по развёрнутому контуру:
 // верх смотрит вниз, плита висит под верхом стен на ceilingThickness. Тип пола и потолка — floor00 (с кантиком)
@@ -58,7 +59,11 @@ export type T_PerimeterPoint = {
     portalAt?: number,
     // кто строит стену на ребре от этой точки: 'own' (по умолчанию), 'shared', 'neighbour' — см. выше
     wall?: T_WallOwner,
+    // что стоит в дыре: 'portal00' (по умолчанию) — портал с порогом; 'hole' — голая дыра, её закрывает пристройка
+    portalType?: T_PortalType,
 }
+
+export type T_PortalType = 'portal00' | 'hole'
 
 export type T_WallOwner = 'own' | 'shared' | 'neighbour'
 
@@ -230,11 +235,14 @@ export const room00 = (opts: T = {}): IBuffersGeom => {
 
     // ---- периметр: без повторяющихся соседних точек и без повтора первой точки в конце
 
-    const points: { point: A2, portalWidth: number, portalAt: number, wall: T_WallOwner }[] = []
-    for (const { x, z, portalWidth, portalAt, wall } of o.path) {
+    const points: { point: A2, portalWidth: number, portalAt: number, wall: T_WallOwner, portalType: T_PortalType }[] = []
+    for (const { x, z, portalWidth, portalAt, wall, portalType } of o.path) {
         const last = points[points.length - 1]
         if (last && Math.hypot(x - last.point[0], z - last.point[1]) < 1e-6) continue
-        points.push({ point: [x, z], portalWidth: portalWidth ?? 0, portalAt: portalAt ?? .5, wall: wall ?? 'own' })
+        points.push({
+            point: [x, z], portalWidth: portalWidth ?? 0, portalAt: portalAt ?? .5, wall: wall ?? 'own',
+            portalType: portalType ?? 'portal00',
+        })
     }
     while (points.length > 1) {
         const first = points[0].point, last = points[points.length - 1].point
@@ -292,7 +300,7 @@ export const room00 = (opts: T = {}): IBuffersGeom => {
     const portalMargin = portalMarginFor(pilaster)
 
     // дыра в стене на ребре: отрезок [from, to] вдоль ребра от его начала
-    type T_Hole = { from: number, to: number }
+    type T_Hole = { from: number, to: number, isBare: boolean }
     const holes: (T_Hole | null)[] = []
     for (let edge = 0; edge < pointCount; ++edge) {
         holes.push(null)
@@ -313,7 +321,7 @@ export const room00 = (opts: T = {}): IBuffersGeom => {
         const width = Math.min(Math.max(portalWidth, MIN_PORTAL_WIDTH), maxTo - minFrom)
         if (width < MIN_PORTAL_WIDTH) continue
         const from = Math.min(Math.max(portalAt * length - width / 2, minFrom), maxTo - width)
-        holes[edge] = { from, to: from + width }
+        holes[edge] = { from, to: from + width, isBare: points[edge].portalType === 'hole' }
     }
 
     // ---- стены
@@ -390,6 +398,8 @@ export const room00 = (opts: T = {}): IBuffersGeom => {
                 collideQuad(worldAt(outerFrom, floorTop + portalHeight), worldAt(outerTo, floorTop + portalHeight), worldAt(outerTo, ceilingBottom), worldAt(outerFrom, ceilingBottom))
             }
 
+            // голая дыра: порог, откосы и их прокси — у пристройки
+            if (hole.isBare) continue
             // Порог — пол в проёме на уровне верха пола, сквозь толщу стены: верх floor01 без боков (высота 0).
             // Сетка тайлов привязана к тому же pos, что у пола комнаты, — клетки порога продолжают пол.
             // Прокси floor01 не берётся — у порога свой квад ниже
@@ -414,7 +424,7 @@ export const room00 = (opts: T = {}): IBuffersGeom => {
     for (let edge = 0; edge < pointCount; ++edge) {
         const hole = holes[edge]
         // портал в стене соседа строит сосед
-        if (!hole || points[edge].wall === 'neighbour') continue
+        if (!hole || hole.isBare || points[edge].wall === 'neighbour') continue
         const innerStart = pointAt(edge)
         const direction = edgeDirections[edge], normal = edgeNormals[edge]
         const innerFrom = along(innerStart, direction, hole.from), innerTo = along(innerStart, direction, hole.to)

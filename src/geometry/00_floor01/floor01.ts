@@ -1,4 +1,4 @@
-import { _GM, type IBuffersGeom, type A2, type A3 } from "_CORE/_M/_gm"
+import { _GM, type IBuffersGeom, type A2, type A3, type T_LightOpts } from "_CORE/_M/_gm"
 import { RECT_EARTH, UV_WHITE_Q } from "atlases/atlas00/atlas00"
 import { RECT_AO_NONE, UV_AO_TOP_Q } from "atlases/atlasAo00/atlasAo00"
 
@@ -97,10 +97,12 @@ export const randomOpts = (): T => {
     }
 }
 
-export const floor01 = (opts: T = {}): IBuffersGeom => {
+// lightOpts — свет сборщика; по умолчанию общий свет уровня. Нужен составной фабрике, которая
+// поворачивает готовую плиту (откосы portal01): она передаёт направление на «солнце», повёрнутое обратно
+export const floor01 = (opts: T = {}, lightOpts: T_LightOpts = {}): IBuffersGeom => {
     const { pos, contour, height, groundColorJitter, groundTileSize, colorGround, colorSide }: Required<T> = { ...DEFAULT_OPTS, ...opts }
 
-    const builder = _GM.createGeomBuilder()
+    const builder = _GM.createGeomBuilder(lightOpts)
     const { quad, tri, collideTri } = builder
 
     const AO_SHADOW_AT_BOTTOM = _GM.flipUvQ(UV_AO_TOP_Q)

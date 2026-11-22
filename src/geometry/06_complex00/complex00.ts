@@ -5,8 +5,9 @@ import {
 } from "geometry/01_pilaster00/pilaster00"
 import {
     room00, portalMarginFor, portalHeightFor, MIN_PORTAL_WIDTH, DEFAULT_OPTS as ROOM_DEFAULT_OPTS,
-    type T_PerimeterPoint, type T_PlanPoint, type T_WallOwner,
+    type T_PerimeterPoint, type T_PlanPoint, type T_WallOwner, type T_PortalType,
 } from "geometry/05_room00/room00"
+import { room02, type T_Room02Portal } from "geometry/05_room02/room02"
 import { wall00 } from "geometry/08_wall00/wall00"
 
 // Комплекс: несколько комнат room00 из смежных многоугольников, между соседями — порталы.
@@ -34,6 +35,25 @@ import { wall00 } from "geometry/08_wall00/wall00"
 //   не оставляет — накрывается целиком наружной петлёй.
 // Прокси у оболочки нет: стену держат прокси внутренних лиц room00, крыша — над потолками.
 // shell: false — оболочки нет совсем, только комнаты (так собирает группы комнат level00).
+//
+// Пристройки — annexCount групп малых комнат room02 у наружного лица фасада, у входов, расставленных по entranceCount
+// (у входов к entranceTargets — нет). Группа целиком лежит в прямоугольнике annexWidth вдоль фасада по центру входа
+// и annexDepth наружу; у края отрезка фасада и у соседних дыр прямоугольник сужается, не уже проёма с запасом.
+// Пол всех комнат пристройки — на верху пола комплекса, потолок ниже, чем у комплекса.
+//   Главная комната — вплотную к фасаду, глубокая, высотой annexHeight. Периметр сложный: дальние углы — прямые,
+//   со срезом или с Г-вырезом, иногда дальняя стена — щипец. Дыра в стене комплекса у такого входа голая
+//   (room00, portalType 'hole'): без portal00 и порога, её закрывает portal01 главной комнаты — room02 ставит его
+//   за своей стеной, то есть в толщу стены комплекса, глубиной в толщину стены.
+//   Малые комнаты — у левой, правой и дальней стены главной (если она не щипец), ещё ниже; между стенами —
+//   зазор в толщину стены, проход — portal01 главной комнаты через зазор, у малой комнаты в стене голая дыра
+//   (room02, bare). Малая комната — прямоугольник, иногда со срезанными дальними углами.
+// Форма группы — от зерна по месту входа: одна и та же на пересборке. Вдоль главной комнаты фасада нет (её стена
+// лежит в той же плоскости), над ней — полоса фасада до верха стен; пилястры фасада вдоль всей группы не встают.
+// Главная комната, которая задевает крылья комплекса или другую пристройку, не строится — вход остаётся с portal00;
+// задевающая малая комната не строится — без неё и проход к ней.
+// annexTargets — пристройки к заданным точкам плана, сверх annexCount: вход на наружном ребре, ближайшем к точке,
+// и пристройка у него (level00 заранее резервирует под неё место). Если пристройка не встала, вход к такой точке
+// убирается — дыра никуда не вела бы.
 // entranceTargets — входы к заданным точкам плана, до распределения entranceCount.
 //
 // Оттенок tint — множитель цвета вершин (c) всего комплекса после сборки комнат, поверх запечённого света;
@@ -79,6 +99,12 @@ type T = {
     // точки плана (относительно pos), к которым нужны входы: на каждую — вход на наружном ребре, ближайшем к точке,
     // сверх entranceCount (level00 подводит к ним туннели)
     entranceTargets?: T_PlanPoint[],
+    annexCount?: number,  // сколько пристроек room02 у входов; не больше числа входов entranceCount
+    annexWidth?: number,  // ширина пристройки вдоль фасада
+    annexDepth?: number,  // глубина пристройки от фасада наружу
+    annexHeight?: number, // высота главной комнаты пристройки в свету; не выше height, малые комнаты — ниже неё
+    // точки плана (относительно pos), у которых нужен вход с пристройкой, сверх annexCount (так ставит их level00)
+    annexTargets?: T_PlanPoint[],
 }
 
 export const DEFAULT_OPTS: Required<T> = {
@@ -124,6 +150,11 @@ export const DEFAULT_OPTS: Required<T> = {
     tint: [.45, .62, 1],
     shell: true,
     entranceTargets: [],
+    annexCount: 2,
+    annexWidth: 14,
+    annexDepth: 11,
+    annexHeight: 3.6,
+    annexTargets: [],
 }
 
 const isInsidePolygon = ([x, z]: A2, polygon: A2[]): boolean => {
@@ -251,6 +282,10 @@ export const randomOpts = (): T => {
         aoLength: rand(.3, .7),
         colorWall: [rand(.65, .9), rand(.65, .9), rand(.65, .9)],
         tint: [rand(.6, .9), rand(.7, .95), 1],
+        annexCount: Math.floor(Math.random() * 4),
+        annexWidth: rand(9, 18),
+        annexDepth: rand(7, 14),
+        annexHeight: rand(3, 4.5),
     }
 }
 
@@ -277,11 +312,138 @@ const offsetPolygon = (points: A2[], distance: number): A2[] => {
 
 // Отрезок фасада — наружное лицо стены по отрезку плана: от угла до угла наружного контура. holes — дыры входов,
 // отрезки [from, to] вдоль от start
-type T_FacadeSegment = { start: A2, end: A2, direction: A2, normal: A2, length: number, holes: [number, number][] }
+// annexSpans — отрезки вдоль от start под главными комнатами пристроек: там фасад только над ними;
+// annexExtents — охват групп пристроек вдоль отрезка: там нет пилястр фасада
+type T_FacadeSegment = {
+    start: A2, end: A2, direction: A2, normal: A2, length: number, holes: [number, number][],
+    annexSpans: [number, number][], annexExtents: [number, number][],
+}
 const distanceAlong = (segment: T_FacadeSegment, point: A2) =>
     (point[0] - segment.start[0]) * segment.direction[0] + (point[1] - segment.start[1]) * segment.direction[1]
 const pointAlong = (segment: T_FacadeSegment, distance: number): A2 =>
     [segment.start[0] + segment.direction[0] * distance, segment.start[1] + segment.direction[1] * distance]
+
+// Комната пристройки в осях входа: u — вдоль фасада от середины входа, v — наружу от наружного лица фасада
+type T_AnnexRoom = { contour: A2[], portals: T_Room02Portal[], height: number }
+// малая комната и портал к ней в главной комнате — добавляется, только если малая комната встала
+type T_AnnexChild = { room: T_AnnexRoom, mainPortal: T_Room02Portal }
+
+// Группа пристройки в прямоугольнике u ∈ [−halfWidth, halfWidth], v ∈ [0, depth]: главная комната и малые у её стен.
+// holeWidth — проём входа, gap — зазор между стенами главной и малой комнаты (он же глубина портала между ними)
+const layoutAnnex = (random: () => number, halfWidth: number, depth: number, holeWidth: number, gap: number,
+    annexHeight: number, portalHeight: number): { main: T_AnnexRoom, children: T_AnnexChild[] } => {
+    const rand = (min: number, max: number) => min + random() * (max - min)
+    // наименьшая сторона малой комнаты и запас стены по бокам проёма
+    const CHILD_MIN = 2.2
+    const PORTAL_SIDE = .3
+    const childPortalWidth = Math.min(holeWidth, 1.6)
+
+    // ---- главная комната: прямоугольник у фасада, дальние углы — прямые, срез или Г-вырез, иногда щипец
+    const mainHalf = Math.min(halfWidth, Math.max(holeWidth / 2 + .6, halfWidth * rand(.28, .42)))
+    const mainDepth = Math.min(depth, Math.max(holeWidth + 1, depth * rand(.6, .8)))
+    const cornerCut = Math.min(mainHalf, mainDepth) * rand(.2, .4)
+    type T_Corner = 'plain' | 'chamfer' | 'notch'
+    const cornerKind = (): T_Corner => { const roll = random(); return roll < .3 ? 'plain' : roll < .65 ? 'chamfer' : 'notch' }
+    const leftCorner = cornerKind(), rightCorner = cornerKind()
+    const hasGable = random() < .3 && depth - mainDepth > 1.2
+    // докуда по v стены главной комнаты прямые, и где по u начинается и кончается дальняя стена
+    const leftTop = leftCorner === 'plain' ? mainDepth : mainDepth - cornerCut
+    const rightTop = rightCorner === 'plain' ? mainDepth : mainDepth - cornerCut
+    const farLeft = leftCorner === 'plain' ? -mainHalf : -mainHalf + cornerCut
+    const farRight = rightCorner === 'plain' ? mainHalf : mainHalf - cornerCut
+
+    // ребро 0 — у фасада, от +u к −u (навстречу отрезку фасада); ребро 1 — левая стена снизу вверх
+    const points: A2[] = [[mainHalf, 0], [-mainHalf, 0], [-mainHalf, leftTop]]
+    if (leftCorner === 'chamfer') points.push([farLeft, mainDepth])
+    if (leftCorner === 'notch') points.push([farLeft, leftTop], [farLeft, mainDepth])
+    // дальняя стена — от (farLeft, mainDepth) к (farRight, mainDepth), если не щипец
+    const farEdge = points.length - 1
+    if (hasGable) points.push([(farLeft + farRight) / 2, mainDepth + Math.min(depth - mainDepth - .1, rand(1, 3))])
+    if (rightCorner === 'chamfer') points.push([farRight, mainDepth])
+    if (rightCorner === 'notch') points.push([farRight, mainDepth], [farRight, rightTop])
+    points.push([mainHalf, rightTop])
+    // правая стена — последнее ребро, сверху вниз к точке 0
+    const rightEdge = points.length - 1
+
+    const main: T_AnnexRoom = {
+        contour: points,
+        portals: [{ wall: 0, offset: .5, width: holeWidth, height: portalHeight }],
+        height: annexHeight,
+    }
+
+    // ---- малые комнаты: ещё ниже, у боковых стен — вне ширины главной, у дальней — в её ширине
+    const children: T_AnnexChild[] = []
+    const childHeight = () => Math.max(portalHeight + .3, annexHeight * rand(.75, .9))
+    // прямоугольник, ребро 0 — к главной комнате; у дальних от неё углов иногда срез
+    const childContour = (wallStart: A2, wallEnd: A2, outward: A2, childDepth: number): A2[] => {
+        const far = (point: A2, distance: number): A2 => [point[0] + outward[0] * distance, point[1] + outward[1] * distance]
+        if (random() < .5) return [wallStart, wallEnd, far(wallEnd, childDepth), far(wallStart, childDepth)]
+        const chamfer = Math.min(childDepth, Math.hypot(wallEnd[0] - wallStart[0], wallEnd[1] - wallStart[1])) * rand(.2, .35)
+        const along: A2 = [(wallEnd[0] - wallStart[0]), (wallEnd[1] - wallStart[1])]
+        const alongLength = Math.hypot(...along)
+        const step = (point: A2, distance: number): A2 => [point[0] + along[0] / alongLength * distance, point[1] + along[1] / alongLength * distance]
+        return [wallStart, wallEnd, far(wallEnd, childDepth - chamfer), step(far(wallEnd, childDepth), -chamfer),
+            step(far(wallStart, childDepth), chamfer), far(wallStart, childDepth - chamfer)]
+    }
+
+    // сбоку: side = −1 — слева, +1 — справа. Малая комната — v ∈ [childFrom, childFrom + childLength], не ближе gap к фасаду;
+    // проём — посередине того, что у неё общего с прямой частью боковой стены главной
+    const sideChild = (side: -1 | 1) => {
+        const wallTop = side < 0 ? leftTop : rightTop
+        const width = Math.min(halfWidth - mainHalf - gap, rand(CHILD_MIN, 5))
+        const childLength = Math.min(depth - gap, rand(CHILD_MIN, 6))
+        const fromMax = Math.min(depth - childLength, wallTop - childPortalWidth - PORTAL_SIDE * 2)
+        if (width < CHILD_MIN || childLength < childPortalWidth + PORTAL_SIDE * 2 || fromMax < gap || random() < .1) return
+        const childFrom = rand(gap, fromMax)
+        const portalCenter = (childFrom + Math.min(childFrom + childLength, wallTop)) / 2
+        const wallU = side * (mainHalf + gap)
+        // ребро 0 малой комнаты — к главной; оно идёт по v навстречу стене главной комнаты
+        const [wallStart, wallEnd]: A2[] = side < 0
+            ? [[wallU, childFrom], [wallU, childFrom + childLength]]
+            : [[wallU, childFrom + childLength], [wallU, childFrom]]
+        const offsetOnChild = side < 0 ? (portalCenter - childFrom) / childLength : (childFrom + childLength - portalCenter) / childLength
+        children.push({
+            room: {
+                contour: childContour(wallStart, wallEnd, [side * width, 0].map(Math.sign) as A2, width),
+                portals: [{ wall: 0, offset: offsetOnChild, width: childPortalWidth, height: portalHeight, bare: true }],
+                height: childHeight(),
+            },
+            mainPortal: side < 0
+                ? { wall: 1, offset: portalCenter / leftTop, width: childPortalWidth, height: portalHeight }
+                : { wall: rightEdge, offset: (rightTop - portalCenter) / rightTop, width: childPortalWidth, height: portalHeight },
+        })
+    }
+    sideChild(-1)
+    sideChild(1)
+
+    // за дальней стеной: в ширине главной комнаты, проём — посередине общего с прямой дальней стеной
+    if (!hasGable && random() < .9) {
+        const childDepth = Math.min(depth - mainDepth - gap, rand(CHILD_MIN, 5))
+        const width = Math.min(mainHalf * 2, rand(CHILD_MIN, 6))
+        const farLength = farRight - farLeft
+        if (childDepth >= CHILD_MIN && width >= childPortalWidth + PORTAL_SIDE * 2 && farLength >= childPortalWidth + PORTAL_SIDE * 2) {
+            // начало по u: так, чтобы общее с дальней стеной вмещало проём
+            const fromMin = Math.max(-mainHalf, farLeft - width + childPortalWidth + PORTAL_SIDE * 2)
+            const fromMax = Math.min(mainHalf - width, farRight - childPortalWidth - PORTAL_SIDE * 2)
+            if (fromMax >= fromMin) {
+                const childFrom = rand(fromMin, fromMax)
+                const portalCenter = (Math.max(childFrom, farLeft) + Math.min(childFrom + width, farRight)) / 2
+                const wallV = mainDepth + gap
+                children.push({
+                    room: {
+                        // ребро 0 — к главной, от +u к −u, навстречу дальней стене главной
+                        contour: childContour([childFrom + width, wallV], [childFrom, wallV], [0, 1], childDepth),
+                        portals: [{ wall: 0, offset: (childFrom + width - portalCenter) / width, width: childPortalWidth, height: portalHeight, bare: true }],
+                        height: childHeight(),
+                    },
+                    mainPortal: { wall: farEdge, offset: (portalCenter - farLeft) / farLength, width: childPortalWidth, height: portalHeight },
+                })
+            }
+        }
+    }
+
+    return { main, children }
+}
 
 // План комплекса без геометрии: общие рёбра, внутреннее лицо стен, порталы, отрезки фасада и входы.
 // Детерминирован — complex00 строит по нему геометрию
@@ -365,7 +527,8 @@ const layoutComplex = (o: Required<T>) => {
         const distance = ((center[0] - start[0]) * (end[0] - start[0]) + (center[1] - start[1]) * (end[1] - start[1])) / length
         return { distance, length }
     }
-    const portals: { width: number, at: number }[][] = plans.map(plan => plan.map(() => ({ width: 0, at: .5 })))
+    const portals: { width: number, at: number, type: T_PortalType }[][] =
+        plans.map(plan => plan.map(() => ({ width: 0, at: .5, type: 'portal00' as T_PortalType })))
     for (let room = 0; room < plans.length; ++room) {
         plans[room].forEach((start, edge) => {
             const link = links[room][edge]
@@ -380,8 +543,8 @@ const layoutComplex = (o: Required<T>) => {
             )
             const width = Math.min(Math.max(o.portalWidth, MIN_PORTAL_WIDTH), halfRoom * 2)
             if (width < MIN_PORTAL_WIDTH) return
-            portals[room][edge] = { width, at: here.distance / here.length }
-            portals[link.room][link.edge] = { width, at: there.distance / there.length }
+            portals[room][edge] = { width, at: here.distance / here.length, type: 'portal00' }
+            portals[link.room][link.edge] = { width, at: there.distance / there.length, type: 'portal00' }
         })
     }
 
@@ -449,6 +612,8 @@ const layoutComplex = (o: Required<T>) => {
                 normal: [-direction[1], direction[0]],
                 length: (end[0] - start[0]) * direction[0] + (end[1] - start[1]) * direction[1],
                 holes: [],
+                annexSpans: [],
+                annexExtents: [],
             }
             for (const edge of run.edges) segmentOfEdge.set(edge, segment)
             return segment
@@ -486,14 +651,16 @@ const layoutComplex = (o: Required<T>) => {
             perimeter += Math.max(0, segment.length)
         }
     }
-    const placeEntrance = (index: number) => {
-        const { edge, segment, width, at, along } = candidates.splice(index, 1)[0]
-        portals[edge.room][edge.edge] = { width, at }
+    const placeEntrance = (index: number): T_EntranceCandidate => {
+        const entrance = candidates.splice(index, 1)[0]
+        const { edge, segment, width, at, along } = entrance
+        portals[edge.room][edge.edge] = { width, at, type: 'portal00' }
         segment.holes.push([along - width / 2, along + width / 2])
+        return entrance
     }
 
     // сначала входы к заданным точкам: середина дыры на наружной петле, ближайшая к точке
-    for (const { x, z } of o.entranceTargets) {
+    const nearestOuterCandidate = (x: number, z: number): number => {
         let best = -1, bestDistance = Infinity
         candidates.forEach((candidate, index) => {
             if (!candidate.outer) return
@@ -501,27 +668,119 @@ const layoutComplex = (o: Required<T>) => {
             const distance = Math.hypot(centerX - x, centerZ - z)
             if (distance < bestDistance) { best = index; bestDistance = distance }
         })
+        return best
+    }
+    for (const { x, z } of o.entranceTargets) {
+        const best = nearestOuterCandidate(x, z)
         if (best >= 0) placeEntrance(best)
+    }
+    // входы под пристройки к заданным точкам
+    const targetAnnexEntrances: T_EntranceCandidate[] = []
+    for (const { x, z } of o.annexTargets) {
+        const best = nearestOuterCandidate(x, z)
+        if (best >= 0) targetAnnexEntrances.push(placeEntrance(best))
     }
 
     const entranceCount = Math.max(0, Math.floor(o.entranceCount))
+    // входы по entranceCount — из них выбираются места пристроек
+    const spreadEntrances: T_EntranceCandidate[] = []
     for (let i = 0; i < entranceCount && candidates.length > 0; ++i) {
         const target = (i + .5) / entranceCount * perimeter
         let best = 0
         candidates.forEach((candidate, index) => {
             if (Math.abs(candidate.perimeterAt - target) < Math.abs(candidates[best].perimeterAt - target)) best = index
         })
-        placeEntrance(best)
+        spreadEntrances.push(placeEntrance(best))
     }
     for (const segments of facadeLoops) for (const segment of segments) segment.holes.sort((a, b) => a[0] - b[0])
 
-    return { wallThickness, plans, isValid, links, innerPaths, portals, pilaster, portalMargin, portalHeight, facadeLoops }
+    // ---- пристройки у входов: группа малых комнат room02 в прямоугольнике по центру входа, от наружного лица фасада наружу
+
+    // запас прямоугольника по бокам от проёма и до соседней дыры
+    const ANNEX_SIDE_MARGIN = .2
+    // комнаты пристроек в плане, относительно pos
+    const annexes: { contour: T_PlanPoint[], portals: T_Room02Portal[], height: number }[] = []
+    const annexPolygons: A2[][] = []
+    const roomPlans = plans.filter((_, room) => isValid[room])
+    const annexCount = Math.max(0, Math.floor(o.annexCount))
+    const annexDepth = Math.max(1, o.annexDepth)
+    // главная комната — не выше комплекса и выше проёма
+    const annexHeight = Math.min(Math.max(0, o.height), Math.max(o.annexHeight, portalHeight + .3))
+    // свободно ли место под комнату: от оси плана наружное лицо фасада отстоит на толщину стены — ближе комната
+    // залезла бы в крыло; от комнат других пристроек — зазор
+    const isClear = (polygon: A2[], others: A2[][]) =>
+        roomPlans.every(plan => polygonsDistance(polygon, plan) > wallThickness - 1e-3)
+        && others.every(other => polygonsDistance(polygon, other) > .5)
+    // сначала заданные точки, потом входы по entranceCount — до annexCount пристроек
+    let spreadAnnexes = 0
+    const annexEntrances = [
+        ...targetAnnexEntrances.map(entrance => ({ entrance, isTarget: true })),
+        ...spreadEntrances.map(entrance => ({ entrance, isTarget: false })),
+    ]
+    for (const { entrance, isTarget } of annexEntrances) {
+        if (!isTarget && spreadAnnexes >= annexCount) break
+        const { edge, segment, width, along } = entrance
+        // вход к заданной точке без пристройки убирается: дыра никуда не вела бы
+        const dropEntrance = () => {
+            if (!isTarget) return
+            portals[edge.room][edge.edge] = { width: 0, at: .5, type: 'portal00' }
+            segment.holes = segment.holes.filter(([from, to]) => Math.abs((from + to) / 2 - along) > 1e-6)
+        }
+        if (portalHeight <= 0) { dropEntrance(); continue }
+        // не шире отрезка фасада и не заходит на соседние дыры
+        let halfWidth = Math.min(Math.max(o.annexWidth, width + ANNEX_SIDE_MARGIN * 2) / 2, along, segment.length - along)
+        for (const [from, to] of segment.holes) {
+            if (Math.abs((from + to) / 2 - along) < 1e-6) continue
+            halfWidth = Math.min(halfWidth, to <= along ? along - to - ANNEX_SIDE_MARGIN : from - along - ANNEX_SIDE_MARGIN)
+        }
+        if (halfWidth * 2 < width + ANNEX_SIDE_MARGIN * 2) { dropEntrance(); continue }
+
+        // оси входа в план: u — по ходу отрезка фасада, v — наружу
+        const entranceMiddle = pointAlong(segment, along)
+        const toPlan = ([u, v]: A2): A2 => [
+            entranceMiddle[0] + segment.direction[0] * u + segment.normal[0] * v,
+            entranceMiddle[1] + segment.direction[1] * u + segment.normal[1] * v,
+        ]
+        // зерно — от места входа: на пересборке группа та же
+        const random = _GM.seededRandom(Math.floor(_GM.hash2(Math.round(entranceMiddle[0] * 100), Math.round(entranceMiddle[1] * 100)) * 2147483647))
+        const { main, children } = layoutAnnex(random, halfWidth, annexDepth, width, wallThickness, annexHeight, portalHeight)
+        const mainPolygon = main.contour.map(toPlan)
+        if (!isClear(mainPolygon, annexPolygons)) { dropEntrance(); continue }
+        if (!isTarget) ++spreadAnnexes
+
+        const groupPolygons = [mainPolygon]
+        const placedRooms: T_AnnexRoom[] = []
+        for (const { room, mainPortal } of children) {
+            const polygon = room.contour.map(toPlan)
+            if (!isClear(polygon, annexPolygons)) continue
+            groupPolygons.push(polygon)
+            placedRooms.push(room)
+            main.portals.push(mainPortal)
+        }
+        placedRooms.unshift(main)
+        annexPolygons.push(...groupPolygons)
+        for (const room of placedRooms) {
+            annexes.push({ contour: room.contour.map(toPlan).map(([x, z]) => ({ x, z })), portals: room.portals, height: room.height })
+        }
+        portals[edge.room][edge.edge].type = 'hole'
+        // под главной комнатой фасада нет; вдоль всей группы — нет пилястр
+        segment.annexSpans.push([along - Math.abs(main.contour[0][0]), along + Math.abs(main.contour[0][0])])
+        const extentU = placedRooms.flatMap(room => room.contour.map(([u]) => u))
+        segment.annexExtents.push([along + Math.min(...extentU), along + Math.max(...extentU)])
+    }
+
+    return {
+        wallThickness, plans, isValid, links, innerPaths, portals, pilaster, portalMargin, portalHeight, facadeLoops, annexes, annexHeight,
+    }
 }
 
 export const complex00 = (opts: T = {}): IBuffersGeom => {
     const o: Required<T> = { ...DEFAULT_OPTS, ...opts }
     const result: IBuffersGeom = { index: [], v: [], uv: [], uv2: [], c: [], vCollide: [] }
-    const { wallThickness, plans, isValid, links, innerPaths, portals, pilaster, portalMargin, portalHeight, facadeLoops } = layoutComplex(o)
+    const {
+        wallThickness, plans, isValid, links, innerPaths, portals, pilaster, portalMargin, portalHeight, facadeLoops, annexes, annexHeight,
+    } = layoutComplex(o)
+    const floorTop = Math.max(0, o.floorThickness)
 
     // ---- комнаты
 
@@ -531,6 +790,7 @@ export const complex00 = (opts: T = {}): IBuffersGeom => {
             x, z,
             portalWidth: portals[room][edge].width,
             portalAt: portals[room][edge].at,
+            portalType: portals[room][edge].type,
             wall: links[room][edge]?.owner ?? 'own',
         }))
         _GM.mergeIndexedArrays(result, room00({
@@ -552,12 +812,28 @@ export const complex00 = (opts: T = {}): IBuffersGeom => {
         }))
     })
 
+    // ---- пристройки: room02 с полом на верху пола комплекса. Порталы главной комнаты уходят за её стены на толщину
+    // стены — в дыру стены комплекса и через зазор к малым комнатам. Кладка — в тон комнат room00 изнутри
+
+    for (const { contour, portals: roomPortals, height } of annexes) {
+        _GM.mergeIndexedArrays(result, room02({
+            pos: [o.pos[0], o.pos[1] + floorTop, o.pos[2]],
+            contour,
+            height,
+            masonryTileSize: o.masonryTileSize,
+            aoLength: o.aoLength,
+            colorWall: [...ROOM_DEFAULT_OPTS.colorMasonry],
+            portals: roomPortals,
+            portalDepth: wallThickness,
+            portalThickness: Math.max(.01, o.floorThickness),
+        }))
+    }
+
     // ---- оболочка: фасад, пилястры фасада, крыша; без неё — только комнаты (level00)
     if (o.shell) {
         // ---- фасад: кладка wall00 от земли до верха стен; у дыры входа — под порогом (толща пола) и над перемычкой.
         // Сетка кладки привязана к проекции на направление отрезка и к земле — куски одного отрезка продолжают одну кладку
 
-        const floorTop = Math.max(0, o.floorThickness)
         const wallTop = floorTop + Math.max(0, o.height) + Math.max(0, o.ceilingThickness)
         const roofOverhang = Math.max(0, o.roofOverhang)
         // под свесом крыши — тень у верха фасада
@@ -580,13 +856,31 @@ export const complex00 = (opts: T = {}): IBuffersGeom => {
             piece.vCollide = []
             _GM.mergeIndexedArrays(result, piece)
         }
+        // Вдоль пристройки фасад лежит в одной плоскости со стеной room02 и смотрит туда же — внутрь пристройки:
+        // там его нет от пола пристройки до её потолка, стену даёт room02. Остаются цоколь под полом пристройки
+        // и полоса от её потолка до верха стен; дыра входа — внутри этого пропуска. Цоколь — только по бокам от дыры:
+        // в дыре на его месте бок плиты пола portal01
+        const annexTop = floorTop + annexHeight
         for (const segments of facadeLoops) {
             for (const segment of segments) {
+                const holeInside = ([annexFrom, annexTo]: [number, number]) =>
+                    segment.holes.find(([from, to]) => from >= annexFrom - 1e-6 && to <= annexTo + 1e-6)
+                const isInsideAnnex = (hole: [number, number]) => segment.annexSpans.some(span => holeInside(span) === hole)
+                const cuts = [
+                    ...segment.holes.filter(hole => !isInsideAnnex(hole)).map(([from, to]) => ({ from, to, annexHole: undefined })),
+                    ...segment.annexSpans.map(([from, to]) => ({ from, to, annexHole: holeInside([from, to]) })),
+                ].sort((a, b) => a.from - b.from)
                 let cursor = 0
-                for (const [from, to] of segment.holes) {
+                for (const { from, to, annexHole } of cuts) {
                     facadePiece(segment, cursor, from, 0, wallTop, true)
-                    facadePiece(segment, from, to, 0, floorTop, true)
-                    facadePiece(segment, from, to, floorTop + portalHeight, wallTop, false)
+                    if (annexHole) {
+                        facadePiece(segment, from, annexHole[0], 0, floorTop, true)
+                        facadePiece(segment, annexHole[1], to, 0, floorTop, true)
+                        facadePiece(segment, from, to, annexTop, wallTop, false)
+                    } else {
+                        facadePiece(segment, from, to, 0, floorTop, true)
+                        facadePiece(segment, from, to, floorTop + portalHeight, wallTop, false)
+                    }
                     cursor = to
                 }
                 facadePiece(segment, cursor, segment.length, 0, wallTop, true)
@@ -607,11 +901,16 @@ export const complex00 = (opts: T = {}): IBuffersGeom => {
             const holeClearance = portalMargin + pilasterHalfWidth + pilasterProjection + .1
             for (const segments of facadeLoops) {
                 for (const segment of segments) {
+                    // занятые куски: дыры входов с пилонами и пристройки — с тем же запасом, что у угла
+                    const blocked: [number, number][] = [
+                        ...segment.holes.map(([from, to]): [number, number] => [from - holeClearance, to + holeClearance]),
+                        ...segment.annexExtents.map(([from, to]): [number, number] => [from - cornerClearance, to + cornerClearance]),
+                    ].sort((a, b) => a[0] - b[0])
                     const freeRanges: [number, number][] = []
                     let rangeFrom = cornerClearance
-                    for (const [from, to] of segment.holes) {
-                        freeRanges.push([rangeFrom, from - holeClearance])
-                        rangeFrom = to + holeClearance
+                    for (const [from, to] of blocked) {
+                        freeRanges.push([rangeFrom, from])
+                        rangeFrom = Math.max(rangeFrom, to)
                     }
                     freeRanges.push([rangeFrom, segment.length - cornerClearance])
                     for (const [from, to] of freeRanges) {

@@ -27,8 +27,13 @@ import { tunnelBetweenHoles } from "geometry/05_room01/room01"
 // и группа поменьше, и так до branchDepth групп вглубь. Отростки тупиковые и выглядят как главный путь. Если задан
 // выход (exitTunnel), отростки не заходят вперёд дальше выхода — место впереди остаётся следующему куску уровня.
 //
+// Пристройки. В конце на свободных наружных стенах групп с вероятностью annexChance встаёт пристройка complex00 —
+// группа малых низких комнат room02 у наружного лица стены, вход в неё — portal01 сквозь стену по центру стены. Раскладка
+// резервирует под неё прямоугольник annexWidth вдоль стены по центру и annexDepth наружу; complex00 ставит
+// пристройку не больше него. Если задан выход, пристройки, как и отростки, не заходят вперёд дальше выхода.
+//
 // Ничто не пересекается в плане: комнаты (по наружному лицу стен), туннели и obstacles отстоят друг от друга
-// хотя бы на clearance. Группа или туннель, которые не встают, пробуются заново в другой форме, на другой стене,
+// хотя бы на clearance; пристройку касается только своя группа. Группа или туннель, которые не встают, пробуются заново в другой форме, на другой стене,
 // другой длины. Раскладка сочиняется генератором от seed: одни и те же опции — одна и та же раскладка.
 // layoutLevel00 отдаёт её без геометрии.
 //
@@ -80,6 +85,10 @@ type T = {
     aoLength?: number,            // длина, на которую растягивается тайл тени у угла стены с полом и потолком
     colorWall?: A3,               // базовый цвет стен комнат до запечённого освещения
     colorTunnel?: A3,             // базовый цвет кладки туннелей до запечённого освещения
+    annexChance?: number,         // вероятность пристройки room02 на свободной наружной стене группы, от 0 до 1
+    annexWidth?: number,          // ширина пристройки вдоль стены
+    annexDepth?: number,          // глубина пристройки от наружного лица стены
+    annexHeight?: number,         // высота главной комнаты пристройки; малые комнаты — ниже
     tint?: A3,                    // множитель цвета вершин всего, компоненты от 0 до 1
 }
 
@@ -125,6 +134,10 @@ export const DEFAULT_OPTS: Required<T> = {
     aoLength: COMPLEX_DEFAULT_OPTS.aoLength,
     colorWall: [...COMPLEX_DEFAULT_OPTS.colorWall],
     colorTunnel: [...ROOM_DEFAULT_OPTS.colorMasonry],
+    annexChance: .3,
+    annexWidth: COMPLEX_DEFAULT_OPTS.annexWidth,
+    annexDepth: COMPLEX_DEFAULT_OPTS.annexDepth,
+    annexHeight: COMPLEX_DEFAULT_OPTS.annexHeight,
     tint: [...COMPLEX_DEFAULT_OPTS.tint],
 }
 
@@ -177,6 +190,10 @@ export const randomOpts = (): T => {
         aoLength: base.aoLength,
         colorWall: base.colorWall,
         colorTunnel: [rand(.2, .85), rand(.2, .8), rand(.3, .85)],
+        annexChance: rand(0, .6),
+        annexWidth: base.annexWidth,
+        annexDepth: base.annexDepth,
+        annexHeight: base.annexHeight,
         tint: base.tint,
     }
 }
@@ -199,6 +216,8 @@ export type T_Level00Cluster = {
     hasPilasters: boolean, // пилястры у стен (у порталов — всегда)
     walls: T_Level00Wall[],     // наружные стены
     holes: T_Level00Wall[],     // наружные стены с дырой портала по центру
+    annexes: T_Level00Wall[],   // наружные стены с пристройкой room02 — дыра по центру, вход в пристройку
+    annexOutlines: A2[][],      // места пристроек в плане — зарезервированные прямоугольники
     outlines: A2[][],             // комнаты по наружному лицу стен — место группы в плане
     roomCenters: A2[],            // середины комнат в плане
     entryRoom: number,            // комната, в которую входит туннель, ведущий к группе
@@ -446,6 +465,7 @@ export const layoutLevel00 = (opts: T = {}): T_Level00Layout => {
             const entryWall = walls.find(wall => wall.room === entry.room && wall.edge === entry.edge)!
             return {
                 plans, level, height: clusterHeight(), hasPilasters: random() < pilasterChance, walls, holes: [entryWall], outlines,
+                annexes: [], annexOutlines: [],
                 roomCenters: plans.map(centerOf), entryRoom: entry.room, isMain,
             }
         }
@@ -505,7 +525,7 @@ export const layoutLevel00 = (opts: T = {}): T_Level00Layout => {
     // у входа пусто
     const blockedWalls = new Set<T_Level00Wall>()
     const freeWalls = (cluster: T_Level00Cluster) => cluster.walls.filter(wall =>
-        wall.length >= minWallForHole && !cluster.holes.includes(wall) && !blockedWalls.has(wall))
+        wall.length >= minWallForHole && !cluster.holes.includes(wall) && !cluster.annexes.includes(wall) && !blockedWalls.has(wall))
     const forwardness = (wall: T_Level00Wall) => wall.normal[0] * forward[0] + wall.normal[1] * forward[1]
     // Стены для выхода главного пути: в пределах headingSpread — вперемешку; потом остальные, что хоть как-то
     // смотрят вперёд, лучшие сначала
@@ -594,7 +614,36 @@ export const layoutLevel00 = (opts: T = {}): T_Level00Layout => {
     }
     for (const cluster of clusters.filter(cluster => cluster.isMain)) growBranches(cluster, 0)
 
-    const outlines = [...clusters.flatMap(cluster => cluster.outlines), ...tunnels.map(tunnel => tunnel.outline)]
+    // ---- пристройки: прямоугольник по центру стены от наружного лица наружу — с запасом под то, что поставит
+    // complex00 (она пристройку только сужает). Свою группу пристройка касается, остальное — с зазором clearance
+
+    const annexChance = Math.max(0, Math.min(1, o.annexChance))
+    const annexHalfWidth = Math.max(o.annexWidth, holeWidth + .4) / 2
+    const annexDepth = Math.max(1, o.annexDepth)
+    for (const cluster of clusters) {
+        for (const wall of shuffled(freeWalls(cluster))) {
+            if (random() >= annexChance) continue
+            const { direction, normal, middle } = wall
+            const faceMiddle: A2 = [middle[0] + normal[0] * wallThickness, middle[1] + normal[1] * wallThickness]
+            // не обрезается по стене: complex00 может вынести пристройку на соседние рёбра той же прямой
+            const halfWidth = annexHalfWidth
+            const corner = (alongWall: number, outward: number): A2 => [
+                faceMiddle[0] + direction[0] * alongWall + normal[0] * outward,
+                faceMiddle[1] + direction[1] * alongWall + normal[1] * outward,
+            ]
+            const outline: A2[] = [corner(-halfWidth, 0), corner(halfWidth, 0), corner(halfWidth, annexDepth), corner(-halfWidth, annexDepth)]
+            // свою комнату пристройка касается вплотную, соседние комнаты группы — не задевает
+            if (!fits(outline, other => other.cluster === cluster && other.room === wall.room, other => other.cluster === cluster) || !behindExit(outline)) continue
+            cluster.annexes.push(wall)
+            cluster.annexOutlines.push(outline)
+            occupied.push({ polygon: outline, cluster: null, room: -1 })
+        }
+    }
+
+    const outlines = [
+        ...clusters.flatMap(cluster => [...cluster.outlines, ...cluster.annexOutlines]),
+        ...tunnels.map(tunnel => tunnel.outline),
+    ]
     return { clusters, tunnels, end, outlines }
 }
 
@@ -618,6 +667,14 @@ export const level00 = (opts: T = {}): IBuffersGeom => {
                 x: middle[0] + normal[0] * wallThickness, z: middle[1] + normal[1] * wallThickness,
             })),
             entranceCount: 0,
+            // пристройки — к середине стены на наружном лице, туда же, куда complex00 ставит вход
+            annexTargets: cluster.annexes.map(({ middle, normal }) => ({
+                x: middle[0] + normal[0] * wallThickness, z: middle[1] + normal[1] * wallThickness,
+            })),
+            annexCount: 0,
+            annexWidth: o.annexWidth,
+            annexDepth: o.annexDepth,
+            annexHeight: o.annexHeight,
             portalWidth: o.portalWidth,
             height: cluster.height,
             wallThickness: o.wallThickness,

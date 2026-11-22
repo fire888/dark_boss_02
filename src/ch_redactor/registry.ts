@@ -4,10 +4,12 @@ import * as floor00 from 'geometry/00_floor00/floor00'
 import * as floor01 from 'geometry/00_floor01/floor01'
 import * as pilaster00 from 'geometry/01_pilaster00/pilaster00'
 import * as portal00 from 'geometry/02_portal00/portal00'
+import * as portal01 from 'geometry/02_portal01/portal01'
 import * as lintel00 from 'geometry/03_lintel00/lintel00'
 import * as profile00 from 'geometry/04_profile00/profile00'
 import * as room00 from 'geometry/05_room00/room00'
 import * as room01 from 'geometry/05_room01/room01'
+import * as room02 from 'geometry/05_room02/room02'
 import * as complex00 from 'geometry/06_complex00/complex00'
 import * as level00 from 'geometry/09_level00/level00'
 import * as stairs00 from 'geometry/07_stairs00/stairs00'
@@ -60,6 +62,12 @@ export const GEOM_REGISTRY: T_GeomEntry[] = [
         defaultOpts: portal00.DEFAULT_OPTS,
     },
     {
+        name: 'portal01',
+        factory: portal01.portal01,
+        randomOpts: portal01.randomOpts,
+        defaultOpts: portal01.DEFAULT_OPTS,
+    },
+    {
         name: 'lintel00',
         factory: lintel00.lintel00,
         randomOpts: lintel00.randomOpts,
@@ -82,6 +90,12 @@ export const GEOM_REGISTRY: T_GeomEntry[] = [
         factory: room01.room01,
         randomOpts: room01.randomOpts,
         defaultOpts: room01.DEFAULT_OPTS,
+    },
+    {
+        name: 'room02',
+        factory: room02.room02,
+        randomOpts: room02.randomOpts,
+        defaultOpts: room02.DEFAULT_OPTS,
     },
     {
         name: 'complex00',
