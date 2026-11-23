@@ -1,14 +1,12 @@
 import { _GM, type IBuffersGeom, type A2, type A3 } from "_CORE/_M/_gm"
-import { floor01 } from "geometry/00_floor01/floor01"
 import {
-    pilaster00, DEFAULT_PROFILE as PILASTER_DEFAULT_PROFILE, randomProfile as randomPilasterProfile, type T_PilasterProfile,
+    DEFAULT_PROFILE as PILASTER_DEFAULT_PROFILE, randomProfile as randomPilasterProfile, type T_PilasterProfile,
 } from "geometry/01_pilaster00/pilaster00"
 import {
     room00, portalMarginFor, portalHeightFor, MIN_PORTAL_WIDTH, DEFAULT_OPTS as ROOM_DEFAULT_OPTS,
     type T_PerimeterPoint, type T_PlanPoint, type T_WallOwner, type T_PortalType,
 } from "geometry/05_room00/room00"
 import { room02, type T_Room02Portal } from "geometry/05_room02/room02"
-import { wall00 } from "geometry/08_wall00/wall00"
 
 // Комплекс: несколько комнат room00 из смежных многоугольников, между соседями — порталы.
 //
@@ -22,33 +20,25 @@ import { wall00 } from "geometry/08_wall00/wall00"
 // стене — по центру ребра плана, шириной portalWidth, сужается, если пилоны не помещаются у одной из комнат;
 // уже 1.2 — общая стена без портала.
 //
-// Снаружи. room00 не строит наружного лица своих стен и верха стен — это оболочка комплекса:
-//   наружный контур — наружные рёбра плана всех комнат (без соседа), сцепленные в петли; рёбра на одной прямой
-//   сливаются в один отрезок фасада, отрезок отстоит от оси плана на толщину стены (там наружное лицо room00);
-//   фасад — кладка wall00 от земли до верха стен, против часовой стрелки сверху — лицом наружу;
-//   пилястры фасада — pilaster00 от земли до верха стен с шагом pilasterSpacing, выступают наружу;
-//   входы — entranceCount порталов portal00 в наружных стенах, разнесённых по периметру поровну. Их строит room00
-//   (дыра, портал, порог) по portalWidth на наружном ребре, комплекс заранее выбирает место и ширину, чтобы
-//   пилоны поместились и в комнате, и на отрезке фасада, и вырезает ту же дыру в фасаде;
-//   крыша — floor01 по наружному контуру, раздвинутому на roofOverhang, плитой roofThickness на верху стен,
-//   снизу — софит свеса (тот же контур по часовой стрелке). Внутренний двор (петля по часовой стрелке) крыша
-//   не оставляет — накрывается целиком наружной петлёй.
-// Прокси у оболочки нет: стену держат прокси внутренних лиц room00, крыша — над потолками.
-// shell: false — оболочки нет совсем, только комнаты (так собирает группы комнат level00).
+// Снаружи комплекса ничего нет: room00 не строит наружного лица своих стен и верха стен, фасада и крыши тоже нет.
+// Наружный контур считается только для входов: наружные рёбра плана всех комнат (без соседа), сцепленные в петли,
+// рёбра на одной прямой — один отрезок, отстоящий от оси плана на толщину стены (там наружное лицо room00).
+// Входы — entranceCount порталов portal00 в наружных стенах, разнесённых по периметру поровну. Их строит room00
+// (дыра, портал, порог) по portalWidth на наружном ребре, комплекс заранее выбирает место и ширину, чтобы пилоны
+// поместились и в комнате, и на отрезке наружного контура.
 //
-// Пристройки — annexCount групп малых комнат room02 у наружного лица фасада, у входов, расставленных по entranceCount
-// (у входов к entranceTargets — нет). Группа целиком лежит в прямоугольнике annexWidth вдоль фасада по центру входа
-// и annexDepth наружу; у края отрезка фасада и у соседних дыр прямоугольник сужается, не уже проёма с запасом.
+// Пристройки — annexCount групп малых комнат room02 у наружного лица стены, у входов, расставленных по entranceCount
+// (у входов к entranceTargets — нет). Группа целиком лежит в прямоугольнике annexWidth вдоль стены по центру входа
+// и annexDepth наружу; у края отрезка наружного контура и у соседних дыр прямоугольник сужается, не уже проёма с запасом.
 // Пол всех комнат пристройки — на верху пола комплекса, потолок ниже, чем у комплекса.
-//   Главная комната — вплотную к фасаду, глубокая, высотой annexHeight. Периметр сложный: дальние углы — прямые,
+//   Главная комната — вплотную к наружному лицу стены, глубокая, высотой annexHeight. Периметр сложный: дальние углы — прямые,
 //   со срезом или с Г-вырезом, иногда дальняя стена — щипец. Дыра в стене комплекса у такого входа голая
 //   (room00, portalType 'hole'): без portal00 и порога, её закрывает portal01 главной комнаты — room02 ставит его
 //   за своей стеной, то есть в толщу стены комплекса, глубиной в толщину стены.
 //   Малые комнаты — у левой, правой и дальней стены главной (если она не щипец), ещё ниже; между стенами —
 //   зазор в толщину стены, проход — portal01 главной комнаты через зазор, у малой комнаты в стене голая дыра
 //   (room02, bare). Малая комната — прямоугольник, иногда со срезанными дальними углами.
-// Форма группы — от зерна по месту входа: одна и та же на пересборке. Вдоль главной комнаты фасада нет (её стена
-// лежит в той же плоскости), над ней — полоса фасада до верха стен; пилястры фасада вдоль всей группы не встают.
+// Форма группы — от зерна по месту входа: одна и та же на пересборке.
 // Главная комната, которая задевает крылья комплекса или другую пристройку, не строится — вход остаётся с portal00;
 // задевающая малая комната не строится — без неё и проход к ней.
 // annexTargets — пристройки к заданным точкам плана, сверх annexCount: вход на наружном ребре, ближайшем к точке,
@@ -78,10 +68,7 @@ type T = {
     rooms?: T_Room[],        // комнаты; общие рёбра — одинаковые пары точек у двух комнат
     portalWidth?: number,    // ширина проёма портала между соседними комнатами, чистая, между стволами пилястр
     entranceCount?: number,  // сколько входов — порталов в наружных стенах, разнесённых по периметру
-    roofThickness?: number,  // толщина плиты крыши над верхом стен
-    roofOverhang?: number,   // свес крыши за наружное лицо фасада
-    masonryTileSize?: number, // сторона тайла кладки фасада, в метрах
-    colorFacade?: A3,        // базовый цвет кладки фасада до запечённого освещения
+    masonryTileSize?: number, // сторона тайла кладки стен пристроек, в метрах
     height?: number,         // высота комнат в свету — от верха пола до низа потолка
     wallThickness?: number,  // толщина стен — и наружных, и общих
     floorThickness?: number, // толщина плиты пола
@@ -95,13 +82,12 @@ type T = {
     aoLength?: number,            // длина, на которую растягивается тайл тени у угла стены с полом и потолком
     colorWall?: A3,               // базовый цвет стен до запечённого освещения
     tint?: A3,                    // множитель цвета вершин всего комплекса, компоненты от 0 до 1
-    shell?: boolean,              // строить оболочку — фасад, пилястры фасада и крышу; false — только комнаты
     // точки плана (относительно pos), к которым нужны входы: на каждую — вход на наружном ребре, ближайшем к точке,
     // сверх entranceCount (level00 подводит к ним туннели)
     entranceTargets?: T_PlanPoint[],
     annexCount?: number,  // сколько пристроек room02 у входов; не больше числа входов entranceCount
-    annexWidth?: number,  // ширина пристройки вдоль фасада
-    annexDepth?: number,  // глубина пристройки от фасада наружу
+    annexWidth?: number,  // ширина пристройки вдоль стены
+    annexDepth?: number,  // глубина пристройки от стены наружу
     annexHeight?: number, // высота главной комнаты пристройки в свету; не выше height, малые комнаты — ниже неё
     // точки плана (относительно pos), у которых нужен вход с пристройкой, сверх annexCount (так ставит их level00)
     annexTargets?: T_PlanPoint[],
@@ -130,10 +116,7 @@ export const DEFAULT_OPTS: Required<T> = {
     ],
     portalWidth: 1.8,
     entranceCount: 4,
-    roofThickness: .35,
-    roofOverhang: .5,
     masonryTileSize: ROOM_DEFAULT_OPTS.masonryTileSize,
-    colorFacade: [...ROOM_DEFAULT_OPTS.colorMasonry],
     height: 6,
     wallThickness: .6,
     floorThickness: .15,
@@ -148,7 +131,6 @@ export const DEFAULT_OPTS: Required<T> = {
     colorWall: [.82, .8, .76],
     //colorWall: [0, 0, 0],
     tint: [.45, .62, 1],
-    shell: true,
     entranceTargets: [],
     annexCount: 2,
     annexWidth: 14,
@@ -265,10 +247,7 @@ export const randomOpts = (): T => {
         rooms,
         portalWidth: rand(1.2, 2.6),
         entranceCount: Math.floor(Math.random() * 6),
-        roofThickness: rand(.15, .6),
-        roofOverhang: rand(0, .9),
         masonryTileSize: rand(.8, 1.8),
-        colorFacade: [rand(.2, .85), rand(.2, .8), rand(.3, .85)],
         height: rand(4.5, 8),
         wallThickness,
         floorThickness: rand(.05, .3),
@@ -310,20 +289,15 @@ const offsetPolygon = (points: A2[], distance: number): A2[] => {
     })
 }
 
-// Отрезок фасада — наружное лицо стены по отрезку плана: от угла до угла наружного контура. holes — дыры входов,
+// Отрезок наружного контура — наружное лицо стены по отрезку плана: от угла до угла наружного контура. holes — дыры входов,
 // отрезки [from, to] вдоль от start
-// annexSpans — отрезки вдоль от start под главными комнатами пристроек: там фасад только над ними;
-// annexExtents — охват групп пристроек вдоль отрезка: там нет пилястр фасада
-type T_FacadeSegment = {
-    start: A2, end: A2, direction: A2, normal: A2, length: number, holes: [number, number][],
-    annexSpans: [number, number][], annexExtents: [number, number][],
-}
+type T_FacadeSegment = { start: A2, end: A2, direction: A2, normal: A2, length: number, holes: [number, number][] }
 const distanceAlong = (segment: T_FacadeSegment, point: A2) =>
     (point[0] - segment.start[0]) * segment.direction[0] + (point[1] - segment.start[1]) * segment.direction[1]
 const pointAlong = (segment: T_FacadeSegment, distance: number): A2 =>
     [segment.start[0] + segment.direction[0] * distance, segment.start[1] + segment.direction[1] * distance]
 
-// Комната пристройки в осях входа: u — вдоль фасада от середины входа, v — наружу от наружного лица фасада
+// Комната пристройки в осях входа: u — вдоль стены от середины входа, v — наружу от наружного лица стены
 type T_AnnexRoom = { contour: A2[], portals: T_Room02Portal[], height: number }
 // малая комната и портал к ней в главной комнате — добавляется, только если малая комната встала
 type T_AnnexChild = { room: T_AnnexRoom, mainPortal: T_Room02Portal }
@@ -338,7 +312,7 @@ const layoutAnnex = (random: () => number, halfWidth: number, depth: number, hol
     const PORTAL_SIDE = .3
     const childPortalWidth = Math.min(holeWidth, 1.6)
 
-    // ---- главная комната: прямоугольник у фасада, дальние углы — прямые, срез или Г-вырез, иногда щипец
+    // ---- главная комната: прямоугольник у стены, дальние углы — прямые, срез или Г-вырез, иногда щипец
     const mainHalf = Math.min(halfWidth, Math.max(holeWidth / 2 + .6, halfWidth * rand(.28, .42)))
     const mainDepth = Math.min(depth, Math.max(holeWidth + 1, depth * rand(.6, .8)))
     const cornerCut = Math.min(mainHalf, mainDepth) * rand(.2, .4)
@@ -352,7 +326,7 @@ const layoutAnnex = (random: () => number, halfWidth: number, depth: number, hol
     const farLeft = leftCorner === 'plain' ? -mainHalf : -mainHalf + cornerCut
     const farRight = rightCorner === 'plain' ? mainHalf : mainHalf - cornerCut
 
-    // ребро 0 — у фасада, от +u к −u (навстречу отрезку фасада); ребро 1 — левая стена снизу вверх
+    // ребро 0 — у стены, от +u к −u (навстречу отрезку наружного контура); ребро 1 — левая стена снизу вверх
     const points: A2[] = [[mainHalf, 0], [-mainHalf, 0], [-mainHalf, leftTop]]
     if (leftCorner === 'chamfer') points.push([farLeft, mainDepth])
     if (leftCorner === 'notch') points.push([farLeft, leftTop], [farLeft, mainDepth])
@@ -386,7 +360,7 @@ const layoutAnnex = (random: () => number, halfWidth: number, depth: number, hol
             step(far(wallStart, childDepth), chamfer), far(wallStart, childDepth - chamfer)]
     }
 
-    // сбоку: side = −1 — слева, +1 — справа. Малая комната — v ∈ [childFrom, childFrom + childLength], не ближе gap к фасаду;
+    // сбоку: side = −1 — слева, +1 — справа. Малая комната — v ∈ [childFrom, childFrom + childLength], не ближе gap к стене;
     // проём — посередине того, что у неё общего с прямой частью боковой стены главной
     const sideChild = (side: -1 | 1) => {
         const wallTop = side < 0 ? leftTop : rightTop
@@ -445,7 +419,7 @@ const layoutAnnex = (random: () => number, halfWidth: number, depth: number, hol
     return { main, children }
 }
 
-// План комплекса без геометрии: общие рёбра, внутреннее лицо стен, порталы, отрезки фасада и входы.
+// План комплекса без геометрии: общие рёбра, внутреннее лицо стен, порталы, отрезки наружного контура и входы.
 // Детерминирован — complex00 строит по нему геометрию
 const layoutComplex = (o: Required<T>) => {
     const wallThickness = Math.max(.05, o.wallThickness)
@@ -548,7 +522,7 @@ const layoutComplex = (o: Required<T>) => {
         })
     }
 
-    // ---- наружный контур: наружные рёбра плана, сцепленные в петли; рёбра на одной прямой — один отрезок фасада
+    // ---- наружный контур: наружные рёбра плана, сцепленные в петли; рёбра на одной прямой — один отрезок наружного контура
 
     type T_ExteriorEdge = { room: number, edge: number, start: A2, end: A2 }
     const exteriorEdges: T_ExteriorEdge[] = []
@@ -612,8 +586,6 @@ const layoutComplex = (o: Required<T>) => {
                 normal: [-direction[1], direction[0]],
                 length: (end[0] - start[0]) * direction[0] + (end[1] - start[1]) * direction[1],
                 holes: [],
-                annexSpans: [],
-                annexExtents: [],
             }
             for (const edge of run.edges) segmentOfEdge.set(edge, segment)
             return segment
@@ -621,7 +593,7 @@ const layoutComplex = (o: Required<T>) => {
     }
 
     // ---- входы: на каждом наружном ребре — самый широкий проём по центру ребра, пилоны которого помещаются и в комнате,
-    // и на отрезке фасада; из подходящих рёбер выбираются ближайшие к точкам, делящим периметр на entranceCount частей
+    // и на отрезке наружного контура; из подходящих рёбер выбираются ближайшие к точкам, делящим периметр на entranceCount частей
 
     const portalHeight = portalHeightFor(pilaster, o.height, o.profileHeight, o.portalHeight)
     // outer — на наружной петле (против часовой стрелки сверху), а не во внутреннем дворе
@@ -694,7 +666,7 @@ const layoutComplex = (o: Required<T>) => {
     }
     for (const segments of facadeLoops) for (const segment of segments) segment.holes.sort((a, b) => a[0] - b[0])
 
-    // ---- пристройки у входов: группа малых комнат room02 в прямоугольнике по центру входа, от наружного лица фасада наружу
+    // ---- пристройки у входов: группа малых комнат room02 в прямоугольнике по центру входа, от наружного лица стены наружу
 
     // запас прямоугольника по бокам от проёма и до соседней дыры
     const ANNEX_SIDE_MARGIN = .2
@@ -706,7 +678,7 @@ const layoutComplex = (o: Required<T>) => {
     const annexDepth = Math.max(1, o.annexDepth)
     // главная комната — не выше комплекса и выше проёма
     const annexHeight = Math.min(Math.max(0, o.height), Math.max(o.annexHeight, portalHeight + .3))
-    // свободно ли место под комнату: от оси плана наружное лицо фасада отстоит на толщину стены — ближе комната
+    // свободно ли место под комнату: от оси плана наружное лицо стены отстоит на толщину стены — ближе комната
     // залезла бы в крыло; от комнат других пристроек — зазор
     const isClear = (polygon: A2[], others: A2[][]) =>
         roomPlans.every(plan => polygonsDistance(polygon, plan) > wallThickness - 1e-3)
@@ -727,7 +699,7 @@ const layoutComplex = (o: Required<T>) => {
             segment.holes = segment.holes.filter(([from, to]) => Math.abs((from + to) / 2 - along) > 1e-6)
         }
         if (portalHeight <= 0) { dropEntrance(); continue }
-        // не шире отрезка фасада и не заходит на соседние дыры
+        // не шире отрезка наружного контура и не заходит на соседние дыры
         let halfWidth = Math.min(Math.max(o.annexWidth, width + ANNEX_SIDE_MARGIN * 2) / 2, along, segment.length - along)
         for (const [from, to] of segment.holes) {
             if (Math.abs((from + to) / 2 - along) < 1e-6) continue
@@ -735,7 +707,7 @@ const layoutComplex = (o: Required<T>) => {
         }
         if (halfWidth * 2 < width + ANNEX_SIDE_MARGIN * 2) { dropEntrance(); continue }
 
-        // оси входа в план: u — по ходу отрезка фасада, v — наружу
+        // оси входа в план: u — по ходу отрезка наружного контура, v — наружу
         const entranceMiddle = pointAlong(segment, along)
         const toPlan = ([u, v]: A2): A2 => [
             entranceMiddle[0] + segment.direction[0] * u + segment.normal[0] * v,
@@ -763,23 +735,15 @@ const layoutComplex = (o: Required<T>) => {
             annexes.push({ contour: room.contour.map(toPlan).map(([x, z]) => ({ x, z })), portals: room.portals, height: room.height })
         }
         portals[edge.room][edge.edge].type = 'hole'
-        // под главной комнатой фасада нет; вдоль всей группы — нет пилястр
-        segment.annexSpans.push([along - Math.abs(main.contour[0][0]), along + Math.abs(main.contour[0][0])])
-        const extentU = placedRooms.flatMap(room => room.contour.map(([u]) => u))
-        segment.annexExtents.push([along + Math.min(...extentU), along + Math.max(...extentU)])
     }
 
-    return {
-        wallThickness, plans, isValid, links, innerPaths, portals, pilaster, portalMargin, portalHeight, facadeLoops, annexes, annexHeight,
-    }
+    return { wallThickness, plans, isValid, links, innerPaths, portals, pilaster, annexes }
 }
 
 export const complex00 = (opts: T = {}): IBuffersGeom => {
     const o: Required<T> = { ...DEFAULT_OPTS, ...opts }
     const result: IBuffersGeom = { index: [], v: [], uv: [], uv2: [], c: [], vCollide: [] }
-    const {
-        wallThickness, plans, isValid, links, innerPaths, portals, pilaster, portalMargin, portalHeight, facadeLoops, annexes, annexHeight,
-    } = layoutComplex(o)
+    const { wallThickness, plans, isValid, links, innerPaths, portals, pilaster, annexes } = layoutComplex(o)
     const floorTop = Math.max(0, o.floorThickness)
 
     // ---- комнаты
@@ -827,136 +791,6 @@ export const complex00 = (opts: T = {}): IBuffersGeom => {
             portalDepth: wallThickness,
             portalThickness: Math.max(.01, o.floorThickness),
         }))
-    }
-
-    // ---- оболочка: фасад, пилястры фасада, крыша; без неё — только комнаты (level00)
-    if (o.shell) {
-        // ---- фасад: кладка wall00 от земли до верха стен; у дыры входа — под порогом (толща пола) и над перемычкой.
-        // Сетка кладки привязана к проекции на направление отрезка и к земле — куски одного отрезка продолжают одну кладку
-
-        const wallTop = floorTop + Math.max(0, o.height) + Math.max(0, o.ceilingThickness)
-        const roofOverhang = Math.max(0, o.roofOverhang)
-        // под свесом крыши — тень у верха фасада
-        const shadowUnderRoof = roofOverhang > 1e-3
-        const masonryTileSize = Math.max(.1, o.masonryTileSize)
-        const facadePiece = (segment: T_FacadeSegment, from: number, to: number, yFrom: number, yTo: number, shadowBottom: boolean) => {
-            if (to - from < 1e-6 || yTo - yFrom < 1e-6) return
-            const start = pointAlong(segment, from)
-            const piece = wall00({
-                pos: [o.pos[0], o.pos[1] + yFrom, o.pos[2]],
-                start, end: pointAlong(segment, to),
-                height: yTo - yFrom,
-                tileSize: masonryTileSize,
-                tileOffsetX: start[0] * segment.direction[0] + start[1] * segment.direction[1],
-                tileOffsetY: yFrom,
-                shadowBottom, shadowTop: shadowUnderRoof && yTo >= wallTop,
-                aoLength: o.aoLength,
-                colorWall: o.colorFacade,
-            })
-            piece.vCollide = []
-            _GM.mergeIndexedArrays(result, piece)
-        }
-        // Вдоль пристройки фасад лежит в одной плоскости со стеной room02 и смотрит туда же — внутрь пристройки:
-        // там его нет от пола пристройки до её потолка, стену даёт room02. Остаются цоколь под полом пристройки
-        // и полоса от её потолка до верха стен; дыра входа — внутри этого пропуска. Цоколь — только по бокам от дыры:
-        // в дыре на его месте бок плиты пола portal01
-        const annexTop = floorTop + annexHeight
-        for (const segments of facadeLoops) {
-            for (const segment of segments) {
-                const holeInside = ([annexFrom, annexTo]: [number, number]) =>
-                    segment.holes.find(([from, to]) => from >= annexFrom - 1e-6 && to <= annexTo + 1e-6)
-                const isInsideAnnex = (hole: [number, number]) => segment.annexSpans.some(span => holeInside(span) === hole)
-                const cuts = [
-                    ...segment.holes.filter(hole => !isInsideAnnex(hole)).map(([from, to]) => ({ from, to, annexHole: undefined })),
-                    ...segment.annexSpans.map(([from, to]) => ({ from, to, annexHole: holeInside([from, to]) })),
-                ].sort((a, b) => a.from - b.from)
-                let cursor = 0
-                for (const { from, to, annexHole } of cuts) {
-                    facadePiece(segment, cursor, from, 0, wallTop, true)
-                    if (annexHole) {
-                        facadePiece(segment, from, annexHole[0], 0, floorTop, true)
-                        facadePiece(segment, annexHole[1], to, 0, floorTop, true)
-                        facadePiece(segment, from, to, annexTop, wallTop, false)
-                    } else {
-                        facadePiece(segment, from, to, 0, floorTop, true)
-                        facadePiece(segment, from, to, floorTop + portalHeight, wallTop, false)
-                    }
-                    cursor = to
-                }
-                facadePiece(segment, cursor, segment.length, 0, wallTop, true)
-            }
-        }
-
-        // ---- пилястры фасада: pilaster00 от земли до верха стен, наружу; на концах свободных кусков отрезка
-        // (у углов и по бокам входов) и равномерно между ними с шагом не больше pilasterSpacing
-
-        const pilasterHalfWidth = Math.max(.05, o.pilasterWidth) / 2
-        const pilasterProtrusion = Math.max(.02, o.pilasterProtrusion)
-        // наибольший вынос базы или капители от ствола
-        const pilasterProjection = Math.max(pilaster.plinthProjection ?? 0, pilaster.abacusProjection ?? 0, 0)
-        if (o.pilasterSpacing > 0 && wallTop > 2) {
-            // от угла — чтобы база не залезла в соседний отрезок у вогнутого угла контура
-            const cornerClearance = pilasterHalfWidth + pilasterProjection + pilasterProtrusion + .1
-            // от края дыры входа — пилон портала с выносами, плюс полширины и вынос самой пилястры
-            const holeClearance = portalMargin + pilasterHalfWidth + pilasterProjection + .1
-            for (const segments of facadeLoops) {
-                for (const segment of segments) {
-                    // занятые куски: дыры входов с пилонами и пристройки — с тем же запасом, что у угла
-                    const blocked: [number, number][] = [
-                        ...segment.holes.map(([from, to]): [number, number] => [from - holeClearance, to + holeClearance]),
-                        ...segment.annexExtents.map(([from, to]): [number, number] => [from - cornerClearance, to + cornerClearance]),
-                    ].sort((a, b) => a[0] - b[0])
-                    const freeRanges: [number, number][] = []
-                    let rangeFrom = cornerClearance
-                    for (const [from, to] of blocked) {
-                        freeRanges.push([rangeFrom, from])
-                        rangeFrom = Math.max(rangeFrom, to)
-                    }
-                    freeRanges.push([rangeFrom, segment.length - cornerClearance])
-                    for (const [from, to] of freeRanges) {
-                        if (to < from) continue
-                        const rangeLength = to - from
-                        const count = rangeLength < o.pilasterSpacing ? 1 : Math.ceil(rangeLength / o.pilasterSpacing) + 1
-                        for (let k = 0; k < count; ++k) {
-                            const center = count === 1 ? (from + to) / 2 : from + rangeLength * k / (count - 1)
-                            const wallLeft = pointAlong(segment, center - pilasterHalfWidth)
-                            const wallRight = pointAlong(segment, center + pilasterHalfWidth)
-                            const outward = (point: A2): A2 =>
-                                [point[0] + segment.normal[0] * pilasterProtrusion, point[1] + segment.normal[1] * pilasterProtrusion]
-                            // П из стены наружу; лицо ствола идёт по ходу отрезка — профили выступают вправо от хода, наружу
-                            const piece = pilaster00({
-                                ...pilaster,
-                                pos: o.pos,
-                                path: [wallLeft, outward(wallLeft), outward(wallRight), wallRight].map(([x, z]) => ({ x, z })),
-                                height: wallTop,
-                                startWallDirection: segment.direction, endWallDirection: segment.direction,
-                            })
-                            piece.vCollide = []
-                            _GM.mergeIndexedArrays(result, piece)
-                        }
-                    }
-                }
-            }
-        }
-
-        // ---- крыша: floor01 по наружному контуру, раздвинутому на свес, — плита на верху стен; снизу — софит свеса.
-        // Крышу получают только наружные петли (против часовой стрелки сверху — в осях [x, z] площадь отрицательна)
-
-        for (const segments of facadeLoops) {
-            const corners = segments.map(segment => segment.start)
-            if (_GM.polygonArea2(corners) >= 0) continue
-            const contour = (roofOverhang > 1e-3 ? offsetPolygon(corners, roofOverhang) : corners).map(([x, z]) => ({ x, z }))
-            const roofPos: A3 = [o.pos[0], o.pos[1] + wallTop, o.pos[2]]
-            const roof = floor01({ pos: roofPos, contour, height: Math.max(.01, o.roofThickness) })
-            roof.vCollide = []
-            _GM.mergeIndexedArrays(result, roof)
-            if (shadowUnderRoof) {
-                // контур по часовой стрелке — верх смотрит вниз
-                const soffit = floor01({ pos: roofPos, contour: [...contour].reverse(), height: 0 })
-                soffit.vCollide = []
-                _GM.mergeIndexedArrays(result, soffit)
-            }
-        }
     }
 
     // ---- оттенок всего комплекса: множитель цвета каждой вершины

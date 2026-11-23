@@ -8,7 +8,7 @@ import { tunnelBetweenHoles } from "geometry/05_room01/room01"
 
 // Уровень из групп комнат, соединённых прямыми туннелями room01, — сначала главный путь вперёд, потом отростки вбок.
 //
-// Группа — complex00 без оболочки (shell: false): несколько смежных комнат, между соседями — порталы. Комнаты
+// Группа — complex00: несколько смежных комнат, между соседями — порталы. Комнаты
 // пристраиваются к свободным стенам уже стоящих комнат как попало, поэтому группа нелинейная: ветвится, у неё
 // много наружных стен. Внутри группы пол на одном уровне; перепады — только в туннелях между группами.
 //
@@ -661,7 +661,6 @@ export const level00 = (opts: T = {}): IBuffersGeom => {
         _GM.mergeIndexedArrays(result, complex00({
             pos: [o.pos[0], o.pos[1] + cluster.level, o.pos[2]],
             rooms: cluster.plans.map(plan => ({ points: plan.map(([x, z]) => ({ x, z })) })),
-            shell: false,
             // вход — к середине дыры на наружном лице: complex00 выберет эту же стену и поставит проём по её центру
             entranceTargets: cluster.holes.map(({ middle, normal }) => ({
                 x: middle[0] + normal[0] * wallThickness, z: middle[1] + normal[1] * wallThickness,
