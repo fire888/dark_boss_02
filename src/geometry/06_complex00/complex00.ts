@@ -20,6 +20,10 @@ import { room02, type T_Room02Portal } from "geometry/05_room02/room02"
 // стене — по центру ребра плана, шириной portalWidth, сужается, если пилоны не помещаются у одной из комнат;
 // уже 1.2 — общая стена без портала.
 //
+// Размеры порталов разные: ширина и высота каждого — от portalWidth и portalHeight с разбросом portalWidthSpread
+// и portalHeightSpread, по зерну от места портала (одни и те же на пересборке). Высота не выше, чем позволяет профиль
+// под потолком; не помещается с разбросом — портал общей высоты. Порталы к малым комнатам пристроек — тоже с разбросом.
+//
 // Снаружи комплекса ничего нет: room00 не строит наружного лица своих стен и верха стен, фасада и крыши тоже нет.
 // Наружный контур считается только для входов: наружные рёбра плана всех комнат (без соседа), сцепленные в петли,
 // рёбра на одной прямой — один отрезок, отстоящий от оси плана на толщину стены (там наружное лицо room00).
@@ -46,11 +50,17 @@ import { room02, type T_Room02Portal } from "geometry/05_room02/room02"
 // убирается — дыра никуда не вела бы.
 // entranceTargets — входы к заданным точкам плана, до распределения entranceCount.
 //
-// Оттенок tint — множитель цвета вершин (c) всего комплекса после сборки комнат, поверх запечённого света;
-// компоненты не больше 1, поэтому цвет остаётся в [0, 1]. По умолчанию — синий.
+// Оттенок tint — множитель цвета вершин (c) поверх запечённого света, у каждой комнаты свой: каждый канал tint
+// × (1 ± tintSpread), по зерну от комнаты; пристройка — в оттенке комнаты, к которой пристроена. Общую стену с порталом
+// строит одна комната, поэтому и со стороны соседа она в её оттенке. Компоненты не больше 1 — цвет остаётся в [0, 1].
+// По умолчанию — синий.
 //
-// Высоты, стены, пилястры и профиль — общие для всех комнат: стыки на общих стенах сходятся только при одинаковых
-// уровнях. Своё у комнаты — форма (в координатах плана относительно pos).
+// Высоты, стены и пилястры — общие для всех комнат: стыки на общих стенах сходятся только при одинаковых
+// уровнях. Своё у комнаты — форма (в координатах плана относительно pos) и высота профиля под потолком: profileHeight
+// с разбросом profileHeightSpread, по зерну от комнаты, не выше, чем оставляет место для портала общей высоты.
+// Общую стену room00 со стороны соседа ведёт до низа его профиля, перемычка портала — под более высоким из двух.
+// Высота базы и капители пилястр — тоже своя у комнаты: множители pilasterBaseScale* и pilasterCapitalScale*.
+// Ширина пилястр у стен — тоже своя у комнаты: pilasterWidth × множитель pilasterWidthScale*.
 //
 // Ограничения плана, при которых стены сходятся: многоугольники выпуклые (точка на прямой стороне — можно);
 // угол комнаты у конца общего ребра на наружной стене — не больше 150° (иначе торец общей стены не доходит до угла
@@ -74,14 +84,30 @@ type T = {
     floorThickness?: number, // толщина плиты пола
     ceilingThickness?: number, // толщина плиты потолка под верхом стен
     profileHeight?: number,  // высота полосы стены с карнизом (profile00) под потолком; 0 — без неё
+    // разброс высоты профиля по комнатам, доля: у каждой комнаты profileHeight × (1 ± profileHeightSpread)
+    profileHeightSpread?: number,
     portalHeight?: number,   // высота пилястр портала от пола до низа перемычки
+    // разброс размеров порталов, доля: у каждого портала ширина portalWidth × (1 ± portalWidthSpread),
+    // высота portalHeight × (1 ± portalHeightSpread); 0 — все одинаковые. Входы к entranceTargets — без разброса
+    portalWidthSpread?: number,
+    portalHeightSpread?: number,
     pilaster?: T_PilasterProfile, // тип пилястр — профиль pilaster00, у порталов и у стен
+    // множитель высоты базы пилястр (плинт, скат, полочка) — у каждой комнаты случайный в этих пределах
+    pilasterBaseScaleMin?: number,
+    pilasterBaseScaleMax?: number,
+    // множитель высоты капители пилястр (абака, скат, полочка) — у каждой комнаты случайный в этих пределах
+    pilasterCapitalScaleMin?: number,
+    pilasterCapitalScaleMax?: number,
     pilasterSpacing?: number,     // шаг пилястр вдоль стен, между центрами; 0 — без пилястр у стен
     pilasterWidth?: number,       // ширина ствола пилястры у стены, вдоль стены
+    // множитель ширины пилястр у стен — у каждой комнаты случайный в этих пределах
+    pilasterWidthScaleMin?: number,
+    pilasterWidthScaleMax?: number,
     pilasterProtrusion?: number,  // на сколько ствол выступает из стены в комнату
     aoLength?: number,            // длина, на которую растягивается тайл тени у угла стены с полом и потолком
     colorWall?: A3,               // базовый цвет стен до запечённого освещения
     tint?: A3,                    // множитель цвета вершин всего комплекса, компоненты от 0 до 1
+    tintSpread?: number,          // разброс оттенка по комнатам, доля: каждый канал tint × (1 ± tintSpread)
     // точки плана (относительно pos), к которым нужны входы: на каждую — вход на наружном ребре, ближайшем к точке,
     // сверх entranceCount (level00 подводит к ним туннели)
     entranceTargets?: T_PlanPoint[],
@@ -122,15 +148,25 @@ export const DEFAULT_OPTS: Required<T> = {
     floorThickness: .15,
     ceilingThickness: .2,
     profileHeight: 1.2,
+    profileHeightSpread: .4,
     portalHeight: 2.6,
+    portalWidthSpread: .35,
+    portalHeightSpread: .2,
     pilaster: { ...PILASTER_DEFAULT_PROFILE },
+    pilasterBaseScaleMin: .3,
+    pilasterBaseScaleMax: 3,
+    pilasterCapitalScaleMin: .3,
+    pilasterCapitalScaleMax: 1.3,
     pilasterSpacing: 3,
     pilasterWidth: .6,
+    pilasterWidthScaleMin: .5,
+    pilasterWidthScaleMax: 2,
     pilasterProtrusion: .15,
     aoLength: .5,
     colorWall: [.82, .8, .76],
     //colorWall: [0, 0, 0],
     tint: [.45, .62, 1],
+    tintSpread: .25,
     entranceTargets: [],
     annexCount: 2,
     annexWidth: 14,
@@ -253,14 +289,24 @@ export const randomOpts = (): T => {
         floorThickness: rand(.05, .3),
         ceilingThickness: rand(.05, .4),
         profileHeight: Math.random() < .1 ? 0 : rand(.8, 1.6),
+        profileHeightSpread: rand(0, .6),
         portalHeight: rand(2, 3.2),
+        portalWidthSpread: rand(0, .5),
+        portalHeightSpread: rand(0, .3),
         pilaster: randomPilasterProfile(),
+        pilasterBaseScaleMin: rand(.2, .6),
+        pilasterBaseScaleMax: rand(1.8, 3.5),
+        pilasterCapitalScaleMin: rand(.2, .6),
+        pilasterCapitalScaleMax: rand(1, 1.4),
         pilasterSpacing: Math.random() < .15 ? 0 : rand(2.5, 6),
         pilasterWidth: rand(.4, 1),
+        pilasterWidthScaleMin: rand(.4, .8),
+        pilasterWidthScaleMax: rand(1.3, 2.2),
         pilasterProtrusion: rand(.06, .3),
         aoLength: rand(.3, .7),
         colorWall: [rand(.65, .9), rand(.65, .9), rand(.65, .9)],
-        tint: [rand(.6, .9), rand(.7, .95), 1],
+        tint: [rand(.4, 1), rand(.4, 1), rand(.4, 1)],
+        tintSpread: rand(0, .4),
         annexCount: Math.floor(Math.random() * 4),
         annexWidth: rand(9, 18),
         annexDepth: rand(7, 14),
@@ -303,14 +349,20 @@ type T_AnnexRoom = { contour: A2[], portals: T_Room02Portal[], height: number }
 type T_AnnexChild = { room: T_AnnexRoom, mainPortal: T_Room02Portal }
 
 // Группа пристройки в прямоугольнике u ∈ [−halfWidth, halfWidth], v ∈ [0, depth]: главная комната и малые у её стен.
-// holeWidth — проём входа, gap — зазор между стенами главной и малой комнаты (он же глубина портала между ними)
+// holeWidth и portalHeight — проём входа, gap — зазор между стенами главной и малой комнаты (он же глубина портала
+// между ними); widthSpread и heightSpread — разброс размеров порталов к малым комнатам, доля
 const layoutAnnex = (random: () => number, halfWidth: number, depth: number, holeWidth: number, gap: number,
-    annexHeight: number, portalHeight: number): { main: T_AnnexRoom, children: T_AnnexChild[] } => {
+    annexHeight: number, portalHeight: number, widthSpread: number, heightSpread: number,
+): { main: T_AnnexRoom, children: T_AnnexChild[] } => {
     const rand = (min: number, max: number) => min + random() * (max - min)
     // наименьшая сторона малой комнаты и запас стены по бокам проёма
     const CHILD_MIN = 2.2
     const PORTAL_SIDE = .3
-    const childPortalWidth = Math.min(holeWidth, 1.6)
+    // размер портала к малой комнате: от проёма входа с разбросом, не выше главной комнаты
+    const childPortalSize = () => ({
+        width: Math.max(1, Math.min(holeWidth, 1.6) * (1 + rand(-1, 1) * widthSpread)),
+        height: Math.min(annexHeight - .3, Math.max(1.8, portalHeight * (1 + rand(-1, 1) * heightSpread))),
+    })
 
     // ---- главная комната: прямоугольник у стены, дальние углы — прямые, срез или Г-вырез, иногда щипец
     const mainHalf = Math.min(halfWidth, Math.max(holeWidth / 2 + .6, halfWidth * rand(.28, .42)))
@@ -347,7 +399,7 @@ const layoutAnnex = (random: () => number, halfWidth: number, depth: number, hol
 
     // ---- малые комнаты: ещё ниже, у боковых стен — вне ширины главной, у дальней — в её ширине
     const children: T_AnnexChild[] = []
-    const childHeight = () => Math.max(portalHeight + .3, annexHeight * rand(.75, .9))
+    const childHeight = (childPortalHeight: number) => Math.max(childPortalHeight + .3, annexHeight * rand(.75, .9))
     // прямоугольник, ребро 0 — к главной комнате; у дальних от неё углов иногда срез
     const childContour = (wallStart: A2, wallEnd: A2, outward: A2, childDepth: number): A2[] => {
         const far = (point: A2, distance: number): A2 => [point[0] + outward[0] * distance, point[1] + outward[1] * distance]
@@ -363,6 +415,7 @@ const layoutAnnex = (random: () => number, halfWidth: number, depth: number, hol
     // сбоку: side = −1 — слева, +1 — справа. Малая комната — v ∈ [childFrom, childFrom + childLength], не ближе gap к стене;
     // проём — посередине того, что у неё общего с прямой частью боковой стены главной
     const sideChild = (side: -1 | 1) => {
+        const { width: childPortalWidth, height: childPortalHeight } = childPortalSize()
         const wallTop = side < 0 ? leftTop : rightTop
         const width = Math.min(halfWidth - mainHalf - gap, rand(CHILD_MIN, 5))
         const childLength = Math.min(depth - gap, rand(CHILD_MIN, 6))
@@ -379,12 +432,12 @@ const layoutAnnex = (random: () => number, halfWidth: number, depth: number, hol
         children.push({
             room: {
                 contour: childContour(wallStart, wallEnd, [side * width, 0].map(Math.sign) as A2, width),
-                portals: [{ wall: 0, offset: offsetOnChild, width: childPortalWidth, height: portalHeight, bare: true }],
-                height: childHeight(),
+                portals: [{ wall: 0, offset: offsetOnChild, width: childPortalWidth, height: childPortalHeight, bare: true }],
+                height: childHeight(childPortalHeight),
             },
             mainPortal: side < 0
-                ? { wall: 1, offset: portalCenter / leftTop, width: childPortalWidth, height: portalHeight }
-                : { wall: rightEdge, offset: (rightTop - portalCenter) / rightTop, width: childPortalWidth, height: portalHeight },
+                ? { wall: 1, offset: portalCenter / leftTop, width: childPortalWidth, height: childPortalHeight }
+                : { wall: rightEdge, offset: (rightTop - portalCenter) / rightTop, width: childPortalWidth, height: childPortalHeight },
         })
     }
     sideChild(-1)
@@ -392,6 +445,7 @@ const layoutAnnex = (random: () => number, halfWidth: number, depth: number, hol
 
     // за дальней стеной: в ширине главной комнаты, проём — посередине общего с прямой дальней стеной
     if (!hasGable && random() < .9) {
+        const { width: childPortalWidth, height: childPortalHeight } = childPortalSize()
         const childDepth = Math.min(depth - mainDepth - gap, rand(CHILD_MIN, 5))
         const width = Math.min(mainHalf * 2, rand(CHILD_MIN, 6))
         const farLength = farRight - farLeft
@@ -407,10 +461,10 @@ const layoutAnnex = (random: () => number, halfWidth: number, depth: number, hol
                     room: {
                         // ребро 0 — к главной, от +u к −u, навстречу дальней стене главной
                         contour: childContour([childFrom + width, wallV], [childFrom, wallV], [0, 1], childDepth),
-                        portals: [{ wall: 0, offset: (childFrom + width - portalCenter) / width, width: childPortalWidth, height: portalHeight, bare: true }],
-                        height: childHeight(),
+                        portals: [{ wall: 0, offset: (childFrom + width - portalCenter) / width, width: childPortalWidth, height: childPortalHeight, bare: true }],
+                        height: childHeight(childPortalHeight),
                     },
-                    mainPortal: { wall: farEdge, offset: (portalCenter - farLeft) / farLength, width: childPortalWidth, height: portalHeight },
+                    mainPortal: { wall: farEdge, offset: (portalCenter - farLeft) / farLength, width: childPortalWidth, height: childPortalHeight },
                 })
             }
         }
@@ -501,8 +555,32 @@ const layoutComplex = (o: Required<T>) => {
         const distance = ((center[0] - start[0]) * (end[0] - start[0]) + (center[1] - start[1]) * (end[1] - start[1])) / length
         return { distance, length }
     }
-    const portals: { width: number, at: number, type: T_PortalType }[][] =
-        plans.map(plan => plan.map(() => ({ width: 0, at: .5, type: 'portal00' as T_PortalType })))
+    // общая высота портала, которую поставит room00; 0 — порталы не помещаются
+    const portalHeight = portalHeightFor(pilaster, o.height, o.profileHeight, o.portalHeight)
+    const widthSpread = Math.min(Math.max(0, o.portalWidthSpread), .9)
+    const heightSpread = Math.min(Math.max(0, o.portalHeightSpread), .9)
+    // Профиль под потолком у каждой комнаты свой: profileHeight × (1 ± profileHeightSpread), по зерну от первой точки
+    // плана. Не выше, чем оставляет место для портала общей высоты, — иначе туннели level00 не сошлись бы с дырами
+    const profileSpread = Math.min(Math.max(0, o.profileHeightSpread), .9)
+    // высота под перемычку без профиля: пол — низ перемычки, если бы профиля не было
+    const portalRoomWithoutProfile = portalHeightFor(pilaster, o.height, 0, Infinity)
+    const maxProfileHeight = portalHeight > 0 ? Math.max(0, portalRoomWithoutProfile - portalHeight) : Math.max(0, o.height)
+    const roomProfiles: number[] = plans.map(plan => {
+        const base = Math.max(0, o.profileHeight)
+        if (!plan.length || base <= 0) return base
+        const random = _GM.seededRandom(Math.floor(_GM.hash2(Math.round(plan[0][0] * 100) - 3571, Math.round(plan[0][1] * 100) + 6007) * 2147483647))
+        return Math.min(maxProfileHeight, base * (1 + (random() * 2 - 1) * profileSpread))
+    })
+    // Желаемые размеры портала с разбросом — по зерну от точки плана в его середине: на пересборке те же.
+    // Высота — та, что поставит room00 под профилем profileHeight; с разбросом не помещается — общая
+    const portalSize = ([x, z]: A2, profileHeight: number): { width: number, height: number } => {
+        const random = _GM.seededRandom(Math.floor(_GM.hash2(Math.round(x * 100) + 7919, Math.round(z * 100) - 104729) * 2147483647))
+        const width = o.portalWidth * (1 + (random() * 2 - 1) * widthSpread)
+        const height = portalHeightFor(pilaster, o.height, profileHeight, o.portalHeight * (1 + (random() * 2 - 1) * heightSpread))
+        return { width, height: height > 0 ? height : portalHeight }
+    }
+    const portals: { width: number, at: number, height: number, type: T_PortalType }[][] =
+        plans.map(plan => plan.map(() => ({ width: 0, at: .5, height: portalHeight, type: 'portal00' as T_PortalType })))
     for (let room = 0; room < plans.length; ++room) {
         plans[room].forEach((start, edge) => {
             const link = links[room][edge]
@@ -515,10 +593,12 @@ const layoutComplex = (o: Required<T>) => {
                 here.distance - portalMargin, here.length - portalMargin - here.distance,
                 there.distance - portalMargin, there.length - portalMargin - there.distance,
             )
-            const width = Math.min(Math.max(o.portalWidth, MIN_PORTAL_WIDTH), halfRoom * 2)
+            // перемычка — под более высоким профилем из двух комнат
+            const size = portalSize(center, Math.max(roomProfiles[room], roomProfiles[link.room]))
+            const width = Math.min(Math.max(size.width, MIN_PORTAL_WIDTH), halfRoom * 2)
             if (width < MIN_PORTAL_WIDTH) return
-            portals[room][edge] = { width, at: here.distance / here.length, type: 'portal00' }
-            portals[link.room][link.edge] = { width, at: there.distance / there.length, type: 'portal00' }
+            portals[room][edge] = { width, at: here.distance / here.length, height: size.height, type: 'portal00' }
+            portals[link.room][link.edge] = { width, at: there.distance / there.length, height: size.height, type: 'portal00' }
         })
     }
 
@@ -595,10 +675,11 @@ const layoutComplex = (o: Required<T>) => {
     // ---- входы: на каждом наружном ребре — самый широкий проём по центру ребра, пилоны которого помещаются и в комнате,
     // и на отрезке наружного контура; из подходящих рёбер выбираются ближайшие к точкам, делящим периметр на entranceCount частей
 
-    const portalHeight = portalHeightFor(pilaster, o.height, o.profileHeight, o.portalHeight)
-    // outer — на наружной петле (против часовой стрелки сверху), а не во внутреннем дворе
+    // outer — на наружной петле (против часовой стрелки сверху), а не во внутреннем дворе;
+    // width, height — проём с разбросом, plainWidth — без разброса (для входов к entranceTargets, к ним подходят туннели)
     type T_EntranceCandidate = {
-        edge: T_ExteriorEdge, segment: T_FacadeSegment, width: number, at: number, along: number, perimeterAt: number, outer: boolean,
+        edge: T_ExteriorEdge, segment: T_FacadeSegment, width: number, height: number, plainWidth: number,
+        at: number, along: number, perimeterAt: number, outer: boolean,
     }
     const candidates: T_EntranceCandidate[] = []
     let perimeter = 0
@@ -615,18 +696,25 @@ const layoutComplex = (o: Required<T>) => {
                         here.distance - portalMargin, here.length - portalMargin - here.distance,
                         along - portalMargin, segment.length - portalMargin - along,
                     )
-                    const width = Math.min(Math.max(o.portalWidth, MIN_PORTAL_WIDTH), halfRoom * 2)
-                    if (width < MIN_PORTAL_WIDTH) continue
-                    candidates.push({ edge, segment, width, at: here.distance / here.length, along, perimeterAt: perimeter + along, outer })
+                    const plainWidth = Math.min(Math.max(o.portalWidth, MIN_PORTAL_WIDTH), halfRoom * 2)
+                    if (plainWidth < MIN_PORTAL_WIDTH) continue
+                    const size = portalSize(center, roomProfiles[edge.room])
+                    const width = Math.min(Math.max(size.width, MIN_PORTAL_WIDTH), halfRoom * 2)
+                    candidates.push({
+                        edge, segment, width, height: size.height, plainWidth,
+                        at: here.distance / here.length, along, perimeterAt: perimeter + along, outer,
+                    })
                 }
             }
             perimeter += Math.max(0, segment.length)
         }
     }
-    const placeEntrance = (index: number): T_EntranceCandidate => {
+    // plain — без разброса размеров
+    const placeEntrance = (index: number, plain = false): T_EntranceCandidate => {
         const entrance = candidates.splice(index, 1)[0]
-        const { edge, segment, width, at, along } = entrance
-        portals[edge.room][edge.edge] = { width, at, type: 'portal00' }
+        if (plain) { entrance.width = entrance.plainWidth; entrance.height = portalHeight }
+        const { edge, segment, width, height, at, along } = entrance
+        portals[edge.room][edge.edge] = { width, at, height, type: 'portal00' }
         segment.holes.push([along - width / 2, along + width / 2])
         return entrance
     }
@@ -644,7 +732,7 @@ const layoutComplex = (o: Required<T>) => {
     }
     for (const { x, z } of o.entranceTargets) {
         const best = nearestOuterCandidate(x, z)
-        if (best >= 0) placeEntrance(best)
+        if (best >= 0) placeEntrance(best, true)
     }
     // входы под пристройки к заданным точкам
     const targetAnnexEntrances: T_EntranceCandidate[] = []
@@ -671,13 +759,14 @@ const layoutComplex = (o: Required<T>) => {
     // запас прямоугольника по бокам от проёма и до соседней дыры
     const ANNEX_SIDE_MARGIN = .2
     // комнаты пристроек в плане, относительно pos
-    const annexes: { contour: T_PlanPoint[], portals: T_Room02Portal[], height: number }[] = []
+    // room — комната комплекса, к которой пристроена группа (оттенок берётся её)
+    const annexes: { contour: T_PlanPoint[], portals: T_Room02Portal[], height: number, room: number }[] = []
     const annexPolygons: A2[][] = []
     const roomPlans = plans.filter((_, room) => isValid[room])
     const annexCount = Math.max(0, Math.floor(o.annexCount))
     const annexDepth = Math.max(1, o.annexDepth)
-    // главная комната — не выше комплекса и выше проёма
-    const annexHeight = Math.min(Math.max(0, o.height), Math.max(o.annexHeight, portalHeight + .3))
+    // главная комната — не выше комплекса и выше проёма входа
+    const annexHeightFor = (entranceHeight: number) => Math.min(Math.max(0, o.height), Math.max(o.annexHeight, entranceHeight + .3))
     // свободно ли место под комнату: от оси плана наружное лицо стены отстоит на толщину стены — ближе комната
     // залезла бы в крыло; от комнат других пристроек — зазор
     const isClear = (polygon: A2[], others: A2[][]) =>
@@ -691,11 +780,11 @@ const layoutComplex = (o: Required<T>) => {
     ]
     for (const { entrance, isTarget } of annexEntrances) {
         if (!isTarget && spreadAnnexes >= annexCount) break
-        const { edge, segment, width, along } = entrance
+        const { edge, segment, width, height: entranceHeight, along } = entrance
         // вход к заданной точке без пристройки убирается: дыра никуда не вела бы
         const dropEntrance = () => {
             if (!isTarget) return
-            portals[edge.room][edge.edge] = { width: 0, at: .5, type: 'portal00' }
+            portals[edge.room][edge.edge] = { width: 0, at: .5, height: portalHeight, type: 'portal00' }
             segment.holes = segment.holes.filter(([from, to]) => Math.abs((from + to) / 2 - along) > 1e-6)
         }
         if (portalHeight <= 0) { dropEntrance(); continue }
@@ -715,7 +804,8 @@ const layoutComplex = (o: Required<T>) => {
         ]
         // зерно — от места входа: на пересборке группа та же
         const random = _GM.seededRandom(Math.floor(_GM.hash2(Math.round(entranceMiddle[0] * 100), Math.round(entranceMiddle[1] * 100)) * 2147483647))
-        const { main, children } = layoutAnnex(random, halfWidth, annexDepth, width, wallThickness, annexHeight, portalHeight)
+        const { main, children } = layoutAnnex(random, halfWidth, annexDepth, width, wallThickness,
+            annexHeightFor(entranceHeight), entranceHeight, widthSpread, heightSpread)
         const mainPolygon = main.contour.map(toPlan)
         if (!isClear(mainPolygon, annexPolygons)) { dropEntrance(); continue }
         if (!isTarget) ++spreadAnnexes
@@ -732,19 +822,95 @@ const layoutComplex = (o: Required<T>) => {
         placedRooms.unshift(main)
         annexPolygons.push(...groupPolygons)
         for (const room of placedRooms) {
-            annexes.push({ contour: room.contour.map(toPlan).map(([x, z]) => ({ x, z })), portals: room.portals, height: room.height })
+            annexes.push({ contour: room.contour.map(toPlan).map(([x, z]) => ({ x, z })), portals: room.portals, height: room.height, room: edge.room })
         }
         portals[edge.room][edge.edge].type = 'hole'
     }
 
-    return { wallThickness, plans, isValid, links, innerPaths, portals, pilaster, annexes }
+    // Высота базы и капители пилястр у каждой комнаты своя: множители от pilasterBaseScaleMin до pilasterBaseScaleMax
+    // и от pilasterCapitalScaleMin до pilasterCapitalScaleMax, по зерну от второй точки плана. Выносы те же — отступы
+    // порталов от углов не меняются. Если пилястра (база, капитель и 0.3 ствола, как считает room00) не влезает
+    // в самый низкий портал комнаты или в стену под профилем, оба множителя уменьшаются в одно и то же число раз
+    const full = pilaster as Required<T_PilasterProfile>
+    const baseHeight = full.plinthHeight + full.baseSlopeHeight + full.baseFilletHeight
+    const capitalHeight = full.abacusHeight + full.capitalSlopeHeight + full.capitalFilletHeight
+    const scaleRange = (min: number, max: number): [number, number] => {
+        const low = Math.max(0, Math.min(min, max))
+        return [low, Math.max(low, max)]
+    }
+    const [baseScaleMin, baseScaleMax] = scaleRange(o.pilasterBaseScaleMin, o.pilasterBaseScaleMax)
+    const [capitalScaleMin, capitalScaleMax] = scaleRange(o.pilasterCapitalScaleMin, o.pilasterCapitalScaleMax)
+    const roomPilasters: T_PilasterProfile[] = plans.map((plan, room) => {
+        const point = plan[1 % Math.max(1, plan.length)] ?? [0, 0]
+        const random = _GM.seededRandom(Math.floor(_GM.hash2(Math.round(point[0] * 100) + 1531, Math.round(point[1] * 100) - 8191) * 2147483647))
+        let baseScale = baseScaleMin + random() * (baseScaleMax - baseScaleMin)
+        let capitalScale = capitalScaleMin + random() * (capitalScaleMax - capitalScaleMin)
+        // порталов нет — ограничивает только стена
+        const lowestPortal = portalHeight > 0
+            ? Math.min(portalHeight, ...portals[room].filter(portal => portal.width > 0).map(portal => portal.height))
+            : Infinity
+        const available = Math.min(lowestPortal, Math.max(0, o.height) - roomProfiles[room]) - .3 - .01
+        const moldings = baseHeight * baseScale + capitalHeight * capitalScale
+        // исходная пилястра влезает — после уменьшения база с капителью не ниже исходных в сумме
+        if (moldings > available && moldings > 0) {
+            const shrink = Math.max(0, available) / moldings
+            baseScale *= shrink
+            capitalScale *= shrink
+        }
+        // Множитель — к высоте всей базы (капители). Выше исходной растёт только плинт (абака): скат и полочка
+        // остаются исходными, иначе вытягиваются; ниже исходной сжимается всё вместе. Скат всегда низкий —
+        // не выше SLOPE_MAX, лишнее уходит в плинт (абаку), полная высота не меняется
+        const SLOPE_MAX = .06
+        const scaleMoldings = (block: number, slope: number, fillet: number, scale: number) => {
+            const scaled = scale >= 1
+                ? { block: block + (block + slope + fillet) * (scale - 1), slope, fillet }
+                : { block: block * scale, slope: slope * scale, fillet: fillet * scale }
+            const lowSlope = Math.min(scaled.slope, SLOPE_MAX)
+            return { block: scaled.block + scaled.slope - lowSlope, slope: lowSlope, fillet: scaled.fillet }
+        }
+        const base = scaleMoldings(full.plinthHeight, full.baseSlopeHeight, full.baseFilletHeight, baseScale)
+        const capital = scaleMoldings(full.abacusHeight, full.capitalSlopeHeight, full.capitalFilletHeight, capitalScale)
+        return {
+            ...pilaster,
+            plinthHeight: base.block,
+            baseSlopeHeight: base.slope,
+            baseFilletHeight: base.fillet,
+            abacusHeight: capital.block,
+            capitalSlopeHeight: capital.slope,
+            capitalFilletHeight: capital.fillet,
+        }
+    })
+
+    // Ширина пилястр у стен у каждой комнаты своя: pilasterWidth × множитель от pilasterWidthScaleMin до
+    // pilasterWidthScaleMax, по зерну от третьей точки плана
+    const [widthScaleMin, widthScaleMax] = scaleRange(o.pilasterWidthScaleMin, o.pilasterWidthScaleMax)
+    const roomPilasterWidths: number[] = plans.map(plan => {
+        const point = plan[2 % Math.max(1, plan.length)] ?? [0, 0]
+        const random = _GM.seededRandom(Math.floor(_GM.hash2(Math.round(point[0] * 100) - 2711, Math.round(point[1] * 100) + 4421) * 2147483647))
+        return Math.max(0, o.pilasterWidth) * (widthScaleMin + random() * (widthScaleMax - widthScaleMin))
+    })
+
+    return { wallThickness, plans, isValid, links, innerPaths, portals, roomPilasters, roomPilasterWidths, annexes, roomProfiles }
 }
 
 export const complex00 = (opts: T = {}): IBuffersGeom => {
     const o: Required<T> = { ...DEFAULT_OPTS, ...opts }
     const result: IBuffersGeom = { index: [], v: [], uv: [], uv2: [], c: [], vCollide: [] }
-    const { wallThickness, plans, isValid, links, innerPaths, portals, pilaster, annexes } = layoutComplex(o)
+    const { wallThickness, plans, isValid, links, innerPaths, portals, roomPilasters, roomPilasterWidths, annexes, roomProfiles } = layoutComplex(o)
     const floorTop = Math.max(0, o.floorThickness)
+
+    // Оттенок комнаты: tint с разбросом tintSpread по каждому каналу, по зерну от первой точки плана; компоненты от 0 до 1
+    const tintSpread = Math.max(0, o.tintSpread)
+    const roomTints: A3[] = plans.map(plan => {
+        const [x, z] = plan[0] ?? [0, 0]
+        const random = _GM.seededRandom(Math.floor(_GM.hash2(Math.round(x * 100) + 9871, Math.round(z * 100) + 3343) * 2147483647))
+        return o.tint.map(channel => Math.min(1, Math.max(0, channel * (1 + (random() * 2 - 1) * tintSpread)))) as A3
+    })
+    // кусок геометрии в результат с оттенком: множитель цвета каждой его вершины
+    const mergeTinted = (piece: IBuffersGeom, tint: A3) => {
+        for (let i = 0; i < piece.c.length; ++i) piece.c[i] *= tint[i % 3]
+        _GM.mergeIndexedArrays(result, piece)
+    }
 
     // ---- комнаты
 
@@ -754,10 +920,12 @@ export const complex00 = (opts: T = {}): IBuffersGeom => {
             x, z,
             portalWidth: portals[room][edge].width,
             portalAt: portals[room][edge].at,
+            portalHeight: portals[room][edge].height,
             portalType: portals[room][edge].type,
             wall: links[room][edge]?.owner ?? 'own',
+            neighbourProfileHeight: links[room][edge] ? roomProfiles[links[room][edge]!.room] : undefined,
         }))
-        _GM.mergeIndexedArrays(result, room00({
+        mergeTinted(room00({
             pos: o.pos,
             path,
             randomPortals: false,
@@ -765,22 +933,22 @@ export const complex00 = (opts: T = {}): IBuffersGeom => {
             wallThickness,
             floorThickness: o.floorThickness,
             ceilingThickness: o.ceilingThickness,
-            profileHeight: o.profileHeight,
+            profileHeight: roomProfiles[room],
             portalHeight: o.portalHeight,
-            pilaster,
+            pilaster: roomPilasters[room],
             pilasterSpacing: o.pilasterSpacing,
-            pilasterWidth: o.pilasterWidth,
+            pilasterWidth: roomPilasterWidths[room],
             pilasterProtrusion: o.pilasterProtrusion,
             aoLength: o.aoLength,
             colorWall: o.colorWall,
-        }))
+        }), roomTints[room])
     })
 
     // ---- пристройки: room02 с полом на верху пола комплекса. Порталы главной комнаты уходят за её стены на толщину
     // стены — в дыру стены комплекса и через зазор к малым комнатам. Кладка — в тон комнат room00 изнутри
 
-    for (const { contour, portals: roomPortals, height } of annexes) {
-        _GM.mergeIndexedArrays(result, room02({
+    for (const { contour, portals: roomPortals, height, room } of annexes) {
+        mergeTinted(room02({
             pos: [o.pos[0], o.pos[1] + floorTop, o.pos[2]],
             contour,
             height,
@@ -790,12 +958,8 @@ export const complex00 = (opts: T = {}): IBuffersGeom => {
             portals: roomPortals,
             portalDepth: wallThickness,
             portalThickness: Math.max(.01, o.floorThickness),
-        }))
+        }), roomTints[room])
     }
-
-    // ---- оттенок всего комплекса: множитель цвета каждой вершины
-    const tint = o.tint.map(channel => Math.min(1, Math.max(0, channel)))
-    for (let i = 0; i < result.c.length; ++i) result.c[i] *= tint[i % 3]
 
     return result
 }
