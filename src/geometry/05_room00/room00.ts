@@ -164,6 +164,48 @@ export const portalHeightFor = (pilasterProfile: T_PilasterProfile, height: numb
     return result >= pilasterMinHeight ? result : 0
 }
 
+// Наименьшая высота комнаты в свету, при которой портал высотой portalHeight встаёт без урезания: перемычка
+// с карнизом под профилем потолка (обратный расчёт к portalHeightFor). complex00 по ней задаёт высоту пристроек
+export const heightForPortal = (profileHeight: number, portalHeight: number): number => {
+    const lintel = LINTEL_DEFAULT_PROFILE
+    const lintelHeight = lintel.fasciaHeight + lintel.corniceSlopeHeight + lintel.corniceHeight
+    return Math.max(0, portalHeight) + Math.max(0, profileHeight) + lintelHeight + .05
+}
+
+// Наружное лицо стены в точке пути (путь — внутреннее лицо): ус по биссектрисе, чтобы обе соседние грани отстояли
+// на wallThickness. Знаменатель — 1 + cos угла между нормалями; ограничен, чтобы на остром изломе ус не улетал
+export const outerFacePoints = (pathPoints: A2[], wallThickness: number): A2[] => {
+    const count = pathPoints.length
+    const normals: A2[] = pathPoints.map(([startX, startZ], i) => {
+        const [endX, endZ] = pathPoints[(i + 1) % count]
+        const length = Math.hypot(endX - startX, endZ - startZ)
+        return [-(endZ - startZ) / length, (endX - startX) / length]
+    })
+    return pathPoints.map(([x, z], i) => {
+        const [normal1X, normal1Z] = normals[(i - 1 + count) % count]
+        const [normal2X, normal2Z] = normals[i]
+        const miterScale = wallThickness / Math.max(.2, 1 + normal1X * normal2X + normal1Z * normal2Z)
+        return [x + (normal1X + normal2X) * miterScale, z + (normal1Z + normal2Z) * miterScale]
+    })
+}
+
+// Где на ребре edge может лежать дыра портала — [minFrom, maxTo] от начала ребра: от углов отступ portalMargin,
+// а у вогнутого угла комнаты — от наружного угла стены: там наружное лицо короче внутреннего, и пилон не должен
+// уходить за него. outerPoints — outerFacePoints того же пути. complex00 по нему заранее выбирает проём, который
+// room00 не сдвинет и не сузит
+export const portalRangeOnEdge = (pathPoints: A2[], outerPoints: A2[], edge: number, portalMargin: number) => {
+    const count = pathPoints.length
+    const start = pathPoints[edge], end = pathPoints[(edge + 1) % count]
+    const length = Math.hypot(end[0] - start[0], end[1] - start[1])
+    const direction: A2 = [(end[0] - start[0]) / length, (end[1] - start[1]) / length]
+    const projection = (point: A2) => (point[0] - start[0]) * direction[0] + (point[1] - start[1]) * direction[1]
+    return {
+        length,
+        minFrom: Math.max(0, projection(outerPoints[edge])) + portalMargin,
+        maxTo: Math.min(length, projection(outerPoints[(edge + 1) % count])) - portalMargin,
+    }
+}
+
 // случайные опции из диапазона, в котором модуль используется; по ним гоняют check:geom и стенд
 export const randomOpts = (): T => {
     const rand = (min: number, max: number) => min + Math.random() * (max - min)
@@ -281,14 +323,7 @@ export const room00 = (opts: T = {}): IBuffersGeom => {
         edgeNormals.push([-(endZ - startZ) / length, (endX - startX) / length])
     }
 
-    // Наружное лицо стены в точке пути: ус по биссектрисе, чтобы обе соседние грани отстояли на wallThickness.
-    // Знаменатель — 1 + cos угла между нормалями; ограничен, чтобы на остром изломе ус не улетал
-    const outerPoints: A2[] = pathPoints.map(([x, z], i) => {
-        const [normal1X, normal1Z] = edgeNormals[(i - 1 + pointCount) % pointCount]
-        const [normal2X, normal2Z] = edgeNormals[i]
-        const miterScale = wallThickness / Math.max(.2, 1 + normal1X * normal2X + normal1Z * normal2Z)
-        return [x + (normal1X + normal2X) * miterScale, z + (normal1Z + normal2Z) * miterScale]
-    })
+    const outerPoints = outerFacePoints(pathPoints, wallThickness)
 
     // ---- порталы: размеры, общие для всех
 
@@ -322,13 +357,8 @@ export const room00 = (opts: T = {}): IBuffersGeom => {
             portalAt = .3 + Math.random() * .4
         }
         if (!(portalWidth > 0)) continue
-        // Наружные углы стены у концов ребра, спроецированные на ребро: у вогнутого угла комнаты наружное лицо
-        // короче внутреннего, и пилон не должен уходить за него
-        const length = edgeLengths[edge], direction = edgeDirections[edge]
-        const start = pointAt(edge)
-        const projection = (point: A2) => (point[0] - start[0]) * direction[0] + (point[1] - start[1]) * direction[1]
-        const minFrom = Math.max(0, projection(outerPoints[edge])) + portalMargin
-        const maxTo = Math.min(length, projection(outerPoints[(edge + 1) % pointCount])) - portalMargin
+        const length = edgeLengths[edge]
+        const { minFrom, maxTo } = portalRangeOnEdge(pathPoints, outerPoints, edge, portalMargin)
         const width = Math.min(Math.max(portalWidth, MIN_PORTAL_WIDTH), maxTo - minFrom)
         if (width < MIN_PORTAL_WIDTH) continue
         const from = Math.min(Math.max(portalAt * length - width / 2, minFrom), maxTo - width)
