@@ -1,5 +1,6 @@
 import type { IBuffersGeom } from '_CORE/_M/_gm'
 
+import * as myTest from 'geometry/_00_myTest/myTest00'
 import * as floor00 from 'geometry/00_floor00/floor00'
 import * as floor01 from 'geometry/00_floor01/floor01'
 import * as pilaster00 from 'geometry/01_pilaster00/pilaster00'
@@ -37,6 +38,14 @@ export type T_GeomEntry = {
 }
 
 export const GEOM_REGISTRY: T_GeomEntry[] = [
+    {
+        // личные тесты владельца репозитория, см. geometry/_00_myTest
+        name: 'myTest',
+        factory: myTest.myTest,
+        randomOpts: myTest.randomOpts,
+        defaultOpts: myTest.DEFAULT_OPTS,
+        noGrid: true,
+    },
     {
         name: 'floor00',
         factory: floor00.floor00,
