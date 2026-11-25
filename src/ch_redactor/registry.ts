@@ -11,6 +11,7 @@ import * as profile00 from 'geometry/04_profile00/profile00'
 import * as room00 from 'geometry/05_room00/room00'
 import * as room01 from 'geometry/05_room01/room01'
 import * as room02 from 'geometry/05_room02/room02'
+import * as room03 from 'geometry/05_room03/room03'
 import * as complex00 from 'geometry/06_complex00/complex00'
 import * as level00 from 'geometry/09_level00/level00'
 import * as stairs00 from 'geometry/07_stairs00/stairs00'
@@ -105,6 +106,12 @@ export const GEOM_REGISTRY: T_GeomEntry[] = [
         factory: room02.room02,
         randomOpts: room02.randomOpts,
         defaultOpts: room02.DEFAULT_OPTS,
+    },
+    {
+        name: 'room03',
+        factory: room03.room03,
+        randomOpts: room03.randomOpts,
+        defaultOpts: room03.DEFAULT_OPTS,
     },
     {
         name: 'complex00',

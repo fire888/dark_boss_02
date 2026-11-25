@@ -149,6 +149,20 @@ export const portalMarginFor = (pilasterProfile: T_PilasterProfile = {}): number
     return PORTAL_PIER_WIDTH + Math.max(pilaster.plinthProjection, pilaster.abacusProjection) + corniceProjection + .1
 }
 
+// Размеры обрамления portal00 у пилястр этого профиля: ширина пилона вдоль стены, отступ перемычки от края абаки
+// и выступ пилона из стены. Перемычка опирается на абаки и уходит в стену, если карниз шире абаки (так считает
+// portal00). Пилон выступает из стены хотя бы на столько, чтобы лицо перемычки вышло из обеих плоскостей стены
+// и её софит закрыл верх дыры по всей толщине. Тот же расчёт берёт room03
+export const portalFrameFor = (pilasterProfile: T_PilasterProfile = {}) => {
+    const pilaster: Required<T_PilasterProfile> = { ...PILASTER_DEFAULT_PROFILE, ...pilasterProfile }
+    const pierWidth = PORTAL_PIER_WIDTH
+    const lintelInset = PORTAL_LINTEL_INSET
+    const corniceEdge = Math.max(0, pilaster.abacusProjection) - lintelInset
+    const corniceProjection = Math.max(0, Math.min(LINTEL_DEFAULT_PROFILE.corniceProjection, corniceEdge + pierWidth / 2))
+    const pierProtrusion = Math.max(.1, corniceProjection - corniceEdge + .02)
+    return { pierWidth, lintelInset, pierProtrusion }
+}
+
 // Высота пилястр портала, которую room00 поставит на самом деле: перемычка с карнизом — под профилем потолка,
 // пилястра вмещает базу и капитель; 0 — порталы не помещаются. complex00 по ней узнаёт, будут ли проёмы в стенах
 export const portalHeightFor = (pilasterProfile: T_PilasterProfile, height: number, profileHeight: number, portalHeight: number): number => {
@@ -331,14 +345,7 @@ export const room00 = (opts: T = {}): IBuffersGeom => {
     // пилястра должна вместить базу и капитель и ещё немного ствола между ними
     const pilasterMinHeight = pilaster.plinthHeight + pilaster.baseSlopeHeight + pilaster.baseFilletHeight
         + pilaster.abacusHeight + pilaster.capitalSlopeHeight + pilaster.capitalFilletHeight + .3
-    const pierWidth = PORTAL_PIER_WIDTH
-    const lintelInset = PORTAL_LINTEL_INSET
-    // Перемычка опирается на абаки и уходит в стену, если карниз шире абаки (так считает portal00). Пилон
-    // выступает из стены хотя бы на столько, чтобы лицо перемычки вышло из обеих плоскостей стены и её софит
-    // закрыл верх дыры по всей толщине
-    const corniceEdge = Math.max(0, pilaster.abacusProjection) - lintelInset
-    const corniceProjection = Math.max(0, Math.min(lintel.corniceProjection, corniceEdge + pierWidth / 2))
-    const pierProtrusion = Math.max(.1, corniceProjection - corniceEdge + .02)
+    const { pierWidth, lintelInset, pierProtrusion } = portalFrameFor(pilaster)
     // от края дыры вдоль стены — пилон, а за ним вынос базы, капители и карниза перемычки
     const portalMargin = portalMarginFor(pilaster)
 
