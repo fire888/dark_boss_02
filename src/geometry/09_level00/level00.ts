@@ -5,8 +5,10 @@ import {
     complex00, randomOpts as randomComplexOpts, DEFAULT_OPTS as COMPLEX_DEFAULT_OPTS,
 } from "geometry/06_complex00/complex00"
 import { tunnelBetweenHoles } from "geometry/05_room01/room01"
+import { room03 } from "geometry/05_room03/room03"
 
-// Уровень из групп комнат, соединённых прямыми туннелями room01, — сначала главный путь вперёд, потом отростки вбок.
+// Уровень из групп комнат, соединённых прямыми туннелями room01 и лестничными комнатами room03, — сначала главный
+// путь вперёд, потом отростки вбок.
 //
 // Группа — complex00: несколько смежных комнат, между соседями — порталы. Комнаты
 // пристраиваются к свободным стенам уже стоящих комнат как попало, поэтому группа нелинейная: ветвится, у неё
@@ -22,6 +24,13 @@ import { tunnelBetweenHoles } from "geometry/05_room01/room01"
 // ровно напротив, лицом назад, с дырой тоже по центру. Наружные стены с дырами берутся с запасом длины, чтобы
 // complex00 не сужал проём: ширина дыры — ровно portalWidth. Длина туннеля — от tunnelLengthMin до tunnelLengthMax,
 // перепад пола — от levelStepMin до levelStepMax вверх или вниз; если пандус круче tunnelSlopeMax, туннель длиннее.
+//
+// Лестничные комнаты. Переход к следующей группе с вероятностью stairRoomChance — не туннель, а room03: комната
+// в два уровня, нижняя зона у нижней группы, верхняя — у верхней, между ними крыльцо. Перепад — от stairRoomStepMin
+// до stairRoomStepMax (крыльцо stairs00 высокий перепад не осилит). Стены room03 с дырами стоят прямо на наружных
+// лицах стен групп, дыры голые — их обрамляют порталы групп. room03 строится в своих осях и поворачивается
+// по нормали стены; свет в ней запечён в её осях, поэтому у повёрнутой ляжет чуть иначе, чем у групп.
+// Выход куска (exitTunnel) — всегда туннель.
 //
 // Отростки. Потом на свободных наружных стенах групп с вероятностью branchChance начинается отросток — туннель
 // и группа поменьше, и так до branchDepth групп вглубь. Отростки тупиковые и выглядят как главный путь. Если задан
@@ -67,6 +76,9 @@ type T = {
     tunnelSlopeMax?: number,  // самый крутой пандус — подъём на метр пандуса
     tunnelFlatLength?: number, // горизонтальный участок туннеля у каждого конца, до пандуса
     tunnelCeilingRise?: number, // на сколько потолок туннеля выше дыры портала
+    stairRoomChance?: number,   // доля переходов между группами, где вместо туннеля — лестничная комната room03, от 0 до 1
+    stairRoomStepMin?: number,  // перепад пола в лестничной комнате, вверх или вниз
+    stairRoomStepMax?: number,
     portalWidth?: number,    // ширина проёма портала — и между комнатами, и у туннелей
     height?: number,         // высота комнат в свету — самая низкая; у каждой группы своя, от height до height + heightSpread
     heightSpread?: number,   // разброс высоты групп вверх от height; порталы у всех групп одной высоты — по height
@@ -116,6 +128,9 @@ export const DEFAULT_OPTS: Required<T> = {
     tunnelSlopeMax: .7,
     tunnelFlatLength: 1,
     tunnelCeilingRise: 1,
+    stairRoomChance: .4,
+    stairRoomStepMin: 1,
+    stairRoomStepMax: 2.2,
     portalWidth: COMPLEX_DEFAULT_OPTS.portalWidth,
     height: COMPLEX_DEFAULT_OPTS.height,
     heightSpread: 4,
@@ -150,6 +165,7 @@ export const randomOpts = (): T => {
     const mainRoomsMin = 1 + Math.floor(Math.random() * 3)
     const branchRoomsMin = 1 + Math.floor(Math.random() * 2)
     const roomScaleMin = rand(.5, 1)
+    const stairRoomStepMin = rand(.8, 1.6)
     return {
         heightSpread: Math.random() < .2 ? 0 : rand(0, 6),
         roomScaleMin,
@@ -176,6 +192,9 @@ export const randomOpts = (): T => {
         tunnelSlopeMax: rand(.3, .8),
         tunnelFlatLength: rand(0, 3),
         tunnelCeilingRise: Math.random() < .3 ? 0 : rand(0, 1.5),
+        stairRoomChance: Math.random() < .2 ? 0 : rand(0, 1),
+        stairRoomStepMin,
+        stairRoomStepMax: stairRoomStepMin + rand(0, 1),
         portalWidth: base.portalWidth,
         height: base.height,
         wallThickness: base.wallThickness,
@@ -224,10 +243,22 @@ export type T_Level00Cluster = {
     isMain: boolean,              // на главном пути
 }
 
+// лестничная комната room03 на месте туннеля — её опции, кроме общих для уровня
+export type T_Level00StairRoom = {
+    pos: A3,           // середина границы зон на уровне нижнего пола, относительно pos уровня
+    angle: number,     // поворот room03 вокруг y (rotateVerticesY) из её осей в оси уровня
+    width: number, lowerLength: number, upperLength: number,
+    levelStep: number, // на сколько верхний пол выше нижнего, > 0
+    height: number,    // высота потолка над верхним полом
+    stairsRadius: number,
+    stairWidth: number, // ширина пролёта лестницы крыльца — он один, прямо к стене нижней зоны
+}
+
 export type T_Level00Tunnel = {
     entryStart: A3, entryEnd: A3, // края дыры у начала; y — верх пола, относительно pos
     exitStart: A3, exitEnd: A3,   // края дыры у конца — или края выхода, если туннель ведёт из куска
     outline: A2[],                // место туннеля в плане
+    stairRoom: T_Level00StairRoom | null, // вместо туннеля — лестничная комната room03
 }
 
 export type T_Level00Layout = {
@@ -348,6 +379,9 @@ export const layoutLevel00 = (opts: T = {}): T_Level00Layout => {
     const flatLength = Math.max(0, o.tunnelFlatLength)
     const slopeMax = Math.max(.05, o.tunnelSlopeMax)
     const floorTop = Math.max(0, o.floorThickness)
+    const stairRoomChance = Math.max(0, Math.min(1, o.stairRoomChance))
+    const stairRoomStepMin = Math.max(.3, Math.min(o.stairRoomStepMin, o.stairRoomStepMax))
+    const stairRoomStepMax = Math.max(stairRoomStepMin, o.stairRoomStepMax)
 
     const clusters: T_Level00Cluster[] = []
     const tunnels: T_Level00Tunnel[] = []
@@ -484,10 +518,47 @@ export const layoutLevel00 = (opts: T = {}): T_Level00Layout => {
         const TRIES = 4
         for (let attempt = 0; attempt < TRIES; ++attempt) {
             const isLast = attempt === TRIES - 1
-            const levelStep = rand(levelStepMin, levelStepMax) * (random() < .5 ? -1 : 1)
-            const length = Math.max(rand(tunnelLengthMin, tunnelLengthMax), Math.abs(levelStep) / slopeMax + flatLength * 2)
+            // лестничная комната — только между группами; без шанса случайность не тратится, раскладки прежние
+            const isStairRoom = withCluster && stairRoomChance > 0 && random() < stairRoomChance
+            let levelStep: number, length: number, halfSide: number
+            let stairRoom: T_Level00StairRoom | null = null
+            if (isStairRoom) {
+                // Размеры room03: крыльцо по перепаду (радиус меньше 2.5 — ступени слишком мелкие), комната такая,
+                // чтобы крыльцо встало с зазорами room03 до боковых стен и до стены нижней зоны и ещё остался проход
+                const step = rand(stairRoomStepMin, stairRoomStepMax)
+                const stairsRadius = Math.max(2.5, step * 1.8) + rand(0, 1)
+                const width = Math.max(rand(10, 16), (stairsRadius + 1) * 2, holeWidth + 4)
+                const lowerLength = Math.max(rand(8, 13), stairsRadius + 3)
+                const upperLength = rand(6, 11)
+                const goesUp = random() < .5
+                levelStep = goesUp ? step : -step
+                length = lowerLength + upperLength
+                halfSide = width / 2
+                // Вверх — из группы входят в нижнюю зону: локальное −z room03 (к задней стене) — по нормали стены,
+                // граница зон — в lowerLength от лица стены. Вниз — наоборот. rotateVerticesY(angle) переводит
+                // локальное +z в (sin, cos)
+                const boundary = goesUp ? lowerLength : upperLength
+                stairRoom = {
+                    pos: [
+                        holeMiddle[0] + normal[0] * boundary,
+                        Math.min(cluster.level, cluster.level + levelStep) + floorTop,
+                        holeMiddle[1] + normal[1] * boundary,
+                    ],
+                    angle: goesUp ? Math.atan2(-normal[0], -normal[1]) : Math.atan2(normal[0], normal[1]),
+                    width, lowerLength, upperLength, levelStep: step,
+                    height: o.height + rand(0, Math.max(0, o.heightSpread) / 2),
+                    stairsRadius, stairWidth: stairsRadius * rand(.6, 1),
+                }
+            } else {
+                levelStep = rand(levelStepMin, levelStepMax) * (random() < .5 ? -1 : 1)
+                length = Math.max(rand(tunnelLengthMin, tunnelLengthMax), Math.abs(levelStep) / slopeMax + flatLength * 2)
+                halfSide = holeWidth / 2
+            }
             const along: A2 = [normal[0] * length, normal[1] * length]
-            const tunnelOutline: A2[] = [holeStart, holeEnd, [holeEnd[0] + along[0], holeEnd[1] + along[1]], [holeStart[0] + along[0], holeStart[1] + along[1]]]
+            // место в плане: у туннеля — шириной с дыру, у лестничной комнаты — во всю её ширину
+            const sideStart: A2 = [holeMiddle[0] - direction[0] * halfSide, holeMiddle[1] - direction[1] * halfSide]
+            const sideEnd: A2 = [holeMiddle[0] + direction[0] * halfSide, holeMiddle[1] + direction[1] * halfSide]
+            const tunnelOutline: A2[] = [sideStart, sideEnd, [sideEnd[0] + along[0], sideEnd[1] + along[1]], [sideStart[0] + along[0], sideStart[1] + along[1]]]
             // стену с дырой туннель касается, соседние комнаты той же группы — не задевает
             const tunnelFits = fits(tunnelOutline,
                 other => other.cluster === cluster && other.room === wall.room,
@@ -509,6 +580,7 @@ export const layoutLevel00 = (opts: T = {}): T_Level00Layout => {
                 exitStart: [end[0] - halfHole[0], level + floorTop, end[1] - halfHole[1]],
                 exitEnd: [end[0] + halfHole[0], level + floorTop, end[1] + halfHole[1]],
                 outline: tunnelOutline,
+                stairRoom,
             })
             if (next) addCluster(next)
             return { cluster: next, end, level }
@@ -693,6 +765,35 @@ export const level00 = (opts: T = {}): IBuffersGeom => {
 
     if (portalHeight > 0) {
         for (const tunnel of layout.tunnels) {
+            const { stairRoom } = tunnel
+            if (stairRoom) {
+                // Стены с дырами — на наружных лицах стен групп, дыры голые: их обрамляют порталы групп. Пилястры
+                // и профиль — общие для уровня, тогда и высота дыры у room03 та же, что у порталов групп
+                const room = room03({
+                    pos: [0, 0, 0],
+                    width: stairRoom.width, lowerLength: stairRoom.lowerLength, upperLength: stairRoom.upperLength,
+                    levelStep: stairRoom.levelStep, height: stairRoom.height,
+                    stairsRadius: stairRoom.stairsRadius,
+                    stairs: [{ angle: Math.PI / 2, width: stairRoom.stairWidth }],
+                    profileHeight: o.profileHeight,
+                    pilaster,
+                    pilasterSpacing: o.pilasterSpacing,
+                    pilasterWidth: o.pilasterWidth,
+                    pilasterProtrusion: o.pilasterProtrusion,
+                    portals: [
+                        { wall: 'front', offset: .5, width: o.portalWidth, height: portalHeight, bare: true },
+                        { wall: 'back', offset: .5, width: o.portalWidth, height: portalHeight, bare: true },
+                    ],
+                    aoLength: o.aoLength,
+                    colorWall: o.colorTunnel,
+                })
+                for (const array of [room.v, room.vCollide]) {
+                    _GM.rotateVerticesY(array, stairRoom.angle)
+                    _GM.translateVertices(array, o.pos[0] + stairRoom.pos[0], o.pos[1] + stairRoom.pos[1], o.pos[2] + stairRoom.pos[2])
+                }
+                _GM.mergeIndexedArrays(result, room)
+                continue
+            }
             _GM.mergeIndexedArrays(result, tunnelBetweenHoles({
                 pos: o.pos,
                 entryStart: tunnel.entryStart, entryEnd: tunnel.entryEnd,
